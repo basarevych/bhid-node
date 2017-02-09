@@ -1,0 +1,36 @@
+#!/usr/bin/env node
+
+const argv = require('minimist')(process.argv.slice(2));
+if (argv['d'])
+    require('daemon')();
+
+const fs = require('fs-ext');
+const path = require('path');
+const Server = require('arpen').Server;
+
+function start() {
+    const server = new Server(path.join(__dirname, '..'), argv);
+    server.run(...argv['_']);
+}
+
+if (!argv['d'])
+    return start();
+
+try {
+    fs.accessSync(argv['d'], fs.constants.F_OK);
+} catch (error) {
+    fs.closeSync(fs.openSync(argv['d'], 'w'));
+}
+
+let fd = fs.openSync(argv['d'], 'r+');
+try {
+    fs.flockSync(fd, 'ex');
+} catch (error) {
+    process.exit(0);
+}
+
+let buffer = Buffer(process.pid.toString());
+fs.ftruncateSync(fd);
+fs.writeSync(fd, buffer, 0, buffer.length, null);
+
+start();
