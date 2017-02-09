@@ -113,14 +113,8 @@ class Tracker extends EventEmitter {
                 })
             })
             .then(() => {
-                let configPath, candidates = [ '/etc/bhid', '/usr/local/etc/bhid' ];
-                if (this._app.argv['c']) {
-                    candidates = [ this._app.argv['c'] ];
-                    if (candidates[0][0] != '/')
-                        candidates[0] = path.join(__dirname, '..', candidates[0]);
-                }
-
-                for (let candidate of candidates) {
+                let configPath;
+                for (let candidate of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
                     try {
                         fs.accessSync(candidate, fs.constants.F_OK);
                         configPath = candidate;
