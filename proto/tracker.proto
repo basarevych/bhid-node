@@ -34,8 +34,9 @@ message ClientMessage {
         CONFIRM_REQUEST = 2;
     }
     required Type type = 1;
-    optional InitRequest init_request = 2;
-    optional ConfirmRequest confirm_request = 3;
+    optional string message_id = 2;
+    optional InitRequest init_request = 3;
+    optional ConfirmRequest confirm_request = 4;
 }
 
 message ServerMessage {
@@ -45,6 +46,7 @@ message ServerMessage {
         CONFIRM_RESPONSE = 2;
     }
     required Type type = 1;
-    optional InitResponse init_response = 2;
-    optional ConfirmResponse confirm_response = 3;
+    optional string message_id = 2;
+    optional InitResponse init_response = 3;
+    optional ConfirmResponse confirm_response = 4;
 }

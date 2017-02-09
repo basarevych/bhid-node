@@ -3,7 +3,7 @@
  */
 module.exports = {
     // Project name (alphanumeric)
-    project: 'arpen',
+    project: 'bhid',
 
     // Load base classes and services, path names
     autoload: [

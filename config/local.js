@@ -12,11 +12,15 @@ module.exports = {
 
     // Loaded modules
     modules: [
+        'daemon',
         'tracker',
     ],
 
     // Servers
     servers: {
+        daemon: {
+            class: 'servers.daemon',
+        },
         tracker: {
             class: 'servers.tracker',
         },

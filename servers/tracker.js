@@ -108,7 +108,7 @@ class Tracker extends EventEmitter {
                         this.ServerMessage = this.proto.lookup('tracker.ServerMessage');
                         resolve();
                     } catch (error) {
-                        reject(new WError(error, 'Tracker.bootstrap()'));
+                        reject(new WError(error, 'Tracker.init()'));
                     }
                 })
             })
