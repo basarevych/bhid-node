@@ -63,16 +63,16 @@ class ConfirmRequest {
                     response: value,
                     token: token,
                 });
-                let relay = this.daemon.ClientMessage.create({
-                    type: this.daemon.ClientMessage.Type.CONFIRM_RESPONSE,
+                let relay = this.daemon.ServerMessage.create({
+                    type: this.daemon.ServerMessage.Type.CONFIRM_RESPONSE,
                     confirmResponse: reply,
                 });
-                let data = this.daemon.ClientMessage.encode(relay).finish();
+                let data = this.daemon.ServerMessage.encode(relay).finish();
                 this.daemon.send(id, data);
             };
 
             let onResponse = (name, response) => {
-                if (name != message.confirmRequest.trackerName || response.messageId != relayId)
+                if (response.messageId != relayId)
                     return;
 
                 reply(response.confirmResponse.response, response.confirmResponse.token);
