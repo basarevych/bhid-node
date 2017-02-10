@@ -81,6 +81,7 @@ class Confirm {
                         switch (message.confirmResponse.response) {
                             case this.ConfirmResponse.Result.ACCEPTED:
                                 console.log('Your daemon token is ' + message.confirmResponse.token);
+                                console.log('It has been saved in the configuration and will be used automatically with this tracker');
                                 process.exit(0);
                                 break;
                             case this.ConfirmResponse.Result.REJECTED:

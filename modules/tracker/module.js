@@ -51,6 +51,11 @@ class Tracker {
         if (this._config.get(`servers.${name}.class`) != 'servers.tracker')
             return Promise.resolve();
 
+        let server = this._app.get('servers').get('tracker');
+
+        let confirmResponse = this._app.get('modules.tracker.messages.confirmResponse');
+        server.on('confirm_response', confirmResponse.onMessage.bind(confirmResponse));
+
         return Promise.resolve();
     }
 }

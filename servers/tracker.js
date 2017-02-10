@@ -117,7 +117,7 @@ class Tracker extends EventEmitter {
                 let configPath;
                 for (let candidate of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
                     try {
-                        fs.accessSync(candidate, fs.constants.F_OK);
+                        fs.accessSync(path.join(candidate, 'bhid.conf'), fs.constants.F_OK);
                         configPath = candidate;
                         break;
                     } catch (error) {
