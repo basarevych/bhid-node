@@ -50,15 +50,18 @@ class ConfirmRequest {
         try {
             let relayId = uuid.v1();
 
-            let onResponse = (name, response) => {
-                if (name != message.confirmRequest.trackerName || response.messageId != relayId)
-                    return;
+            let timer;
+            let reply = (value, token) => {
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
+                }
 
                 this.tracker.removeListener('confirm_response', onResponse);
 
                 let reply = this.daemon.ConfirmResponse.create({
-                    response: response.confirmResponse.response,
-                    token: response.confirmResponse.token,
+                    response: value,
+                    token: token,
                 });
                 let relay = this.daemon.ClientMessage.create({
                     type: this.daemon.ClientMessage.Type.CONFIRM_RESPONSE,
@@ -67,7 +70,21 @@ class ConfirmRequest {
                 let data = this.daemon.ClientMessage.encode(relay).finish();
                 this.daemon.send(id, data);
             };
+
+            let onResponse = (name, response) => {
+                if (name != message.confirmRequest.trackerName || response.messageId != relayId)
+                    return;
+
+                reply(response.confirmResponse.response, response.confirmResponse.token);
+            };
             this.tracker.on('confirm_response', onResponse);
+
+            timer = setTimeout(
+                () => {
+                    reply(this.daemon.ConfirmResponse.Result.TIMEOUT, '');
+                },
+                this.daemon.constructor.requestTimeout
+            );
 
             let request = this.tracker.ConfirmRequest.create({
                 token: message.confirmRequest.token,

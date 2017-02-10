@@ -51,6 +51,14 @@ class Daemon extends EventEmitter {
     }
 
     /**
+     * How much time to wait for tracker response
+     * @type {number}
+     */
+    static get requestTimeout() {
+        return 60 * 1000; // ms
+    }
+
+    /**
      * Initialize the server
      * @param {string} name                     Config section name
      * @return {Promise}

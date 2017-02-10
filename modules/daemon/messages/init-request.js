@@ -50,14 +50,17 @@ class InitRequest {
         try {
             let relayId = uuid.v1();
 
-            let onResponse = (name, response) => {
-                if (name != message.initRequest.trackerName || response.messageId != relayId)
-                    return;
+            let timer;
+            let reply = value => {
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
+                }
 
                 this.tracker.removeListener('init_response', onResponse);
 
                 let reply = this.daemon.InitResponse.create({
-                    response: response.initResponse.response,
+                    response: value,
                 });
                 let relay = this.daemon.ClientMessage.create({
                     type: this.daemon.ClientMessage.Type.INIT_RESPONSE,
@@ -66,7 +69,21 @@ class InitRequest {
                 let data = this.daemon.ClientMessage.encode(relay).finish();
                 this.daemon.send(id, data);
             };
+
+            let onResponse = (name, response) => {
+                if (name != message.initRequest.trackerName || response.messageId != relayId)
+                    return;
+
+                reply(response.initResponse.response);
+            };
             this.tracker.on('init_response', onResponse);
+
+            timer = setTimeout(
+                () => {
+                    reply(this.daemon.InitResponse.Result.TIMEOUT);
+                },
+                this.daemon.constructor.requestTimeout
+            );
 
             let request = this.tracker.InitRequest.create({
                 email: message.initRequest.email,

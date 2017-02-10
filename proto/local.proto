@@ -11,6 +11,7 @@ message InitResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
+        TIMEOUT = 2;
     }
     required Result response = 1;
 }
@@ -24,6 +25,7 @@ message ConfirmResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
+        TIMEOUT = 2;
     }
     required Result response = 1;
     optional string token = 2;
