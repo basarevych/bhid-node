@@ -2,7 +2,7 @@
  * Init Request message
  * @module daemon/messages/init-request
  */
-const debug = require('debug')('bhid:message');
+const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 

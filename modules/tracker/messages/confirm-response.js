@@ -2,7 +2,7 @@
  * Confirm Response message
  * @module tracker/messages/confirm-response
  */
-const debug = require('debug')('bhid:message');
+const debug = require('debug')('bhid:tracker');
 const path = require('path');
 const fs = require('fs');
 const ini = require('ini');
@@ -44,6 +44,9 @@ class ConfirmResponse {
      * @param {object} message      The message
      */
     onMessage(name, message) {
+        if (message.confirmResponse.response != this.tracker.ConfirmResponse.Result.ACCEPTED)
+            return;
+
         let server = this.tracker.servers.get(name);
         if (!server)
             return;
