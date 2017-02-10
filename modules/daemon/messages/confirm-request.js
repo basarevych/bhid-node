@@ -2,7 +2,7 @@
  * Confirm Request message
  * @module daemon/messages/confirm-request
  */
-const debug = require('debug')('bhit:message');
+const debug = require('debug')('bhid:message');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 

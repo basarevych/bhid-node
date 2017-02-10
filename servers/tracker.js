@@ -195,6 +195,8 @@ class Tracker extends EventEmitter {
      * @param {Buffer|null} data            Data to send
      */
     send(name, data) {
+        if (!name)
+            name = this.default;
         let server = this.servers.get(name);
         if (!server || !server.socket || !server.wrapper)
             return;

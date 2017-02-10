@@ -2,7 +2,7 @@ syntax = "proto3";
 package local;
 
 message InitRequest {
-    required string tracker_name = 1;
+    optional string tracker_name = 1;
     required string email = 2;
     required string daemon_name = 3;
 }

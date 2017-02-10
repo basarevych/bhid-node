@@ -2,7 +2,7 @@
  * Daemon server
  * @module servers/daemon
  */
-const debug = require('debug')('bhit:daemon');
+const debug = require('debug')('bhid:daemon');
 const path = require('path');
 const fs = require('fs');
 const net = require('net');
@@ -75,12 +75,12 @@ class Daemon extends EventEmitter {
 
                     try {
                         this.proto = root;
-                        this.InitRequest = this.proto.lookup('tracker.InitRequest');
-                        this.InitResponse = this.proto.lookup('tracker.InitResponse');
-                        this.ConfirmRequest = this.proto.lookup('tracker.ConfirmRequest');
-                        this.ConfirmResponse = this.proto.lookup('tracker.ConfirmResponse');
-                        this.ClientMessage = this.proto.lookup('tracker.ClientMessage');
-                        this.ServerMessage = this.proto.lookup('tracker.ServerMessage');
+                        this.InitRequest = this.proto.lookup('local.InitRequest');
+                        this.InitResponse = this.proto.lookup('local.InitResponse');
+                        this.ConfirmRequest = this.proto.lookup('local.ConfirmRequest');
+                        this.ConfirmResponse = this.proto.lookup('local.ConfirmResponse');
+                        this.ClientMessage = this.proto.lookup('local.ClientMessage');
+                        this.ServerMessage = this.proto.lookup('local.ServerMessage');
                         resolve();
                     } catch (error) {
                         reject(new WError(error, 'Daemon.init()'));
@@ -88,7 +88,7 @@ class Daemon extends EventEmitter {
                 })
             })
             .then(() => {
-                this.server = net.createServer(this.onConnection.bind(this))
+                this.server = net.createServer(this.onConnection.bind(this));
                 this.server.on('error', this.onServerError.bind(this));
                 this.server.on('listening', this.onListening.bind(this));
             });
@@ -157,10 +157,10 @@ class Daemon extends EventEmitter {
 
         switch (error.code) {
             case 'EACCES':
-                this._logger.error('Tracker TCP port requires elevated privileges');
+                this._logger.error('Daemon socket requires elevated privileges');
                 break;
             case 'EADDRINUSE':
-                this._logger.error('Tracker TCP port is already in use');
+                this._logger.error('Daemon socket is already in use');
                 break;
             default:
                 this._logger.error(error);

@@ -2,7 +2,7 @@
  * Init Request message
  * @module daemon/messages/init-request
  */
-const debug = require('debug')('bhit:message');
+const debug = require('debug')('bhid:message');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -62,16 +62,16 @@ class InitRequest {
                 let reply = this.daemon.InitResponse.create({
                     response: value,
                 });
-                let relay = this.daemon.ClientMessage.create({
-                    type: this.daemon.ClientMessage.Type.INIT_RESPONSE,
+                let relay = this.daemon.ServerMessage.create({
+                    type: this.daemon.ServerMessage.Type.INIT_RESPONSE,
                     initResponse: reply,
                 });
-                let data = this.daemon.ClientMessage.encode(relay).finish();
+                let data = this.daemon.ServerMessage.encode(relay).finish();
                 this.daemon.send(id, data);
             };
 
             let onResponse = (name, response) => {
-                if (name != message.initRequest.trackerName || response.messageId != relayId)
+                if (response.messageId != relayId)
                     return;
 
                 reply(response.initResponse.response);
