@@ -20,9 +20,19 @@ module.exports = {
     servers: {
         daemon: {
             class: 'servers.daemon',
+            log: {
+                path: path.join(__dirname, '..', 'logs'),
+                interval: '1d',
+                mode: 0o640,
+            },
         },
         tracker: {
             class: 'servers.tracker',
+            log: {
+                path: path.join(__dirname, '..', 'logs'),
+                interval: '1d',
+                mode: 0o640,
+            },
         },
     },
 

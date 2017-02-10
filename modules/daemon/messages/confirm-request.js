@@ -14,12 +14,10 @@ class ConfirmRequest {
      * Create service
      * @param {App} app                         The application
      * @param {object} config                   Configuration
-     * @param {Logger} logger                   Logger
      */
-    constructor(app, config, logger) {
+    constructor(app, config) {
         this._app = app;
         this._config = config;
-        this._logger = logger;
     }
 
     /**
@@ -35,7 +33,7 @@ class ConfirmRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger' ];
+        return [ 'app', 'config' ];
     }
 
     /**
@@ -49,37 +47,41 @@ class ConfirmRequest {
             return;
 
         debug(`Got CONFIRM REQUEST`);
-        let relayId = uuid.v1();
+        try {
+            let relayId = uuid.v1();
 
-        let onResponse = (name, response) => {
-            if (name != message.confirmRequest.trackerName || response.messageId != relayId)
-                return;
+            let onResponse = (name, response) => {
+                if (name != message.confirmRequest.trackerName || response.messageId != relayId)
+                    return;
 
-            this.tracker.removeListener('confirm_response', onResponse);
+                this.tracker.removeListener('confirm_response', onResponse);
 
-            let reply = this.daemon.ConfirmResponse.create({
-                response: response.confirmResponse.response,
-                token: response.confirmResponse.token,
+                let reply = this.daemon.ConfirmResponse.create({
+                    response: response.confirmResponse.response,
+                    token: response.confirmResponse.token,
+                });
+                let relay = this.daemon.ClientMessage.create({
+                    type: this.daemon.ClientMessage.Type.CONFIRM_RESPONSE,
+                    confirmResponse: reply,
+                });
+                let data = this.daemon.ClientMessage.encode(relay).finish();
+                this.daemon.send(id, data);
+            };
+            this.tracker.on('confirm_response', onResponse);
+
+            let request = this.tracker.ConfirmRequest.create({
+                token: message.confirmRequest.token,
             });
-            let relay = this.daemon.ClientMessage.create({
-                type: this.daemon.ClientMessage.Type.CONFIRM_RESPONSE,
-                confirmResponse: reply,
+            let relay = this.tracker.ClientMessage.create({
+                type: this.tracker.ClientMessage.Type.CONFIRM_REQUEST,
+                messageId: relayId,
+                confirmRequest: request,
             });
-            let data = this.daemon.ClientMessage.encode(relay).finish();
-            this.daemon.send(id, data);
-        };
-        this.tracker.on('confirm_response', onResponse);
-
-        let request = this.tracker.ConfirmRequest.create({
-            token: message.confirmRequest.token,
-        });
-        let relay = this.tracker.ClientMessage.create({
-            type: this.tracker.ClientMessage.Type.CONFIRM_REQUEST,
-            messageId: relayId,
-            confirmRequest: request,
-        });
-        let data = this.tracker.ClientMessage.encode(relay).finish();
-        this.tracker.send(message.confirmRequest.trackerName, data);
+            let data = this.tracker.ClientMessage.encode(relay).finish();
+            this.tracker.send(message.confirmRequest.trackerName, data);
+        } catch (error) {
+            this._daemon._logger.error(new WError(error, 'ConfirmRequest.onMessage()'));
+        }
     }
 
     /**

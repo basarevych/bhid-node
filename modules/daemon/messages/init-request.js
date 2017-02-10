@@ -14,12 +14,10 @@ class InitRequest {
      * Create service
      * @param {App} app                         The application
      * @param {object} config                   Configuration
-     * @param {Logger} logger                   Logger
      */
-    constructor(app, config, logger) {
+    constructor(app, config) {
         this._app = app;
         this._config = config;
-        this._logger = logger;
     }
 
     /**
@@ -35,7 +33,7 @@ class InitRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger' ];
+        return [ 'app', 'config' ];
     }
 
     /**
@@ -49,37 +47,41 @@ class InitRequest {
             return;
 
         debug(`Got INIT REQUEST`);
-        let relayId = uuid.v1();
+        try {
+            let relayId = uuid.v1();
 
-        let onResponse = (name, response) => {
-            if (name != message.initRequest.trackerName || response.messageId != relayId)
-                return;
+            let onResponse = (name, response) => {
+                if (name != message.initRequest.trackerName || response.messageId != relayId)
+                    return;
 
-            this.tracker.removeListener('init_response', onResponse);
+                this.tracker.removeListener('init_response', onResponse);
 
-            let reply = this.daemon.InitResponse.create({
-                response: response.initResponse.response,
+                let reply = this.daemon.InitResponse.create({
+                    response: response.initResponse.response,
+                });
+                let relay = this.daemon.ClientMessage.create({
+                    type: this.daemon.ClientMessage.Type.INIT_RESPONSE,
+                    initResponse: reply,
+                });
+                let data = this.daemon.ClientMessage.encode(relay).finish();
+                this.daemon.send(id, data);
+            };
+            this.tracker.on('init_response', onResponse);
+
+            let request = this.tracker.InitRequest.create({
+                email: message.initRequest.email,
+                daemonName: message.initRequest.daemonName,
             });
-            let relay = this.daemon.ClientMessage.create({
-                type: this.daemon.ClientMessage.Type.INIT_RESPONSE,
-                initResponse: reply,
+            let relay = this.tracker.ClientMessage.create({
+                type: this.tracker.ClientMessage.Type.INIT_REQUEST,
+                messageId: relayId,
+                initRequest: request,
             });
-            let data = this.daemon.ClientMessage.encode(relay).finish();
-            this.daemon.send(id, data);
-        };
-        this.tracker.on('init_response', onResponse);
-
-        let request = this.tracker.InitRequest.create({
-            email: message.initRequest.email,
-            daemonName: message.initRequest.daemonName,
-        });
-        let relay = this.tracker.ClientMessage.create({
-            type: this.tracker.ClientMessage.Type.INIT_REQUEST,
-            messageId: relayId,
-            initRequest: request,
-        });
-        let data = this.tracker.ClientMessage.encode(relay).finish();
-        this.tracker.send(message.initRequest.trackerName, data);
+            let data = this.tracker.ClientMessage.encode(relay).finish();
+            this.tracker.send(message.initRequest.trackerName, data);
+        } catch (error) {
+            this._daemon._logger.error(new WError(error, 'InitRequest.onMessage()'));
+        }
     }
 
     /**
