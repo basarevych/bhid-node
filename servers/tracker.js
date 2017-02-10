@@ -105,6 +105,8 @@ class Tracker extends EventEmitter {
                         this.InitResponse = this.proto.lookup('tracker.InitResponse');
                         this.ConfirmRequest = this.proto.lookup('tracker.ConfirmRequest');
                         this.ConfirmResponse = this.proto.lookup('tracker.ConfirmResponse');
+                        this.CreateRequest = this.proto.lookup('tracker.CreateRequest');
+                        this.CreateResponse = this.proto.lookup('tracker.CreateResponse');
                         this.ClientMessage = this.proto.lookup('tracker.ClientMessage');
                         this.ServerMessage = this.proto.lookup('tracker.ServerMessage');
                         resolve();
@@ -190,6 +192,20 @@ class Tracker extends EventEmitter {
     }
 
     /**
+     * Get daemon token for the tracker
+     * @param {string} name                 Tracker name
+     * @return {string}
+     */
+    getToken(name) {
+        if (!name)
+            name = this.default;
+        let server = this.servers.get(name);
+        if (!server || !server.token)
+            return '';
+        return server.token;
+    }
+
+    /**
      * Send message
      * @param {string} name                 Tracker name
      * @param {Buffer|null} data            Data to send
@@ -242,6 +258,9 @@ class Tracker extends EventEmitter {
                     break;
                 case this.ServerMessage.Type.CONFIRM_RESPONSE:
                     this.emit('confirm_response', name, message);
+                    break;
+                case this.ServerMessage.Type.CREATE_RESPONSE:
+                    this.emit('create_response', name, message);
                     break;
             }
         } catch (error) {

@@ -13,6 +13,7 @@ function usage() {
     console.log('\tinstall\t\tRegister the program in the system');
     console.log('\tinit\t\tInitialize the account');
     console.log('\tconfirm\t\tConfirm email');
+    console.log('\tcreate\t\tCreate new connection');
     console.log('\trun\t\tRun the program');
 }
 
@@ -72,6 +73,12 @@ switch (argv['_'][0]) {
                 console.log('Usage: bhid confirm <token> [-t <tracker>]');
                 console.log('\tConfirm account creation or generation of a new token');
                 break;
+            case 'create':
+                console.log('Usage: bhid create <path> <server-addr>:<server-port> <- <client-addr>:<client-port> [-t <tracker>]');
+                console.log('       bhid create <path> <client-addr>:<client-port> -> <server-addr>:<server-port> [-t <tracker>]');
+                console.log('\tCreate a new connection. First form will register this daemon as server, second as client of this' +
+                            'connection');
+                break;
             default:
                 console.log('Usage: bhid help <command>');
                 process.exit(1);
@@ -100,6 +107,7 @@ switch (argv['_'][0]) {
         break;
     case 'init':
     case 'confirm':
+    case 'create':
         exec(path.join(__dirname, 'bin', 'server'), [ 'tracker', '-d', pidPath ])
             .then(() => {
                 return exec(path.join(__dirname, 'bin', 'cmd'), process.argv.slice(2));
