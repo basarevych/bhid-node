@@ -5,6 +5,7 @@
 const argv = require('minimist')(process.argv.slice(2));
 const execFile = require('child_process').execFile;
 const path = require('path');
+const fs = require('fs');
 
 let pidPath = path.join('/var', 'run', 'bhid', 'bhid.pid');
 
@@ -60,6 +61,36 @@ function execCmd() {
     return exec(path.join(__dirname, 'bin', 'cmd'), process.argv.slice(2));
 }
 
+if (!argv['_'].length) {
+    usage();
+    process.exit(0);
+}
+if (argv['_'][0] != 'help' && argv['_'][0] != 'install') {
+    let etcExists = false;
+    for (let dir of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
+        try {
+            fs.accessSync(dir, fs.constants.F_OK);
+            etcExists = true;
+            break;
+        } catch (error) {
+            // do nothing
+        }
+    }
+    let workExists = true;
+    for (let dir of [ '/var/run/bhid', '/var/log/bhid' ]) {
+        try {
+            fs.accessSync(dir, fs.constants.F_OK);
+        } catch (error) {
+            workExists = false;
+            break;
+        }
+    }
+    if (!etcExists || !workExists) {
+        console.log('Run "bhid install" first');
+        process.exit(1);
+    }
+}
+
 switch (argv['_'][0]) {
     case 'help':
         switch (argv['_'][1]) {
@@ -96,11 +127,14 @@ switch (argv['_'][0]) {
     case 'install':
         execCmd()
             .then(result => {
-                if (result.stdout.length)
-                    console.log(result.stdout.trim());
-                if (result.stderr.length)
-                    console.error(result.stderr.trim());
-                process.exit(result.code);
+                if (result.code !== 0) {
+                    if (result.stdout.length)
+                        console.log(result.stdout.trim());
+                    if (result.stderr.length)
+                        console.error(result.stderr.trim());
+                    process.exit(result.code);
+                }
+                process.exit(0);
             })
             .catch(error => {
                 console.log(error.message);
@@ -109,6 +143,16 @@ switch (argv['_'][0]) {
         break;
     case 'run':
         execDaemon()
+            .then(result => {
+                if (result.code !== 0) {
+                    if (result.stdout.length)
+                        console.log(result.stdout.trim());
+                    if (result.stderr.length)
+                        console.error(result.stderr.trim());
+                    process.exit(result.code);
+                }
+                process.exit(0);
+            })
             .catch(error => {
                 console.log(error.message);
                 process.exit(1);
@@ -118,7 +162,14 @@ switch (argv['_'][0]) {
     case 'confirm':
     case 'create':
         execDaemon()
-            .then(() => {
+            .then(result => {
+                if (result.code !== 0) {
+                    if (result.stdout.length)
+                        console.log(result.stdout.trim());
+                    if (result.stderr.length)
+                        console.error(result.stderr.trim());
+                    process.exit(result.code);
+                }
                 return execCmd();
             })
             .then(result => {
