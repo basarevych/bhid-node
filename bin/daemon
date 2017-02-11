@@ -1,0 +1,94 @@
+#!/usr/bin/env node
+
+const argv = require('minimist')(process.argv.slice(2));
+const fs = require('fs-ext');
+const path = require('path');
+const merge = require('merge');
+const stripAnsi = require('strip-ansi');
+const Runner = require(path.join(__dirname, '..', 'node_modules', 'arpen', 'src', 'services', 'runner.js'));
+const Emailer = require(path.join(__dirname, '..', 'node_modules', 'arpen', 'src', 'services', 'emailer.js'));
+
+let args = process.argv.slice(2);
+if (!args.length) {
+    console.error('Need the server name(s)');
+    process.exit(1);
+}
+if (!argv['d']) {
+    console.error('Required parameter -d <pidfile> missing');
+    process.exit(1);
+}
+
+let config, runner, emailer;
+try {
+    let globalConf = require(path.join(__dirname, '..', 'config', 'global.js'));
+    let localConf = require(path.join(__dirname, '..', 'config', 'local.js'));
+    config = merge.recursive(true, globalConf, localConf);
+    runner = new Runner();
+    emailer = new Emailer(config);
+} catch (error) {
+    console.error(error.message);
+    process.exit(1);
+}
+
+try {
+    fs.accessSync(argv['d'], fs.constants.F_OK);
+    try {
+        fs.accessSync(argv['d'], fs.constants.R_OK | fs.constants.W_OK);
+    } catch (error) {
+        console.error(error.message);
+        process.exit(1);
+    }
+} catch (error) {
+    try {
+        fs.closeSync(fs.openSync(argv['d'], 'w'));
+    } catch (error) {
+        console.error(error.message);
+        process.exit(1);
+    }
+}
+require('daemon')();
+
+let fd = fs.openSync(argv['d'], 'r+');
+try {
+    fs.flockSync(fd, 'ex');
+} catch (error) {
+    process.exit(0);
+}
+
+let pidBuffer = Buffer(process.pid.toString());
+fs.ftruncateSync(fd);
+fs.writeSync(fd, pidBuffer, 0, pidBuffer.length, null);
+
+function restart() {
+    let maxBufferLength = 10000, buffer = '';
+    let proc = runner.spawn('node', [ path.join(__dirname, 'server'), ...args ]);
+    proc.cmd.on('data', data => {
+        process.stdout.write(data);
+        buffer += data.toString();
+        if (buffer.length > maxBufferLength)
+            buffer = buffer.slice(buffer.length - maxBufferLength);
+    });
+    proc.promise
+        .then(result => {
+            if (result.code === 0)
+                process.exit(0);
+
+            if (!config.email.daemon.enabled)
+                restart();
+
+            return emailer.send({
+                    from: config.email.from,
+                    to: config.email.daemon.to,
+                    subject: '[' + config.project + '] Exit code ' + result.code + ' of ' + args.join(' '),
+                    text: stripAnsi(buffer),
+                })
+                .then(function () {
+                    setTimeout(() => { restart(); }, 1000);
+                });
+        })
+        .catch(error => {
+            console.error(error.message);
+            process.exit(1);
+        });
+}
+restart();

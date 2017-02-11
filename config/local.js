@@ -55,7 +55,7 @@ module.exports = {
             error_enabled: false,           // email logger.error() or not
             to: 'debug@example.com',
         },
-        launcher: {
+        daemon: {
             enabled: false,                 // email program crash or not
             to: 'debug@example.com',
         },
