@@ -92,7 +92,8 @@ class CreateRequest {
             );
 
             let request = this.tracker.CreateRequest.create({
-                token: this.tracker.getToken(message.confirmRequest.trackerName),
+                token: this.tracker.getToken(message.createRequest.trackerName),
+                daemonName: message.createRequest.daemonName,
                 path: message.createRequest.path,
                 type: message.createRequest.type,
                 connectAddress: message.createRequest.connectAddress,
@@ -106,7 +107,7 @@ class CreateRequest {
                 createRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.confirmRequest.trackerName, data);
+            this.tracker.send(message.createRequest.trackerName, data);
         } catch (error) {
             this._daemon._logger.error(new WError(error, 'CreateRequest.onMessage()'));
         }

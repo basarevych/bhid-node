@@ -33,12 +33,13 @@ message CreateRequest {
         CLIENT = 1;
     }
     required string token = 1;
-    required string path = 2;
-    required Type type = 3;
-    required string connect_address = 4;
-    required string connect_port = 5;
-    required string listen_address = 6;
-    required string listen_port = 7;
+    optional string daemon_name = 2;
+    required string path = 3;
+    required Type type = 4;
+    required string connect_address = 5;
+    required string connect_port = 6;
+    required string listen_address = 7;
+    required string listen_port = 8;
 }
 
 message CreateResponse {

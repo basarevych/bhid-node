@@ -69,29 +69,31 @@ switch (argv['_'][0]) {
     case 'help':
         switch (argv['_'][1]) {
             case 'install':
-                console.log('Usage: bhid install');
+                console.log('Usage: bhid install\n');
                 console.log('\tThis command will register the program in the system');
                 console.log('\tand will create configuration in /etc/bhid by default')
                 break;
             case 'run':
-                console.log('Usage: bhid run');
+                console.log('Usage: bhid run\n');
                 console.log('\tThis command will start the daemon');
                 console.log('\tYou might want to run "systemctl bhid start" instead');
                 break;
             case 'init':
-                console.log('Usage: bhid init <email> <name> [-t <tracker>]');
+                console.log('Usage: bhid init <email> <daemon-name> [-t <tracker>]\n');
                 console.log('\tInitialize your and daemon accounts on the tracker');
                 console.log('\tYou will receive a confirmation email');
                 break;
             case 'confirm':
-                console.log('Usage: bhid confirm <token> [-t <tracker>]');
+                console.log('Usage: bhid confirm <token> [-t <tracker>]\n');
                 console.log('\tConfirm account creation or generation of a new token');
                 break;
             case 'create':
-                console.log('Usage: bhid create <path> <server-addr>:<server-port> <- <client-addr>:<client-port> [-t <tracker>]');
-                console.log('       bhid create <path> <client-addr>:<client-port> -> <server-addr>:<server-port> [-t <tracker>]');
-                console.log('\tCreate a new connection. First form will register this daemon as server, second as client of this' +
-                            'connection');
+                console.log('Usage: bhid create <path> <connect-addr>:<connect-port> <listen-addr>:<listen-port>');
+                console.log('                   [-d <daemon-name>] [-c] [-t <tracker>]\n');
+                console.log(
+                    '\tCreate a new connection. If -c is not specified the daemon is configured as server of this ' +
+                    'connection or as client otherwise'
+                );
                 break;
             default:
                 console.log('Usage: bhid help <command>');

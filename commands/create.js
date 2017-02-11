@@ -44,25 +44,18 @@ class Create {
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 5)
+        if (argv['_'].length < 4)
             return this.error('Invalid parameters');
 
-        let trackerName = argv['t'] || '';
-        let path = argv['_'][1];
+        let cpath = argv['_'][1];
         let first = argv['_'][2];
-        let direction = argv['_'][3];
-        let second = argv['_'][4];
+        let second = argv['_'][3];
+        let client = !!argv['c'];
+        let daemonName = argv['d'] || '';
+        let trackerName = argv['t'] || '';
 
         if (first.split(':').length != 2 || second.split(':').length != 2)
             return this.error('Invalid host:port notation');
-
-        let type;
-        if (direction == '<-')
-            type = this.CreateRequest.Type.SERVER;
-        else if (direction == '->')
-            type = this.CreateRequest.Type.CLIENT;
-        else
-            return this.error('Invalid direction');
 
         debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
@@ -77,14 +70,16 @@ class Create {
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
                 debug(`Sending CREATE REQUEST`);
+                let type = client ? this.CreateRequest.Type.CLIENT : this.CreateRequest.Type.SERVER;
                 let request = this.CreateRequest.create({
                     trackerName: trackerName,
-                    path: path,
+                    daemonName: daemonName,
+                    path: cpath,
                     type: type,
-                    connectAddress: (direction == '<-' ? first.split(':')[0] : second.split(':')[0]),
-                    connectPort: (direction == '<-' ? first.split(':')[1] : second.split(':')[1]),
-                    listenAddress: (direction == '<-' ? second.split(':')[0] : first.split(':')[0]),
-                    listenPort: (direction == '<-' ? second.split(':')[1] : first.split(':')[1]),
+                    connectAddress: first.split(':')[0],
+                    connectPort: first.split(':')[1],
+                    listenAddress: second.split(':')[0],
+                    listenPort: second.split(':')[1],
                 });
                 let message = this.ClientMessage.create({
                     type: this.ClientMessage.Type.CREATE_REQUEST,
@@ -104,7 +99,8 @@ class Create {
                                     '\n' +
                                     'Client token: ' + message.createResponse.clientToken +
                                     '\n' +
-                                    'This daemon is configured as ' + (direction == '<-' ? 'server' : 'client')
+                                    (daemonName ? `Daemon ${daemonName}` : 'This daemon') +
+                                    ' is configured as ' + (client ? 'client' : 'server')
                                 );
                                 process.exit(0);
                                 break;
