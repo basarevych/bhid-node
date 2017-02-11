@@ -6,6 +6,8 @@ const argv = require('minimist')(process.argv.slice(2));
 const execFile = require('child_process').execFile;
 const path = require('path');
 
+let pidPath = path.join('/var', 'run', 'bhid', 'bhid.pid');
+
 function usage() {
     console.log('Usage: bhid <command>');
     console.log('Commands:');
@@ -50,7 +52,14 @@ function exec(command, params = []) {
     });
 }
 
-let pidPath = path.join('/var', 'run', 'bhid.pid');
+function execDaemon() {
+    return exec(path.join(__dirname, 'bin', 'daemon'), [ pidPath, 'daemon', 'tracker' ]);
+}
+
+function execCmd() {
+    return exec(path.join(__dirname, 'bin', 'cmd'), process.argv.slice(2));
+}
+
 switch (argv['_'][0]) {
     case 'help':
         switch (argv['_'][1]) {
@@ -85,7 +94,7 @@ switch (argv['_'][0]) {
         }
         break;
     case 'install':
-        exec(path.join(__dirname, 'bin', 'cmd'), process.argv.slice(2))
+        execCmd()
             .then(result => {
                 if (result.stdout.length)
                     console.log(result.stdout.trim());
@@ -99,7 +108,7 @@ switch (argv['_'][0]) {
             });
         break;
     case 'run':
-        exec(path.join(__dirname, 'bin', 'server'), [ 'tracker', '-d', pidPath ])
+        execDaemon()
             .catch(error => {
                 console.log(error.message);
                 process.exit(1);
@@ -108,9 +117,9 @@ switch (argv['_'][0]) {
     case 'init':
     case 'confirm':
     case 'create':
-        exec(path.join(__dirname, 'bin', 'server'), [ 'tracker', '-d', pidPath ])
+        execDaemon()
             .then(() => {
-                return exec(path.join(__dirname, 'bin', 'cmd'), process.argv.slice(2));
+                return execCmd();
             })
             .then(result => {
                 if (result.stdout.length)
