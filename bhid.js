@@ -71,7 +71,7 @@ switch (argv['_'][0]) {
             case 'install':
                 console.log('Usage: bhid install\n');
                 console.log('\tThis command will register the program in the system');
-                console.log('\tand will create configuration in /etc/bhid by default')
+                console.log('\tand will create configuration in /etc/bhid by default');
                 break;
             case 'run':
                 console.log('Usage: bhid run\n');
