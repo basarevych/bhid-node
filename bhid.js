@@ -88,11 +88,11 @@ switch (argv['_'][0]) {
                 console.log('\tConfirm account creation or generation of a new token');
                 break;
             case 'create':
-                console.log('Usage: bhid create <path> <connect-addr>:<connect-port> <listen-addr>:<listen-port>');
-                console.log('                   [-d <daemon-name>] [-c] [-e] [-t <tracker>]\n');
+                console.log('Usage: bhid create <path> <connect-addr> <listen-addr> [-d <daemon-name>] [-c] [-e] [-t <tracker>]\n');
                 console.log(
-                    '\tCreate a new connection. If -c is not specified the daemon is configured as server of this ' +
-                    'connection or as client otherwise. If -e is set then connection is encrypted'
+                    '\tCreate a new connection. If -c is not specified the daemon is configured as server of this\n' +
+                    '\tconnection or as client otherwise. If -e is set then connection is encrypted.\n\n' +
+                    '\t<connect-addr> and <listen-addr> are written in the form of address:port or just /path/to/unix/socket'
                 );
                 break;
             default:

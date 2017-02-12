@@ -55,8 +55,29 @@ class Create {
         let daemonName = argv['d'] || '';
         let trackerName = argv['t'] || '';
 
-        if (first.split(':').length != 2 || second.split(':').length != 2)
-            return this.error('Invalid host:port notation');
+        let parts = first.split(':');
+        let firstAddress, firstPort;
+        if (parts.length == 2) {
+            firstAddress = parts[0];
+            firstPort = parts[1];
+        } else if (parts.length == 1 && parts[0].length && parts[0][0] == '/') {
+            firstAddress = '';
+            firstPort = parts[0];
+        } else {
+            return this.error('Invalid connect address notation');
+        }
+
+        parts = second.split(':');
+        let secondAddress, secondPort;
+        if (parts.length == 2) {
+            secondAddress = parts[0];
+            secondPort = parts[1];
+        } else if (parts.length == 1 && parts[0].length && parts[0][0] == '/') {
+            secondAddress = '';
+            secondPort = parts[0];
+        } else {
+            return this.error('Invalid listen address notation');
+        }
 
         debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
@@ -78,10 +99,10 @@ class Create {
                     path: cpath,
                     type: type,
                     encrypted: encrypted,
-                    connectAddress: first.split(':')[0],
-                    connectPort: first.split(':')[1],
-                    listenAddress: second.split(':')[0],
-                    listenPort: second.split(':')[1],
+                    connectAddress: firstAddress,
+                    connectPort: firstPort,
+                    listenAddress: secondAddress,
+                    listenPort: secondPort,
                 });
                 let message = this.ClientMessage.create({
                     type: this.ClientMessage.Type.CREATE_REQUEST,
