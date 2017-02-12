@@ -1,6 +1,6 @@
 /**
  * Daemon module
- * @module dammon/module
+ * @module daemon/module
  */
 
 
