@@ -40,10 +40,11 @@ message CreateRequest {
     required string daemon_name = 2;
     required string path = 3;
     required Type type = 4;
-    required string connect_address = 5;
-    required string connect_port = 6;
-    required string listen_address = 7;
-    required string listen_port = 8;
+    required bool encrypted = 5;
+    required string connect_address = 6;
+    required string connect_port = 7;
+    required string listen_address = 8;
+    required string listen_port = 9;
 }
 
 message CreateResponse {

@@ -96,6 +96,7 @@ class CreateRequest {
                 daemonName: message.createRequest.daemonName,
                 path: message.createRequest.path,
                 type: message.createRequest.type,
+                encrypted: message.createRequest.encrypted,
                 connectAddress: message.createRequest.connectAddress,
                 connectPort: message.createRequest.connectPort,
                 listenAddress: message.createRequest.listenAddress,

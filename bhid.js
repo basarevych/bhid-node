@@ -89,10 +89,10 @@ switch (argv['_'][0]) {
                 break;
             case 'create':
                 console.log('Usage: bhid create <path> <connect-addr>:<connect-port> <listen-addr>:<listen-port>');
-                console.log('                   [-d <daemon-name>] [-c] [-t <tracker>]\n');
+                console.log('                   [-d <daemon-name>] [-c] [-e] [-t <tracker>]\n');
                 console.log(
                     '\tCreate a new connection. If -c is not specified the daemon is configured as server of this ' +
-                    'connection or as client otherwise'
+                    'connection or as client otherwise. If -e is set then connection is encrypted'
                 );
                 break;
             default:

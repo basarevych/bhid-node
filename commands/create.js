@@ -51,6 +51,7 @@ class Create {
         let first = argv['_'][2];
         let second = argv['_'][3];
         let client = !!argv['c'];
+        let encrypted = !!argv['e'];
         let daemonName = argv['d'] || '';
         let trackerName = argv['t'] || '';
 
@@ -76,6 +77,7 @@ class Create {
                     daemonName: daemonName,
                     path: cpath,
                     type: type,
+                    encrypted: encrypted,
                     connectAddress: first.split(':')[0],
                     connectPort: first.split(':')[1],
                     listenAddress: second.split(':')[0],
