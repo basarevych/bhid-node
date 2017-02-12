@@ -99,6 +99,14 @@ switch (argv['_'][0]) {
                 console.log('Usage: bhid delete <path> [-t <tracker>]\n');
                 console.log('\tDelete path recursively with all the connections');
                 break;
+            case 'connect':
+                console.log('Usage: bhid connect <token> [-d <daemon-name>] [-t <tracker>]\n');
+                console.log('\tConnect the daemon to the network with the help of the token');
+                break;
+            case 'disconnect':
+                console.log('Usage: bhid disconnect <path> [-d <daemon-name>] [-t <tracker>]\n');
+                console.log('\tDisconnect the daemon without deleting the connection information and affecting other daemons');
+                break;
             default:
                 console.log('Usage: bhid help <command>');
                 process.exit(1);
@@ -128,6 +136,8 @@ switch (argv['_'][0]) {
     case 'confirm':
     case 'create':
     case 'delete':
+    case 'connect':
+    case 'disconnect':
         execDaemon()
             .then(result => {
                 if (result.code !== 0)

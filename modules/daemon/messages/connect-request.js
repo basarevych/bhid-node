@@ -1,15 +1,15 @@
 /**
- * Delete Request message
- * @module daemon/messages/delete-request
+ * Connect Request message
+ * @module daemon/messages/connect-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Delete Request message class
+ * Connect Request message class
  */
-class DeleteRequest {
+class ConnectRequest {
     /**
      * Create service
      * @param {App} app                         The application
@@ -21,11 +21,11 @@ class DeleteRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.messages.deleteRequest'
+     * Service name is 'modules.daemon.messages.connectRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.messages.deleteRequest';
+        return 'modules.daemon.messages.connectRequest';
     }
 
     /**
@@ -46,7 +46,7 @@ class DeleteRequest {
         if (!client)
             return;
 
-        debug(`Got DELETE REQUEST`);
+        debug(`Got CONNECT REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -57,14 +57,14 @@ class DeleteRequest {
                     timer = null;
                 }
 
-                this.tracker.removeListener('delete_response', onResponse);
+                this.tracker.removeListener('connect_response', onResponse);
 
-                let reply = this.daemon.DeleteResponse.create({
+                let reply = this.daemon.ConnectResponse.create({
                     response: value,
                 });
                 let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.DELETE_RESPONSE,
-                    deleteResponse: reply,
+                    type: this.daemon.ServerMessage.Type.CONNECT_RESPONSE,
+                    connectResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
                 this.daemon.send(id, data);
@@ -74,32 +74,31 @@ class DeleteRequest {
                 if (response.messageId != relayId)
                     return;
 
-                reply(
-                    response.deleteResponse.response,
-                );
+                reply(response.connectResponse.response);
             };
-            this.tracker.on('delete_response', onResponse);
+            this.tracker.on('connect_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.DeleteResponse.Result.TIMEOUT, '');
+                    reply(this.daemon.ConnectResponse.Result.TIMEOUT, '');
                 },
                 this.daemon.constructor.requestTimeout
             );
 
-            let request = this.tracker.DeleteRequest.create({
-                token: this.tracker.getToken(message.deleteRequest.trackerName),
-                path: message.createRequest.path,
+            let request = this.tracker.ConnectRequest.create({
+                token: this.tracker.getToken(message.connectRequest.trackerName),
+                daemonName: message.connectRequest.daemonName,
+                connectToken: message.connectRequest.token,
             });
             let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.DELETE_REQUEST,
+                type: this.tracker.ClientMessage.Type.CONNECT_REQUEST,
                 messageId: relayId,
-                deleteRequest: request,
+                connectRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.createRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'DeleteRequest.onMessage()'));
+            this._daemon._logger.error(new WError(error, 'ConnectRequest.onMessage()'));
         }
     }
 
@@ -126,4 +125,4 @@ class DeleteRequest {
     }
 }
 
-module.exports = DeleteRequest;
+module.exports = ConnectRequest;

@@ -60,12 +60,44 @@ message DeleteRequest {
     required string path = 2;
 }
 
-message CreateResponse {
+message DeleteResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
         INVALID_PATH = 2;
         PATH_NOT_FOUND = 3;
+    }
+    required Result response = 1;
+}
+
+message ConnectRequest {
+    required string token = 1;
+    optional string daemon_name = 2;
+    required string connect_token = 3;
+}
+
+message ConnectResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        ALREADY_CONNECTED = 2;
+    }
+    required Result response = 1;
+}
+
+message DisconnectRequest {
+    required string token = 1;
+    optional string daemon_name = 2;
+    required string path = 3;
+}
+
+message DisconnectResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        INVALID_PATH = 2;
+        PATH_NOT_FOUND = 3;
+        NOT_CONNECTED = 4;
     }
     required Result response = 1;
 }
@@ -76,6 +108,8 @@ message ClientMessage {
         CONFIRM_REQUEST = 1;
         CREATE_REQUEST = 2;
         DELETE_REQUEST = 3;
+        CONNECT_REQUEST = 4;
+        DISCONNECT_REQUEST = 5;
         ALIVE = 99;
     }
     required Type type = 1;
@@ -84,6 +118,8 @@ message ClientMessage {
     optional ConfirmRequest confirm_request = 4;
     optional CreateRequest create_request = 5;
     optional DeleteRequest delete_request = 6;
+    optional ConnectRequest connect_request = 7;
+    optional DisconnectRequest disconnect_request = 8;
 }
 
 message ServerMessage {
@@ -92,6 +128,8 @@ message ServerMessage {
         CONFIRM_RESPONSE = 1;
         CREATE_RESPONSE = 2;
         DELETE_RESPONSE = 3;
+        CONNECT_RESPONSE = 4;
+        DISCONNECT_RESPONSE = 5;
         ALIVE = 99;
     }
     required Type type = 1;
@@ -100,4 +138,6 @@ message ServerMessage {
     optional ConfirmResponse confirm_response = 4;
     optional CreateResponse create_response = 5;
     optional DeleteResponse delete_response = 6;
+    optional ConnectResponse connect_response = 7;
+    optional DisconnectResponse disconnect_response = 8;
 }

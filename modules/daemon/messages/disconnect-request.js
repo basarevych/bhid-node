@@ -1,15 +1,15 @@
 /**
- * Delete Request message
- * @module daemon/messages/delete-request
+ * Disconnect Request message
+ * @module daemon/messages/disconnect-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Delete Request message class
+ * Disconnect Request message class
  */
-class DeleteRequest {
+class DisconnectRequest {
     /**
      * Create service
      * @param {App} app                         The application
@@ -21,11 +21,11 @@ class DeleteRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.messages.deleteRequest'
+     * Service name is 'modules.daemon.messages.disconnectRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.messages.deleteRequest';
+        return 'modules.daemon.messages.disconnectRequest';
     }
 
     /**
@@ -46,7 +46,7 @@ class DeleteRequest {
         if (!client)
             return;
 
-        debug(`Got DELETE REQUEST`);
+        debug(`Got DISCONNECT REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -57,14 +57,14 @@ class DeleteRequest {
                     timer = null;
                 }
 
-                this.tracker.removeListener('delete_response', onResponse);
+                this.tracker.removeListener('disconnect_response', onResponse);
 
-                let reply = this.daemon.DeleteResponse.create({
+                let reply = this.daemon.DisconnectResponse.create({
                     response: value,
                 });
                 let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.DELETE_RESPONSE,
-                    deleteResponse: reply,
+                    type: this.daemon.ServerMessage.Type.DISCONNECT_RESPONSE,
+                    disconnectResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
                 this.daemon.send(id, data);
@@ -74,32 +74,31 @@ class DeleteRequest {
                 if (response.messageId != relayId)
                     return;
 
-                reply(
-                    response.deleteResponse.response,
-                );
+                reply(response.connectResponse.response);
             };
-            this.tracker.on('delete_response', onResponse);
+            this.tracker.on('disconnect_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.DeleteResponse.Result.TIMEOUT, '');
+                    reply(this.daemon.DisconnectResponse.Result.TIMEOUT, '');
                 },
                 this.daemon.constructor.requestTimeout
             );
 
-            let request = this.tracker.DeleteRequest.create({
-                token: this.tracker.getToken(message.deleteRequest.trackerName),
-                path: message.createRequest.path,
+            let request = this.tracker.DisconnectRequest.create({
+                token: this.tracker.getToken(message.disconnectRequest.trackerName),
+                daemonName: message.disconnectRequest.daemonName,
+                path: message.disconnectRequest.path,
             });
             let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.DELETE_REQUEST,
+                type: this.tracker.ClientMessage.Type.DISCONNECT_REQUEST,
                 messageId: relayId,
-                deleteRequest: request,
+                disconnectRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.createRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'DeleteRequest.onMessage()'));
+            this._daemon._logger.error(new WError(error, 'DisconnectRequest.onMessage()'));
         }
     }
 
@@ -126,4 +125,4 @@ class DeleteRequest {
     }
 }
 
-module.exports = DeleteRequest;
+module.exports = DisconnectRequest;
