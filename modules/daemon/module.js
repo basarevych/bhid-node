@@ -62,6 +62,9 @@ class Daemon {
         let createRequest = this._app.get('modules.daemon.messages.createRequest');
         server.on('create_request', createRequest.onMessage.bind(createRequest));
 
+        let deleteRequest = this._app.get('modules.daemon.messages.deleteRequest');
+        server.on('delete_request', deleteRequest.onMessage.bind(deleteRequest));
+
         return Promise.resolve();
     }
 }

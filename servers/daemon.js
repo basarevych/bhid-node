@@ -81,6 +81,8 @@ class Daemon extends EventEmitter {
                         this.ConfirmResponse = this.proto.lookup('local.ConfirmResponse');
                         this.CreateRequest = this.proto.lookup('local.CreateRequest');
                         this.CreateResponse = this.proto.lookup('local.CreateResponse');
+                        this.DeleteRequest = this.proto.lookup('local.DeleteRequest');
+                        this.DeleteResponse = this.proto.lookup('local.DeleteResponse');
                         this.ClientMessage = this.proto.lookup('local.ClientMessage');
                         this.ServerMessage = this.proto.lookup('local.ServerMessage');
                         resolve();
@@ -234,6 +236,9 @@ class Daemon extends EventEmitter {
                     break;
                 case this.ClientMessage.Type.CREATE_REQUEST:
                     this.emit('create_request', id, message);
+                    break;
+                case this.ClientMessage.Type.DELETE_REQUEST:
+                    this.emit('delete_request', id, message);
                     break;
             }
         } catch (error) {

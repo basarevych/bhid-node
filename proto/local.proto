@@ -60,16 +60,34 @@ message CreateResponse {
     optional string client_token = 3;
 }
 
+message DeleteRequest {
+    required string tracker_name = 1;
+    required string path = 2;
+}
+
+message CreateResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        INVALID_PATH = 2;
+        PATH_NOT_FOUND = 3;
+        TIMEOUT = 99;
+    }
+    required Result response = 1;
+}
+
 message ClientMessage {
     enum Type {
         INIT_REQUEST = 0;
         CONFIRM_REQUEST = 1;
         CREATE_REQUEST = 2;
+        DELETE_REQUEST = 3;
     }
     required Type type = 1;
     optional InitRequest init_request = 2;
     optional ConfirmRequest confirm_request = 3;
     optional CreateRequest create_request = 4;
+    optional DeleteRequest delete_request = 5;
 }
 
 message ServerMessage {
@@ -77,9 +95,11 @@ message ServerMessage {
         INIT_RESPONSE = 0;
         CONFIRM_RESPONSE = 1;
         CREATE_RESPONSE = 2;
+        DELETE_RESPONSE = 3;
     }
     required Type type = 1;
     optional InitResponse init_response = 2;
     optional ConfirmResponse confirm_response = 3;
     optional CreateResponse create_response = 4;
+    optional DeleteResponse delete_response = 5;
 }

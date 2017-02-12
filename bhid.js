@@ -95,6 +95,10 @@ switch (argv['_'][0]) {
                     '\t<connect-addr> and <listen-addr> are written in the form of address:port or just /path/to/unix/socket'
                 );
                 break;
+            case 'delete':
+                console.log('Usage: bhid delete <path> [-t <tracker>]\n');
+                console.log('\tDelete path recursively with all the connections');
+                break;
             default:
                 console.log('Usage: bhid help <command>');
                 process.exit(1);
@@ -123,6 +127,7 @@ switch (argv['_'][0]) {
     case 'init':
     case 'confirm':
     case 'create':
+    case 'delete':
         execDaemon()
             .then(result => {
                 if (result.code !== 0)

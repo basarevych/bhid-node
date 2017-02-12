@@ -1,15 +1,15 @@
 /**
- * Create Request message
- * @module daemon/messages/create-request
+ * Delete Request message
+ * @module daemon/messages/delete-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Create Request message class
+ * Delete Request message class
  */
-class CreateRequest {
+class DeleteRequest {
     /**
      * Create service
      * @param {App} app                         The application
@@ -21,11 +21,11 @@ class CreateRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.messages.createRequest'
+     * Service name is 'modules.daemon.messages.deleteRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.messages.createRequest';
+        return 'modules.daemon.messages.deleteRequest';
     }
 
     /**
@@ -46,7 +46,7 @@ class CreateRequest {
         if (!client)
             return;
 
-        debug(`Got CREATE REQUEST`);
+        debug(`Got DELETE REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -57,16 +57,14 @@ class CreateRequest {
                     timer = null;
                 }
 
-                this.tracker.removeListener('create_response', onResponse);
+                this.tracker.removeListener('delete_response', onResponse);
 
-                let reply = this.daemon.CreateResponse.create({
+                let reply = this.daemon.DeleteResponse.create({
                     response: value,
-                    serverToken: serverToken,
-                    clientToken: clientToken,
                 });
                 let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.CREATE_RESPONSE,
-                    createResponse: reply,
+                    type: this.daemon.ServerMessage.Type.DELETE_RESPONSE,
+                    deleteResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
                 this.daemon.send(id, data);
@@ -77,40 +75,31 @@ class CreateRequest {
                     return;
 
                 reply(
-                    response.createResponse.response,
-                    response.createResponse.serverToken,
-                    response.createResponse.clientToken
+                    response.deleteResponse.response,
                 );
             };
-            this.tracker.on('create_response', onResponse);
+            this.tracker.on('delete_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.CreateResponse.Result.TIMEOUT, '');
+                    reply(this.daemon.DeleteResponse.Result.TIMEOUT, '');
                 },
                 this.daemon.constructor.requestTimeout
             );
 
-            let request = this.tracker.CreateRequest.create({
-                token: this.tracker.getToken(message.createRequest.trackerName),
-                daemonName: message.createRequest.daemonName,
+            let request = this.tracker.DeleteRequest.create({
+                token: this.tracker.getToken(message.deleteRequest.trackerName),
                 path: message.createRequest.path,
-                type: message.createRequest.type,
-                encrypted: message.createRequest.encrypted,
-                connectAddress: message.createRequest.connectAddress,
-                connectPort: message.createRequest.connectPort,
-                listenAddress: message.createRequest.listenAddress,
-                listenPort: message.createRequest.listenPort,
             });
             let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.CREATE_REQUEST,
+                type: this.tracker.ClientMessage.Type.DELETE_REQUEST,
                 messageId: relayId,
-                createRequest: request,
+                deleteRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.createRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'CreateRequest.onMessage()'));
+            this._daemon._logger.error(new WError(error, 'DeleteRequest.onMessage()'));
         }
     }
 
@@ -137,4 +126,4 @@ class CreateRequest {
     }
 }
 
-module.exports = CreateRequest;
+module.exports = DeleteRequest;
