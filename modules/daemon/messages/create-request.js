@@ -69,6 +69,7 @@ class CreateRequest {
                     createResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
+                debug(`Sending CREATE RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -79,6 +80,7 @@ class CreateRequest {
                 if (response.messageId != relayId)
                     return;
 
+                debug(`Got CREATE RESPONSE from tracker`);
                 reply(
                     response.createResponse.response,
                     response.createResponse.serverToken,
@@ -89,7 +91,7 @@ class CreateRequest {
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.CreateResponse.Result.TIMEOUT, '');
+                    reply(this.daemon.CreateResponse.Result.TIMEOUT);
                 },
                 this.daemon.constructor.requestTimeout
             );

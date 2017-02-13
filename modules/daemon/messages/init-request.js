@@ -67,6 +67,7 @@ class InitRequest {
                     initResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
+                debug(`Sending INIT RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -74,6 +75,7 @@ class InitRequest {
                 if (response.messageId != relayId)
                     return;
 
+                debug(`Got INIT RESPONSE from tracker`);
                 reply(response.initResponse.response);
             };
             this.tracker.on('init_response', onResponse);

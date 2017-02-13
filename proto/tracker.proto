@@ -102,6 +102,38 @@ message DisconnectResponse {
     required Result response = 1;
 }
 
+message TreeRequest {
+    required string token = 1;
+    optional string daemon_name = 2;
+    optional string path = 3;
+}
+
+message Tree {
+    enum Type {
+        SERVER = 0;
+        CLIENT = 1;
+        NOT_CONNECTED = 2;
+    }
+    repeated Tree tree = 1;
+    required bool connection = 2;
+    required Type type = 3;
+    required string name = 4;
+    required string path = 5;
+    optional string server_token = 6;
+    optional string client_token = 7;
+}
+
+message TreeResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        INVALID_PATH = 2;
+        PATH_NOT_FOUND = 3;
+    }
+    required Result response = 1;
+    optional Tree tree = 2;
+}
+
 message ClientMessage {
     enum Type {
         INIT_REQUEST = 0;
@@ -110,6 +142,7 @@ message ClientMessage {
         DELETE_REQUEST = 3;
         CONNECT_REQUEST = 4;
         DISCONNECT_REQUEST = 5;
+        TREE_REQUEST = 6;
         ALIVE = 99;
     }
     required Type type = 1;
@@ -120,6 +153,7 @@ message ClientMessage {
     optional DeleteRequest delete_request = 6;
     optional ConnectRequest connect_request = 7;
     optional DisconnectRequest disconnect_request = 8;
+    optional TreeRequest tree_request = 9;
 }
 
 message ServerMessage {
@@ -130,6 +164,7 @@ message ServerMessage {
         DELETE_RESPONSE = 3;
         CONNECT_RESPONSE = 4;
         DISCONNECT_RESPONSE = 5;
+        TREE_RESPONSE = 6;
         ALIVE = 99;
     }
     required Type type = 1;
@@ -140,4 +175,5 @@ message ServerMessage {
     optional DeleteResponse delete_response = 6;
     optional ConnectResponse connect_response = 7;
     optional DisconnectResponse disconnect_response = 8;
+    optional TreeResponse tree_response = 9;
 }

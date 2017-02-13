@@ -67,6 +67,7 @@ class DisconnectRequest {
                     disconnectResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
+                debug(`Sending DISCONNECT RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -77,13 +78,14 @@ class DisconnectRequest {
                 if (response.messageId != relayId)
                     return;
 
+                debug(`Got DISCONNECT RESPONSE from tracker`);
                 reply(response.disconnectResponse.response);
             };
             this.tracker.on('disconnect_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.DisconnectResponse.Result.TIMEOUT, '');
+                    reply(this.daemon.DisconnectResponse.Result.TIMEOUT);
                 },
                 this.daemon.constructor.requestTimeout
             );

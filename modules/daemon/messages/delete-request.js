@@ -67,6 +67,7 @@ class DeleteRequest {
                     deleteResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
+                debug(`Sending DELETE RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -77,13 +78,14 @@ class DeleteRequest {
                 if (response.messageId != relayId)
                     return;
 
+                debug(`Got DELETE RESPONSE from tracker`);
                 reply(response.deleteResponse.response);
             };
             this.tracker.on('delete_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.DeleteResponse.Result.TIMEOUT, '');
+                    reply(this.daemon.DeleteResponse.Result.TIMEOUT);
                 },
                 this.daemon.constructor.requestTimeout
             );

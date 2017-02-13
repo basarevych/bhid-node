@@ -9,6 +9,7 @@
     "url": "git+https://github.com/breedhub/bhid-node.git"
   },
   "dependencies": {
+    "archy": "~1.0.0",
     "arpen": "~0.0.2",
     "daemon": "~1.1.0",
     "debug": "~2.6.0",

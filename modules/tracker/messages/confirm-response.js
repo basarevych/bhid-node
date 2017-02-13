@@ -76,6 +76,7 @@ class ConfirmResponse {
                 let tracker = section.substr(0, section.length - this.tracker.constructor.trackerSection.length);
                 if (tracker == name) {
                     bhidConfig[section]['token'] = server.token;
+                    debug(`Tracker ${name} token updated`);
                     break;
                 }
             }

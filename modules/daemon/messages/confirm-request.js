@@ -61,13 +61,14 @@ class ConfirmRequest {
 
                 let reply = this.daemon.ConfirmResponse.create({
                     response: value,
-                    token: token,
+                    token: token || '',
                 });
                 let relay = this.daemon.ServerMessage.create({
                     type: this.daemon.ServerMessage.Type.CONFIRM_RESPONSE,
                     confirmResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
+                debug(`Sending CONFIRM RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -75,13 +76,14 @@ class ConfirmRequest {
                 if (response.messageId != relayId)
                     return;
 
+                debug(`Got CONFIRM RESPONSE from tracker`);
                 reply(response.confirmResponse.response, response.confirmResponse.token);
             };
             this.tracker.on('confirm_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.ConfirmResponse.Result.TIMEOUT, '');
+                    reply(this.daemon.ConfirmResponse.Result.TIMEOUT);
                 },
                 this.daemon.constructor.requestTimeout
             );

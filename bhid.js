@@ -17,6 +17,10 @@ function usage() {
     console.log('\tinit\t\tInitialize the account');
     console.log('\tconfirm\t\tConfirm email');
     console.log('\tcreate\t\tCreate new connection');
+    console.log('\tdelete\t\tDelete a connection');
+    console.log('\tconnect\t\tMake the daemon server or client of a connection');
+    console.log('\tdisconnect\tDisconnect the daemon from given path');
+    console.log('\ttree\t\tPrint user tree');
     console.log('\trun\t\tRun the program');
 }
 
@@ -107,6 +111,10 @@ switch (argv['_'][0]) {
                 console.log('Usage: bhid disconnect <path> [-d <daemon-name>] [-t <tracker>]\n');
                 console.log('\tDisconnect the daemon without deleting the connection information and affecting other daemons');
                 break;
+            case 'tree':
+                console.log('Usage: bhid tree [<path>] [-d <daemon-name>] [-t <tracker>]\n');
+                console.log('\tPrint connections of this account');
+                break;
             default:
                 console.log('Usage: bhid help <command>');
                 process.exit(1);
@@ -138,6 +146,7 @@ switch (argv['_'][0]) {
     case 'delete':
     case 'connect':
     case 'disconnect':
+    case 'tree':
         execDaemon()
             .then(result => {
                 if (result.code !== 0)

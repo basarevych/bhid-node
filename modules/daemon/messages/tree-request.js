@@ -1,15 +1,15 @@
 /**
- * Connect Request message
- * @module daemon/messages/connect-request
+ * Tree Request message
+ * @module daemon/messages/tree-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Connect Request message class
+ * Tree Request message class
  */
-class ConnectRequest {
+class TreeRequest {
     /**
      * Create service
      * @param {App} app                         The application
@@ -21,11 +21,11 @@ class ConnectRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.messages.connectRequest'
+     * Service name is 'modules.daemon.messages.treeRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.messages.connectRequest';
+        return 'modules.daemon.messages.treeRequest';
     }
 
     /**
@@ -46,64 +46,65 @@ class ConnectRequest {
         if (!client)
             return;
 
-        debug(`Got CONNECT REQUEST`);
+        debug(`Got TREE REQUEST`);
         try {
             let relayId = uuid.v1();
 
             let timer;
-            let reply = value => {
+            let reply = (value, tree) => {
                 if (timer) {
                     clearTimeout(timer);
                     timer = null;
                 }
 
-                this.tracker.removeListener('connect_response', onResponse);
+                this.tracker.removeListener('tree_response', onResponse);
 
-                let reply = this.daemon.ConnectResponse.create({
+                let reply = this.daemon.TreeResponse.create({
                     response: value,
+                    tree: tree,
                 });
                 let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.CONNECT_RESPONSE,
-                    connectResponse: reply,
+                    type: this.daemon.ServerMessage.Type.TREE_RESPONSE,
+                    treeResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending CONNECT RESPONSE`);
+                debug(`Sending TREE RESPONSE`);
                 this.daemon.send(id, data);
             };
 
-            if (!this.tracker.getToken(message.connectRequest.trackerName))
-                return reply(this.daemon.ConnectResponse.Result.REJECTED);
+            if (!this.tracker.getToken(message.treeRequest.trackerName))
+                return reply(this.daemon.TreeResponse.Result.REJECTED);
 
             let onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;
 
-                debug(`Got CONNECT RESPONSE from tracker`);
-                reply(response.connectResponse.response);
+                debug(`Got TREE RESPONSE from tracker`);
+                reply(response.treeResponse.response, response.treeResponse.tree);
             };
-            this.tracker.on('connect_response', onResponse);
+            this.tracker.on('tree_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.ConnectResponse.Result.TIMEOUT);
+                    reply(this.daemon.TreeResponse.Result.TIMEOUT);
                 },
                 this.daemon.constructor.requestTimeout
             );
 
-            let request = this.tracker.ConnectRequest.create({
-                token: this.tracker.getToken(message.connectRequest.trackerName),
-                daemonName: message.connectRequest.daemonName,
-                connectToken: message.connectRequest.token,
+            let request = this.tracker.TreeRequest.create({
+                token: this.tracker.getToken(message.treeRequest.trackerName),
+                daemonName: message.treeRequest.daemonName,
+                path: message.treeRequest.path,
             });
             let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.CONNECT_REQUEST,
+                type: this.tracker.ClientMessage.Type.TREE_REQUEST,
                 messageId: relayId,
-                connectRequest: request,
+                treeRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.connectRequest.trackerName, data);
+            this.tracker.send(message.treeRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'ConnectRequest.onMessage()'));
+            this._daemon._logger.error(new WError(error, 'TreeRequest.onMessage()'));
         }
     }
 
@@ -130,4 +131,4 @@ class ConnectRequest {
     }
 }
 
-module.exports = ConnectRequest;
+module.exports = TreeRequest;
