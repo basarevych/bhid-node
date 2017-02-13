@@ -99,7 +99,7 @@ class ConnectRequest {
                 connectRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.createRequest.trackerName, data);
+            this.tracker.send(message.connectRequest.trackerName, data);
         } catch (error) {
             this._daemon._logger.error(new WError(error, 'ConnectRequest.onMessage()'));
         }

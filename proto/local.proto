@@ -135,7 +135,7 @@ message ServerMessage {
         CREATE_RESPONSE = 2;
         DELETE_RESPONSE = 3;
         CONNECT_RESPONSE = 4;
-        DISCONNECT_RESPONSE = 4;
+        DISCONNECT_RESPONSE = 5;
     }
     required Type type = 1;
     optional InitResponse init_response = 2;

@@ -77,7 +77,7 @@ class DisconnectRequest {
                 if (response.messageId != relayId)
                     return;
 
-                reply(response.connectResponse.response);
+                reply(response.disconnectResponse.response);
             };
             this.tracker.on('disconnect_response', onResponse);
 
@@ -99,7 +99,7 @@ class DisconnectRequest {
                 disconnectRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.createRequest.trackerName, data);
+            this.tracker.send(message.disconnectRequest.trackerName, data);
         } catch (error) {
             this._daemon._logger.error(new WError(error, 'DisconnectRequest.onMessage()'));
         }

@@ -77,9 +77,7 @@ class DeleteRequest {
                 if (response.messageId != relayId)
                     return;
 
-                reply(
-                    response.deleteResponse.response,
-                );
+                reply(response.deleteResponse.response);
             };
             this.tracker.on('delete_response', onResponse);
 
@@ -92,7 +90,7 @@ class DeleteRequest {
 
             let request = this.tracker.DeleteRequest.create({
                 token: this.tracker.getToken(message.deleteRequest.trackerName),
-                path: message.createRequest.path,
+                path: message.deleteRequest.path,
             });
             let relay = this.tracker.ClientMessage.create({
                 type: this.tracker.ClientMessage.Type.DELETE_REQUEST,
@@ -100,7 +98,7 @@ class DeleteRequest {
                 deleteRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.createRequest.trackerName, data);
+            this.tracker.send(message.deleteRequest.trackerName, data);
         } catch (error) {
             this._daemon._logger.error(new WError(error, 'DeleteRequest.onMessage()'));
         }
