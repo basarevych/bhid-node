@@ -51,7 +51,7 @@ class DisconnectRequest {
             let relayId = uuid.v1();
 
             let timer;
-            let reply = (value) => {
+            let reply = value => {
                 if (timer) {
                     clearTimeout(timer);
                     timer = null;
@@ -69,6 +69,9 @@ class DisconnectRequest {
                 let data = this.daemon.ServerMessage.encode(relay).finish();
                 this.daemon.send(id, data);
             };
+
+            if (!this.tracker.getToken(message.disconnectRequest.trackerName))
+                return reply(this.daemon.DisconnectResponse.Result.REJECTED);
 
             let onResponse = (name, response) => {
                 if (response.messageId != relayId)

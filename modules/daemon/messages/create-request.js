@@ -61,8 +61,8 @@ class CreateRequest {
 
                 let reply = this.daemon.CreateResponse.create({
                     response: value,
-                    serverToken: serverToken,
-                    clientToken: clientToken,
+                    serverToken: serverToken || '',
+                    clientToken: clientToken || '',
                 });
                 let relay = this.daemon.ServerMessage.create({
                     type: this.daemon.ServerMessage.Type.CREATE_RESPONSE,
@@ -71,6 +71,9 @@ class CreateRequest {
                 let data = this.daemon.ServerMessage.encode(relay).finish();
                 this.daemon.send(id, data);
             };
+
+            if (!this.tracker.getToken(message.createRequest.trackerName))
+                return reply(this.daemon.CreateResponse.Result.REJECTED);
 
             let onResponse = (name, response) => {
                 if (response.messageId != relayId)
