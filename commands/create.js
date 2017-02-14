@@ -50,10 +50,15 @@ class Create {
         let cpath = argv['_'][1];
         let first = argv['_'][2];
         let second = argv['_'][3];
+        let server = !!argv['s'];
         let client = !!argv['c'];
         let encrypted = !!argv['e'];
+        let fixed = !!argv['f'];
         let daemonName = argv['d'] || '';
         let trackerName = argv['t'] || '';
+
+        if (server && client)
+            return this.error('Daemon cannot be a server and a client of the same connection at the same time');
 
         let parts = first.split(':');
         let firstAddress, firstPort;
@@ -91,14 +96,20 @@ class Create {
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
+                let type = this.CreateRequest.Type.NOT_CONNECTED;
+                if (server)
+                    type = this.CreateRequest.Type.SERVER;
+                else if (client)
+                    type = this.CreateRequest.Type.CLIENT;
+
                 debug(`Sending CREATE REQUEST`);
-                let type = client ? this.CreateRequest.Type.CLIENT : this.CreateRequest.Type.SERVER;
                 let request = this.CreateRequest.create({
                     trackerName: trackerName,
                     daemonName: daemonName,
                     path: cpath,
                     type: type,
                     encrypted: encrypted,
+                    fixed: fixed,
                     connectAddress: firstAddress,
                     connectPort: firstPort,
                     listenAddress: secondAddress,

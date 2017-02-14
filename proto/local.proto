@@ -35,16 +35,18 @@ message CreateRequest {
     enum Type {
         SERVER = 0;
         CLIENT = 1;
+        NOT_CONNECTED = 2;
     }
     required string tracker_name = 1;
     required string daemon_name = 2;
     required string path = 3;
     required Type type = 4;
     required bool encrypted = 5;
-    optional string connect_address = 6;
-    required string connect_port = 7;
-    optional string listen_address = 8;
-    required string listen_port = 9;
+    required bool fixed = 6;
+    optional string connect_address = 7;
+    required string connect_port = 8;
+    optional string listen_address = 9;
+    required string listen_port = 10;
 }
 
 message CreateResponse {

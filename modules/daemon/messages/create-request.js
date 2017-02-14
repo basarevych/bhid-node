@@ -102,6 +102,7 @@ class CreateRequest {
                 path: message.createRequest.path,
                 type: message.createRequest.type,
                 encrypted: message.createRequest.encrypted,
+                fixed: message.createRequest.fixed,
                 connectAddress: message.createRequest.connectAddress,
                 connectPort: message.createRequest.connectPort,
                 listenAddress: message.createRequest.listenAddress,
