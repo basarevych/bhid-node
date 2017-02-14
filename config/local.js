@@ -21,7 +21,7 @@ module.exports = {
         daemon: {
             class: 'servers.daemon',
             log: {
-                path: path.join(__dirname, '..', 'logs'),
+                path: '/var/log/bhid',
                 interval: '1d',
                 mode: 0o640,
             },
@@ -29,7 +29,7 @@ module.exports = {
         tracker: {
             class: 'servers.tracker',
             log: {
-                path: path.join(__dirname, '..', 'logs'),
+                path: '/var/log/bhid',
                 interval: '1d',
                 mode: 0o640,
             },

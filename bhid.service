@@ -1,0 +1,16 @@
+[Unit]
+Description=Breedhub Interconnect Daemon
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/node /usr/bin/bhid run
+PIDFile=/var/run/bhid/bhid.pid
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=bhid
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
