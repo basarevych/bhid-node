@@ -90,6 +90,11 @@ class Daemon extends EventEmitter {
                         this.Tree = this.proto.lookup('local.Tree');
                         this.TreeRequest = this.proto.lookup('local.TreeRequest');
                         this.TreeResponse = this.proto.lookup('local.TreeResponse');
+                        this.ServerConnection = this.proto.lookup('local.ServerConnection');
+                        this.ClientConnection = this.proto.lookup('local.ClientConnection');
+                        this.ConnectionsList = this.proto.lookup('local.ConnectionsList');
+                        this.ConnectionsListRequest = this.proto.lookup('local.ConnectionsListRequest');
+                        this.ConnectionsListResponse = this.proto.lookup('local.ConnectionsListResponse');
                         this.ClientMessage = this.proto.lookup('local.ClientMessage');
                         this.ServerMessage = this.proto.lookup('local.ServerMessage');
                         resolve();
@@ -255,6 +260,9 @@ class Daemon extends EventEmitter {
                     break;
                 case this.ClientMessage.Type.TREE_REQUEST:
                     this.emit('tree_request', id, message);
+                    break;
+                case this.ClientMessage.Type.CONNECTIONS_LIST_REQUEST:
+                    this.emit('connections_list_request', id, message);
                     break;
             }
         } catch (error) {

@@ -1,15 +1,15 @@
 /**
- * Init Request message
- * @module daemon/messages/init-request
+ * Disconnect Request event
+ * @module daemon/events/disconnect-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Init Request message class
+ * Disconnect Request event class
  */
-class InitRequest {
+class DisconnectRequest {
     /**
      * Create service
      * @param {App} app                         The application
@@ -21,11 +21,11 @@ class InitRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.messages.initRequest'
+     * Service name is 'modules.daemon.events.disconnectRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.messages.initRequest';
+        return 'modules.daemon.events.disconnectRequest';
     }
 
     /**
@@ -37,69 +37,74 @@ class InitRequest {
     }
 
     /**
-     * Message handler
+     * Event handler
      * @param {string} id           ID of the client
      * @param {object} message      The message
      */
-    onMessage(id, message) {
+    handle(id, message) {
         let client = this.daemon.clients.get(id);
         if (!client)
             return;
 
-        debug(`Got INIT REQUEST`);
+        debug(`Got DISCONNECT REQUEST`);
         try {
             let relayId = uuid.v1();
 
-            let timer;
+            let timer, onResponse;
             let reply = value => {
                 if (timer) {
                     clearTimeout(timer);
                     timer = null;
                 }
 
-                this.tracker.removeListener('init_response', onResponse);
+                if (onResponse)
+                    this.tracker.removeListener('disconnect_response', onResponse);
 
-                let reply = this.daemon.InitResponse.create({
+                let reply = this.daemon.DisconnectResponse.create({
                     response: value,
                 });
                 let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.INIT_RESPONSE,
-                    initResponse: reply,
+                    type: this.daemon.ServerMessage.Type.DISCONNECT_RESPONSE,
+                    disconnectResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending INIT RESPONSE`);
+                debug(`Sending DISCONNECT RESPONSE`);
                 this.daemon.send(id, data);
             };
 
-            let onResponse = (name, response) => {
+            if (!this.tracker.getToken(message.disconnectRequest.trackerName))
+                return reply(this.daemon.DisconnectResponse.Result.REJECTED);
+
+            onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;
 
-                debug(`Got INIT RESPONSE from tracker`);
-                reply(response.initResponse.response);
+                debug(`Got DISCONNECT RESPONSE from tracker`);
+                reply(response.disconnectResponse.response);
             };
-            this.tracker.on('init_response', onResponse);
+            this.tracker.on('disconnect_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.InitResponse.Result.TIMEOUT);
+                    reply(this.daemon.DisconnectResponse.Result.TIMEOUT);
                 },
                 this.daemon.constructor.requestTimeout
             );
 
-            let request = this.tracker.InitRequest.create({
-                email: message.initRequest.email,
-                daemonName: message.initRequest.daemonName,
+            let request = this.tracker.DisconnectRequest.create({
+                token: this.tracker.getToken(message.disconnectRequest.trackerName),
+                daemonName: message.disconnectRequest.daemonName,
+                path: message.disconnectRequest.path,
             });
             let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.INIT_REQUEST,
+                type: this.tracker.ClientMessage.Type.DISCONNECT_REQUEST,
                 messageId: relayId,
-                initRequest: request,
+                disconnectRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.initRequest.trackerName, data);
+            this.tracker.send(message.disconnectRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'InitRequest.onMessage()'));
+            this._daemon._logger.error(new WError(error, 'DisconnectRequest.handle()'));
         }
     }
 
@@ -126,4 +131,4 @@ class InitRequest {
     }
 }
 
-module.exports = InitRequest;
+module.exports = DisconnectRequest;

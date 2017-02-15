@@ -1,6 +1,6 @@
 /**
- * Confirm Response message
- * @module tracker/messages/confirm-response
+ * Confirm Response event
+ * @module tracker/events/confirm-response
  */
 const debug = require('debug')('bhid:tracker');
 const path = require('path');
@@ -9,7 +9,7 @@ const ini = require('ini');
 const WError = require('verror').WError;
 
 /**
- * Confirm Response message class
+ * Confirm Response event class
  */
 class ConfirmResponse {
     /**
@@ -23,11 +23,11 @@ class ConfirmResponse {
     }
 
     /**
-     * Service name is 'modules.tracker.messages.confirmResponse'
+     * Service name is 'modules.tracker.events.confirmResponse'
      * @type {string}
      */
     static get provides() {
-        return 'modules.tracker.messages.confirmResponse';
+        return 'modules.tracker.events.confirmResponse';
     }
 
     /**
@@ -39,11 +39,11 @@ class ConfirmResponse {
     }
 
     /**
-     * Message handler
+     * Event handler
      * @param {string} name         Name of the tracker
      * @param {object} message      The message
      */
-    onMessage(name, message) {
+    handle(name, message) {
         if (message.confirmResponse.response != this.tracker.ConfirmResponse.Result.ACCEPTED)
             return;
 
@@ -83,7 +83,7 @@ class ConfirmResponse {
 
             fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(bhidConfig));
         } catch (error) {
-            this._tracker._logger.error(new WError(error, 'ConfirmResponse.onMessage()'));
+            this._tracker._logger.error(new WError(error, 'ConfirmResponse.handle()'));
         }
     }
 

@@ -1,13 +1,13 @@
 /**
- * Tree Request message
- * @module daemon/messages/tree-request
+ * Tree Request event
+ * @module daemon/events/tree-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Tree Request message class
+ * Tree Request event class
  */
 class TreeRequest {
     /**
@@ -21,11 +21,11 @@ class TreeRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.messages.treeRequest'
+     * Service name is 'modules.daemon.events.treeRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.messages.treeRequest';
+        return 'modules.daemon.events.treeRequest';
     }
 
     /**
@@ -37,11 +37,11 @@ class TreeRequest {
     }
 
     /**
-     * Message handler
+     * Event handler
      * @param {string} id           ID of the client
      * @param {object} message      The message
      */
-    onMessage(id, message) {
+    handle(id, message) {
         let client = this.daemon.clients.get(id);
         if (!client)
             return;
@@ -50,14 +50,15 @@ class TreeRequest {
         try {
             let relayId = uuid.v1();
 
-            let timer;
+            let timer, onResponse;
             let reply = (value, tree) => {
                 if (timer) {
                     clearTimeout(timer);
                     timer = null;
                 }
 
-                this.tracker.removeListener('tree_response', onResponse);
+                if (onResponse)
+                    this.tracker.removeListener('tree_response', onResponse);
 
                 let reply = this.daemon.TreeResponse.create({
                     response: value,
@@ -75,7 +76,7 @@ class TreeRequest {
             if (!this.tracker.getToken(message.treeRequest.trackerName))
                 return reply(this.daemon.TreeResponse.Result.REJECTED);
 
-            let onResponse = (name, response) => {
+            onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;
 
@@ -104,7 +105,7 @@ class TreeRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.treeRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'TreeRequest.onMessage()'));
+            this._daemon._logger.error(new WError(error, 'TreeRequest.handle()'));
         }
     }
 

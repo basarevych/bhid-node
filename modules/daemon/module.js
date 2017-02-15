@@ -53,26 +53,29 @@ class Daemon {
 
         let server = this._app.get('servers').get('daemon');
 
-        let initRequest = this._app.get('modules.daemon.messages.initRequest');
-        server.on('init_request', initRequest.onMessage.bind(initRequest));
+        let initRequest = this._app.get('modules.daemon.events.initRequest');
+        server.on('init_request', initRequest.handle.bind(initRequest));
 
-        let confirmRequest = this._app.get('modules.daemon.messages.confirmRequest');
-        server.on('confirm_request', confirmRequest.onMessage.bind(confirmRequest));
+        let confirmRequest = this._app.get('modules.daemon.events.confirmRequest');
+        server.on('confirm_request', confirmRequest.handle.bind(confirmRequest));
 
-        let createRequest = this._app.get('modules.daemon.messages.createRequest');
-        server.on('create_request', createRequest.onMessage.bind(createRequest));
+        let createRequest = this._app.get('modules.daemon.events.createRequest');
+        server.on('create_request', createRequest.handle.bind(createRequest));
 
-        let deleteRequest = this._app.get('modules.daemon.messages.deleteRequest');
-        server.on('delete_request', deleteRequest.onMessage.bind(deleteRequest));
+        let deleteRequest = this._app.get('modules.daemon.events.deleteRequest');
+        server.on('delete_request', deleteRequest.handle.bind(deleteRequest));
 
-        let connectRequest = this._app.get('modules.daemon.messages.connectRequest');
-        server.on('connect_request', connectRequest.onMessage.bind(connectRequest));
+        let connectRequest = this._app.get('modules.daemon.events.connectRequest');
+        server.on('connect_request', connectRequest.handle.bind(connectRequest));
 
-        let disconnectRequest = this._app.get('modules.daemon.messages.disconnectRequest');
-        server.on('disconnect_request', disconnectRequest.onMessage.bind(disconnectRequest));
+        let disconnectRequest = this._app.get('modules.daemon.events.disconnectRequest');
+        server.on('disconnect_request', disconnectRequest.handle.bind(disconnectRequest));
 
-        let treeRequest = this._app.get('modules.daemon.messages.treeRequest');
-        server.on('tree_request', treeRequest.onMessage.bind(treeRequest));
+        let treeRequest = this._app.get('modules.daemon.events.treeRequest');
+        server.on('tree_request', treeRequest.handle.bind(treeRequest));
+
+        let connectionsListRequest = this._app.get('modules.daemon.events.connectionsListRequest');
+        server.on('connections_list_request', connectionsListRequest.handle.bind(connectionsListRequest));
 
         return Promise.resolve();
     }

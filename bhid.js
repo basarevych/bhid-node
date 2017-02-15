@@ -21,6 +21,7 @@ function usage() {
     console.log('\tconnect\t\tMake the daemon server or client of a connection');
     console.log('\tdisconnect\tDisconnect the daemon from given path');
     console.log('\ttree\t\tPrint user tree');
+    console.log('\tload\t\tLoad current connection configuration from tracker');
     console.log('\trun\t\tRun the program');
 }
 
@@ -118,6 +119,10 @@ switch (argv['_'][0]) {
                 console.log('Usage: bhid tree [<path>] [-d <daemon-name>] [-t <tracker>]\n');
                 console.log('\tPrint connections of this account');
                 break;
+            case 'load':
+                console.log('Usage: bhid load [-t <tracker>]\n');
+                console.log('\tLoad and save locally connection configuration');
+                break;
             default:
                 console.log('Usage: bhid help <command>');
                 process.exit(1);
@@ -150,6 +155,7 @@ switch (argv['_'][0]) {
     case 'connect':
     case 'disconnect':
     case 'tree':
+    case 'load':
         execDaemon()
             .then(result => {
                 if (result.code !== 0)

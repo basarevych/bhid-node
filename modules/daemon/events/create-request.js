@@ -1,13 +1,13 @@
 /**
- * Create Request message
- * @module daemon/messages/create-request
+ * Create Request event
+ * @module daemon/events/create-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Create Request message class
+ * Create Request event class
  */
 class CreateRequest {
     /**
@@ -21,11 +21,11 @@ class CreateRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.messages.createRequest'
+     * Service name is 'modules.daemon.events.createRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.messages.createRequest';
+        return 'modules.daemon.events.createRequest';
     }
 
     /**
@@ -37,11 +37,11 @@ class CreateRequest {
     }
 
     /**
-     * Message handler
+     * Event handler
      * @param {string} id           ID of the client
      * @param {object} message      The message
      */
-    onMessage(id, message) {
+    handle(id, message) {
         let client = this.daemon.clients.get(id);
         if (!client)
             return;
@@ -50,14 +50,15 @@ class CreateRequest {
         try {
             let relayId = uuid.v1();
 
-            let timer;
+            let timer, onResponse;
             let reply = (value, serverToken, clientToken) => {
                 if (timer) {
                     clearTimeout(timer);
                     timer = null;
                 }
 
-                this.tracker.removeListener('create_response', onResponse);
+                if (onResponse)
+                    this.tracker.removeListener('create_response', onResponse);
 
                 let reply = this.daemon.CreateResponse.create({
                     response: value,
@@ -76,7 +77,7 @@ class CreateRequest {
             if (!this.tracker.getToken(message.createRequest.trackerName))
                 return reply(this.daemon.CreateResponse.Result.REJECTED);
 
-            let onResponse = (name, response) => {
+            onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;
 
@@ -116,7 +117,7 @@ class CreateRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.createRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'CreateRequest.onMessage()'));
+            this._daemon._logger.error(new WError(error, 'CreateRequest.handle()'));
         }
     }
 

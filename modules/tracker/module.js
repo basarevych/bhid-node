@@ -53,8 +53,8 @@ class Tracker {
 
         let server = this._app.get('servers').get('tracker');
 
-        let confirmResponse = this._app.get('modules.tracker.messages.confirmResponse');
-        server.on('confirm_response', confirmResponse.onMessage.bind(confirmResponse));
+        let confirmResponse = this._app.get('modules.tracker.events.confirmResponse');
+        server.on('confirm_response', confirmResponse.handle.bind(confirmResponse));
 
         return Promise.resolve();
     }

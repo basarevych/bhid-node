@@ -1,15 +1,15 @@
 /**
- * Delete Request message
- * @module daemon/messages/delete-request
+ * Confirm Request event
+ * @module daemon/events/confirm-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Delete Request message class
+ * Confirm Request event class
  */
-class DeleteRequest {
+class ConfirmRequest {
     /**
      * Create service
      * @param {App} app                         The application
@@ -21,11 +21,11 @@ class DeleteRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.messages.deleteRequest'
+     * Service name is 'modules.daemon.events.confirmRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.messages.deleteRequest';
+        return 'modules.daemon.events.confirmRequest';
     }
 
     /**
@@ -37,72 +37,70 @@ class DeleteRequest {
     }
 
     /**
-     * Message handler
+     * Event handler
      * @param {string} id           ID of the client
      * @param {object} message      The message
      */
-    onMessage(id, message) {
+    handle(id, message) {
         let client = this.daemon.clients.get(id);
         if (!client)
             return;
 
-        debug(`Got DELETE REQUEST`);
+        debug(`Got CONFIRM REQUEST`);
         try {
             let relayId = uuid.v1();
 
-            let timer;
-            let reply = value => {
+            let timer, onResponse;
+            let reply = (value, token) => {
                 if (timer) {
                     clearTimeout(timer);
                     timer = null;
                 }
 
-                this.tracker.removeListener('delete_response', onResponse);
+                if (onResponse)
+                    this.tracker.removeListener('confirm_response', onResponse);
 
-                let reply = this.daemon.DeleteResponse.create({
+                let reply = this.daemon.ConfirmResponse.create({
                     response: value,
+                    token: token || '',
                 });
                 let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.DELETE_RESPONSE,
-                    deleteResponse: reply,
+                    type: this.daemon.ServerMessage.Type.CONFIRM_RESPONSE,
+                    confirmResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending DELETE RESPONSE`);
+                debug(`Sending CONFIRM RESPONSE`);
                 this.daemon.send(id, data);
             };
 
-            if (!this.tracker.getToken(message.deleteRequest.trackerName))
-                return reply(this.daemon.DeleteResponse.Result.REJECTED);
-
-            let onResponse = (name, response) => {
+            onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;
 
-                debug(`Got DELETE RESPONSE from tracker`);
-                reply(response.deleteResponse.response);
+                debug(`Got CONFIRM RESPONSE from tracker`);
+                reply(response.confirmResponse.response, response.confirmResponse.token);
             };
-            this.tracker.on('delete_response', onResponse);
+            this.tracker.on('confirm_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.DeleteResponse.Result.TIMEOUT);
+                    reply(this.daemon.ConfirmResponse.Result.TIMEOUT);
                 },
                 this.daemon.constructor.requestTimeout
             );
 
-            let request = this.tracker.DeleteRequest.create({
-                token: this.tracker.getToken(message.deleteRequest.trackerName),
-                path: message.deleteRequest.path,
+            let request = this.tracker.ConfirmRequest.create({
+                token: message.confirmRequest.token,
             });
             let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.DELETE_REQUEST,
+                type: this.tracker.ClientMessage.Type.CONFIRM_REQUEST,
                 messageId: relayId,
-                deleteRequest: request,
+                confirmRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.deleteRequest.trackerName, data);
+            this.tracker.send(message.confirmRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'DeleteRequest.onMessage()'));
+            this._daemon._logger.error(new WError(error, 'ConfirmRequest.handle()'));
         }
     }
 
@@ -129,4 +127,4 @@ class DeleteRequest {
     }
 }
 
-module.exports = DeleteRequest;
+module.exports = ConfirmRequest;

@@ -1,18 +1,18 @@
 /**
- * Tree command
+ * Load command
  * @module commands/disconnect
  */
 const debug = require('debug')('bhid:command');
 const path = require('path');
 const net = require('net');
 const protobuf = require('protobufjs');
-const archy = require('archy');
 const SocketWrapper = require('socket-wrapper');
+const Table = require('easy-table');
 
 /**
  * Command class
  */
-class Tree {
+class Load {
     /**
      * Create the service
      * @param {App} app                 The application
@@ -24,11 +24,11 @@ class Tree {
     }
 
     /**
-     * Service name is 'commands.tree'
+     * Service name is 'commands.load'
      * @type {string}
      */
     static get provides() {
-        return 'commands.tree';
+        return 'commands.load';
     }
 
     /**
@@ -45,8 +45,6 @@ class Tree {
      * @return {Promise}
      */
     run(argv) {
-        let tpath = argv['_'][1] || '';
-        let daemonName = argv['d'] || '';
         let trackerName = argv['t'] || '';
 
         debug('Loading protocol');
@@ -56,52 +54,36 @@ class Tree {
 
             try {
                 this.proto = root;
-                this.Tree = this.proto.lookup('local.Tree');
-                this.TreeRequest = this.proto.lookup('local.TreeRequest');
-                this.TreeResponse = this.proto.lookup('local.TreeResponse');
+                this.ConnectionsListRequest = this.proto.lookup('local.ConnectionsListRequest');
+                this.ConnectionsListResponse = this.proto.lookup('local.ConnectionsListResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                debug(`Sending TREE REQUEST`);
-                let request = this.TreeRequest.create({
+                debug(`Sending CONNECTION LIST REQUEST`);
+                let request = this.ConnectionsListRequest.create({
                     trackerName: trackerName,
-                    daemonName: daemonName,
-                    path: tpath,
                 });
                 let message = this.ClientMessage.create({
-                    type: this.ClientMessage.Type.TREE_REQUEST,
-                    treeRequest: request,
+                    type: this.ClientMessage.Type.CONNECTIONS_LIST_REQUEST,
+                    connectionsListRequest: request,
                 });
                 let buffer = this.ClientMessage.encode(message).finish();
                 this.send(buffer)
                     .then(data => {
                         let message = this.ServerMessage.decode(data);
-                        if (message.type !== this.ServerMessage.Type.TREE_RESPONSE)
+                        if (message.type !== this.ServerMessage.Type.CONNECTIONS_LIST_RESPONSE)
                             throw new Error('Invalid reply from daemon');
 
-                        switch (message.treeResponse.response) {
-                            case this.TreeResponse.Result.ACCEPTED:
-                                if (tpath.length) {
-                                    process.stdout.write(archy(this.buildTree(message.treeResponse.tree)));
-                                } else {
-                                    for (let node of message.treeResponse.tree.tree)
-                                        process.stdout.write(archy(this.buildTree(node)));
-                                }
+                        switch (message.connectionsListResponse.response) {
+                            case this.ConnectionsListResponse.Result.ACCEPTED:
+                                this.printTable(message.connectionsListResponse.list);
                                 process.exit(0);
                                 break;
-                            case this.TreeResponse.Result.REJECTED:
+                            case this.ConnectionsListResponse.Result.REJECTED:
                                 console.log('Request rejected');
                                 process.exit(1);
                                 break;
-                            case this.TreeResponse.Result.INVALID_PATH:
-                                console.log('Invalid path');
-                                process.exit(1);
-                                break;
-                            case this.TreeResponse.Result.PATH_NOT_FOUND:
-                                console.log(tpath.length ? 'Path not found' : 'Empty tree');
-                                process.exit(1);
-                                break;
-                            case this.TreeResponse.Result.TIMEOUT:
+                            case this.ConnectionsListResponse.Result.TIMEOUT:
                                 console.log('No response from tracker');
                                 process.exit(1);
                                 break;
@@ -121,25 +103,29 @@ class Tree {
     }
 
     /**
-     * Build the tree
-     * @param {object} tree                     The tree with subnodes
+     * Print the table
+     * @param {object} list
      */
-    buildTree(tree) {
-        let obj = {
-            label: '/' + tree.name,
-            nodes: [],
-        };
-        if (tree.connection) {
-            obj.label += '\n' +
-                '[' + (tree.type == this.Tree.Type.CLIENT ? '*' : ' ') + '] Client token: ' + tree.clientToken +
-                '\n' +
-                '[' + (tree.type == this.Tree.Type.SERVER ? '*' : ' ') + '] Server token: ' + tree.serverToken;
-        } else {
-            obj.label += '\n' + 'Client token: ' + tree.clientToken;
-        }
-        for (let node of tree.tree)
-            obj.nodes.push(this.buildTree(node));
-        return obj;
+    printTable(list) {
+        if (!list.serverConnections.length && !list.clientConnections.length)
+            return console.log('No connections defined');
+
+        let table = new Table();
+        list.serverConnections.forEach(row => {
+            table.cell('Type', 'server');
+            table.cell('Address', row.connectAddress);
+            table.cell('Port', row.connectPort);
+            table.cell('Peers', row.clients.length ? row.clients.join(', ') : '*');
+            table.newRow();
+        });
+        list.clientConnections.forEach(row => {
+            table.cell('Type', 'client');
+            table.cell('Address', row.listenAddress);
+            table.cell('Port', row.listenPort);
+            table.cell('Peers', row.server);
+            table.newRow();
+        });
+        console.log(table.toString().trim());
     }
 
     /**
@@ -175,4 +161,4 @@ class Tree {
     }
 }
 
-module.exports = Tree;
+module.exports = Load;
