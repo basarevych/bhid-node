@@ -131,9 +131,11 @@ class Tree {
         };
         if (tree.connection) {
             obj.label += '\n' +
-                '[' + (tree.type == this.Tree.Type.CLIENT ? '*' : ' ') + '] Client token: ' + tree.clientToken +
+                '[' + (tree.type == this.Tree.Type.CLIENT ? '*' : ' ') + '] ' +
+                tree.clientsNumber + ' client(s), token: ' + tree.clientToken +
                 '\n' +
-                '[' + (tree.type == this.Tree.Type.SERVER ? '*' : ' ') + '] Server token: ' + tree.serverToken;
+                '[' + (tree.type == this.Tree.Type.SERVER ? '*' : ' ') + '] ' +
+                tree.serversNumber + ' server(s), token: ' + tree.serverToken;
         } else {
             obj.label += '\n' + 'Client token: ' + tree.clientToken;
         }

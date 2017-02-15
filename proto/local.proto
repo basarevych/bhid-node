@@ -130,7 +130,9 @@ message Tree {
     required string name = 4;
     required string path = 5;
     optional string server_token = 6;
-    optional string client_token = 7;
+    optional uint32 servers_number = 7;
+    optional string client_token = 8;
+    optional uint32 clients_number = 9;
 }
 
 message TreeResponse {
