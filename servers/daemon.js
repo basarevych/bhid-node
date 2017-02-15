@@ -169,7 +169,7 @@ class Daemon extends EventEmitter {
      */
     onServerError(error) {
         if (error.syscall !== 'listen')
-            return this._logger.error(new WError(error, 'Tracker.onTcpError()'));
+            return this._logger.error(new WError(error, 'Daemon.onServerError()'));
 
         switch (error.code) {
             case 'EACCES':

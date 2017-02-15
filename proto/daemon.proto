@@ -1,0 +1,53 @@
+syntax = "proto3";
+package daemon;
+
+message ConnectRequest {
+    enum Hash {
+        SHA256 = 0;
+    }
+    required Hash hash = 1;
+    required string identity = 2;
+    required string public_key = 3;
+    required string signature = 4;
+}
+
+message ConnectResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+    }
+    required Result response = 1;
+}
+
+message Data {
+    required bytes nonce = 1;
+    required bytes payload = 2;
+}
+
+message OuterMessage {
+    enum Type {
+        BYE = 0;
+        CONNECT_REQUEST = 1;
+        CONNECT_RESPONSE = 2;
+        DATA = 3;
+        ACK = 4;
+        NACK = 5;
+        ALIVE = 6;
+    }
+    required Type type = 1;
+    optional ConnectRequest request = 2;
+    optional ConnectResponse response = 3;
+    optional uint32 data_id = 4;
+    optional Data data_message = 5;
+}
+
+message InnerMessage {
+    enum Type {
+        OPEN = 0;
+        DATA = 1;
+        CLOSE = 2;
+    }
+    required Type type = 1;
+    required string id = 2;
+    optional bytes data = 3;
+}
