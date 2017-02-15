@@ -7,7 +7,6 @@ const net = require('net');
 const uuid = require('uuid');
 const EventEmitter = require('events');
 const WError = require('verror').WError;
-const SocketWrapper = require('socket-wrapper');
 
 /**
  * Server class
