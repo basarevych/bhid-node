@@ -34,6 +34,22 @@ module.exports = {
                 mode: 0o640,
             },
         },
+        peer: {
+            class: 'servers.peer',
+            log: {
+                path: '/var/log/bhid',
+                interval: '1d',
+                mode: 0o640,
+            },
+        },
+        front: {
+            class: 'servers.front',
+            log: {
+                path: '/var/log/bhid',
+                interval: '1d',
+                mode: 0o640,
+            },
+        },
     },
 
     // SMTP servers

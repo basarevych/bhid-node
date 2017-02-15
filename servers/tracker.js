@@ -21,9 +21,8 @@ class Tracker extends EventEmitter {
      * @param {App} app                     Application
      * @param {object} config               Configuration
      * @param {Logger} logger               Logger service
-     * @param {Util} util                   Util service
      */
-    constructor(app, config, logger, util) {
+    constructor(app, config, logger) {
         super();
 
         this.servers = new Map();
@@ -33,7 +32,6 @@ class Tracker extends EventEmitter {
         this._app = app;
         this._config = config;
         this._logger = logger;
-        this._util = util;
         this._timeouts = new Map();
     }
 
@@ -50,7 +48,7 @@ class Tracker extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'util' ];
+        return [ 'app', 'config', 'logger' ];
     }
 
     /**
@@ -181,7 +179,7 @@ class Tracker extends EventEmitter {
      */
     start(name) {
         if (name !== this._name)
-            return Promise.reject(new Error(`Server ${name} was not properly bootstrapped`));
+            return Promise.reject(new Error(`Server ${name} was not properly initialized`));
 
         return Array.from(this._app.get('modules')).reduce(
                 (prev, [ curName, curModule ]) => {

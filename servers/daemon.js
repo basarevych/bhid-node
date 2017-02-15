@@ -22,7 +22,7 @@ class Daemon extends EventEmitter {
      * @param {object} config               Configuration
      * @param {Logger} logger               Logger service
      */
-    constructor(app, config, logger, util) {
+    constructor(app, config, logger) {
         super();
 
         this.server = null;
@@ -117,7 +117,7 @@ class Daemon extends EventEmitter {
      */
     start(name) {
         if (name !== this._name)
-            return Promise.reject(new Error(`Server ${name} was not properly bootstrapped`));
+            return Promise.reject(new Error(`Server ${name} was not properly initialized`));
 
         return Array.from(this._app.get('modules')).reduce(
                 (prev, [ curName, curModule ]) => {
