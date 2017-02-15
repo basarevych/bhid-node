@@ -156,7 +156,7 @@ message ClientConnection {
     required string listen_address = 2;
     required string listen_port = 3;
     required bool encrypted = 4;
-    optional string server = 5;
+    required string server = 5;
 }
 
 message ConnectionsList {
