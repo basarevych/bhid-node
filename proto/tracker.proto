@@ -143,7 +143,7 @@ message ConnectionsListRequest {
 }
 
 message ServerConnection {
-    required string id = 1;
+    required string name = 1;
     required string connect_address = 2;
     required string connect_port = 3;
     required bool encrypted = 4;
@@ -152,7 +152,7 @@ message ServerConnection {
 }
 
 message ClientConnection {
-    required string id = 1;
+    required string name = 1;
     required string listen_address = 2;
     required string listen_port = 3;
     required bool encrypted = 4;

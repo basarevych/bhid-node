@@ -112,6 +112,7 @@ class Load {
 
         let table = new Table();
         list.serverConnections.forEach(row => {
+            table.cell('Name', row.name);
             table.cell('Type', 'server');
             table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
             table.cell('Fixed', row.fixed ? 'yes' : 'no');
@@ -121,6 +122,7 @@ class Load {
             table.newRow();
         });
         list.clientConnections.forEach(row => {
+            table.cell('Name', row.name);
             table.cell('Type', 'client');
             table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
             table.cell('Fixed', '');
