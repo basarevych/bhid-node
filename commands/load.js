@@ -113,13 +113,17 @@ class Load {
         let table = new Table();
         list.serverConnections.forEach(row => {
             table.cell('Type', 'server');
+            table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
+            table.cell('Fixed', row.fixed ? 'yes' : 'no');
             table.cell('Address', row.connectAddress);
             table.cell('Port', row.connectPort);
-            table.cell('Peers', row.clients.length ? row.clients.join(', ') : '*');
+            table.cell('Peers', row.clients.length ? row.clients.join(', ') : '');
             table.newRow();
         });
         list.clientConnections.forEach(row => {
             table.cell('Type', 'client');
+            table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
+            table.cell('Fixed', '');
             table.cell('Address', row.listenAddress);
             table.cell('Port', row.listenPort);
             table.cell('Peers', row.server);

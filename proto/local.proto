@@ -153,14 +153,17 @@ message ServerConnection {
     required string id = 1;
     required string connect_address = 2;
     required string connect_port = 3;
-    repeated string clients = 4;
+    required bool encrypted = 4;
+    required bool fixed = 5;
+    repeated string clients = 6;
 }
 
 message ClientConnection {
     required string id = 1;
-    required string server = 2;
-    required string listen_address = 3;
-    required string listen_port = 4;
+    required string listen_address = 2;
+    required string listen_port = 3;
+    required bool encrypted = 4;
+    optional string server = 5;
 }
 
 message ConnectionsList {
