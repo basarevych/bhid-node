@@ -528,7 +528,7 @@ class Front extends EventEmitter {
 
     /**
      * Retrieve peer server
-     * @return {Tracker}
+     * @return {Peer}
      */
     get _peer() {
         if (this._peer_instance)
