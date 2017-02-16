@@ -31,6 +31,19 @@ message ConfirmResponse {
     optional string token = 2;
 }
 
+message SetTokenRequest {
+    required string tracker_name = 1;
+    required string token = 2;
+}
+
+message SetTokenResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+    }
+    required Result response = 1;
+}
+
 message CreateRequest {
     enum Type {
         SERVER = 0;
@@ -187,42 +200,46 @@ message ClientMessage {
     enum Type {
         INIT_REQUEST = 0;
         CONFIRM_REQUEST = 1;
-        CREATE_REQUEST = 2;
-        DELETE_REQUEST = 3;
-        CONNECT_REQUEST = 4;
-        DISCONNECT_REQUEST = 5;
-        TREE_REQUEST = 6;
-        CONNECTIONS_LIST_REQUEST = 7;
+        SET_TOKEN_REQUEST = 2;
+        CREATE_REQUEST = 3;
+        DELETE_REQUEST = 4;
+        CONNECT_REQUEST = 5;
+        DISCONNECT_REQUEST = 6;
+        TREE_REQUEST = 7;
+        CONNECTIONS_LIST_REQUEST = 8;
     }
     required Type type = 1;
     optional InitRequest init_request = 2;
     optional ConfirmRequest confirm_request = 3;
-    optional CreateRequest create_request = 4;
-    optional DeleteRequest delete_request = 5;
-    optional ConnectRequest connect_request = 6;
-    optional DisconnectRequest disconnect_request = 7;
-    optional TreeRequest tree_request = 8;
-    optional ConnectionsListRequest connections_list_request = 9;
+    optional SetTokenRequest set_token_request = 4;
+    optional CreateRequest create_request = 5;
+    optional DeleteRequest delete_request = 6;
+    optional ConnectRequest connect_request = 7;
+    optional DisconnectRequest disconnect_request = 8;
+    optional TreeRequest tree_request = 9;
+    optional ConnectionsListRequest connections_list_request = 10;
 }
 
 message ServerMessage {
     enum Type {
         INIT_RESPONSE = 0;
         CONFIRM_RESPONSE = 1;
-        CREATE_RESPONSE = 2;
-        DELETE_RESPONSE = 3;
-        CONNECT_RESPONSE = 4;
-        DISCONNECT_RESPONSE = 5;
-        TREE_RESPONSE = 6;
-        CONNECTIONS_LIST_RESPONSE = 7;
+        SET_TOKEN_RESPONSE = 2;
+        CREATE_RESPONSE = 3;
+        DELETE_RESPONSE = 4;
+        CONNECT_RESPONSE = 5;
+        DISCONNECT_RESPONSE = 6;
+        TREE_RESPONSE = 7;
+        CONNECTIONS_LIST_RESPONSE = 8;
     }
     required Type type = 1;
     optional InitResponse init_response = 2;
     optional ConfirmResponse confirm_response = 3;
-    optional CreateResponse create_response = 4;
-    optional DeleteResponse delete_response = 5;
-    optional ConnectResponse connect_response = 6;
-    optional DisconnectResponse disconnect_response = 7;
-    optional TreeResponse tree_response = 8;
-    optional ConnectionsListResponse connections_list_response = 9;
+    optional SetTokenResponse set_token_response = 4;
+    optional CreateResponse create_response = 5;
+    optional DeleteResponse delete_response = 6;
+    optional ConnectResponse connect_response = 7;
+    optional DisconnectResponse disconnect_response = 8;
+    optional TreeResponse tree_response = 9;
+    optional ConnectionsListResponse connections_list_response = 10;
 }

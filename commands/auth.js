@@ -1,6 +1,6 @@
 /**
- * Confirm command
- * @module commands/confirm
+ * Auth command
+ * @module commands/auth
  */
 const debug = require('debug')('bhid:command');
 const path = require('path');
@@ -11,7 +11,7 @@ const SocketWrapper = require('socket-wrapper');
 /**
  * Command class
  */
-class Confirm {
+class Auth {
     /**
      * Create the service
      * @param {App} app                 The application
@@ -23,11 +23,11 @@ class Confirm {
     }
 
     /**
-     * Service name is 'commands.confirm'
+     * Service name is 'commands.auth'
      * @type {string}
      */
     static get provides() {
-        return 'commands.confirm';
+        return 'commands.auth';
     }
 
     /**
@@ -57,71 +57,34 @@ class Confirm {
 
             try {
                 this.proto = root;
-                this.ConfirmRequest = this.proto.lookup('local.ConfirmRequest');
-                this.ConfirmResponse = this.proto.lookup('local.ConfirmResponse');
                 this.SetTokenRequest = this.proto.lookup('local.SetTokenRequest');
                 this.SetTokenResponse = this.proto.lookup('local.SetTokenResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
                 debug(`Sending CONFIRM REQUEST`);
-                let request = this.ConfirmRequest.create({
+                let request = this.SetTokenRequest.create({
                     trackerName: trackerName,
                     token: token,
                 });
                 let message = this.ClientMessage.create({
-                    type: this.ClientMessage.Type.CONFIRM_REQUEST,
-                    confirmRequest: request,
+                    type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
+                    setTokenRequest: request,
                 });
                 let buffer = this.ClientMessage.encode(message).finish();
                 this.send(buffer)
                     .then(data => {
-                        let message = this.ServerMessage.decode(data);
-                        if (message.type !== this.ServerMessage.Type.CONFIRM_RESPONSE)
+                        message = this.ServerMessage.decode(data);
+                        if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
                             throw new Error('Invalid reply from daemon');
 
-                        switch (message.confirmResponse.response) {
-                            case this.ConfirmResponse.Result.ACCEPTED:
-                                console.log('Your daemon token is ' + message.confirmResponse.token);
-                                debug(`Sending SET TOKEN REQUEST`);
-                                request = this.SetTokenRequest.create({
-                                    trackerName: trackerName,
-                                    token: message.confirmResponse.token,
-                                });
-                                message = this.ClientMessage.create({
-                                    type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
-                                    setTokenRequest: request,
-                                });
-                                buffer = this.ClientMessage.encode(message).finish();
-                                this.send(buffer)
-                                    .then(data => {
-                                        message = this.ServerMessage.decode(data);
-                                        if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
-                                            throw new Error('Invalid reply from daemon');
-
-                                        switch (message.setTokenResponse.response) {
-                                            case this.SetTokenResponse.Result.ACCEPTED:
-                                                console.log('It has been saved in the configuration and will be used automatically with this tracker');
-                                                process.exit(0);
-                                                break;
-                                            case this.SetTokenResponse.Result.REJECTED:
-                                                console.log('Save request rejected');
-                                                process.exit(1);
-                                                break;
-                                            default:
-                                                throw new Error('Unsupported response from daemon');
-                                        }
-                                    })
-                                    .catch(error => {
-                                        this.error(error.message);
-                                    });
+                        switch (message.setTokenResponse.response) {
+                            case this.SetTokenResponse.Result.ACCEPTED:
+                                console.log('Token saved');
+                                process.exit(0);
                                 break;
-                            case this.ConfirmResponse.Result.REJECTED:
+                            case this.SetTokenResponse.Result.REJECTED:
                                 console.log('Request rejected');
-                                process.exit(1);
-                                break;
-                            case this.ConfirmResponse.Result.TIMEOUT:
-                                console.log('No response from tracker');
                                 process.exit(1);
                                 break;
                             default:
@@ -172,4 +135,4 @@ class Confirm {
     }
 }
 
-module.exports = Confirm;
+module.exports = Auth;

@@ -16,6 +16,7 @@ function usage() {
     console.log('\tinstall\t\tRegister the program in the system');
     console.log('\tinit\t\tInitialize the account');
     console.log('\tconfirm\t\tConfirm email');
+    console.log('\tauth\t\tSet and save a token for tracker');
     console.log('\tcreate\t\tCreate new connection');
     console.log('\tdelete\t\tDelete a connection');
     console.log('\tconnect\t\tMake the daemon server or client of a connection');
@@ -150,6 +151,7 @@ switch (argv['_'][0]) {
         break;
     case 'init':
     case 'confirm':
+    case 'auth':
     case 'create':
     case 'delete':
     case 'connect':

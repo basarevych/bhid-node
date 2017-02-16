@@ -218,6 +218,58 @@ class Tracker extends EventEmitter {
     }
 
     /**
+     * Set daemon token for the tracker
+     * @param {string} name         Name of the tracker
+     * @param {string} token        The token
+     */
+    setToken(name, token) {
+        if (!name)
+            name = this.default;
+        let server = this.servers.get(name);
+        if (!server)
+            return false;
+
+        let oldToken = server.token;
+        server.token = token;
+        try {
+            let configPath;
+            for (let candidate of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
+                try {
+                    fs.accessSync(path.join(candidate, 'bhid.conf'), fs.constants.F_OK);
+                    configPath = candidate;
+                    break;
+                } catch (error) {
+                    // do nothing
+                }
+            }
+
+            if (!configPath)
+                throw new Error('Could not read bhid.conf');
+
+            let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
+            for (let section of Object.keys(bhidConfig)) {
+                if (!section.endsWith(this.constructor.trackerSection))
+                    continue;
+
+                let tracker = section.substr(0, section.length - this.constructor.trackerSection.length);
+                if (tracker == name) {
+                    bhidConfig[section]['token'] = server.token;
+                    debug(`Tracker ${name} token updated`);
+                    break;
+                }
+            }
+
+            fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(bhidConfig));
+        } catch (error) {
+            server.token = oldToken;
+            this._logger.error(new WError(error, 'Tracker.setToken()'));
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Send message
      * @param {string} name                 Tracker name
      * @param {Buffer|null} data            Data to send
