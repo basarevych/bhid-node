@@ -121,6 +121,7 @@ class Tracker extends EventEmitter {
                         this.ConnectionsList = this.proto.lookup('tracker.ConnectionsList');
                         this.ConnectionsListRequest = this.proto.lookup('tracker.ConnectionsListRequest');
                         this.ConnectionsListResponse = this.proto.lookup('tracker.ConnectionsListResponse');
+                        this.Status = this.proto.lookup('tracker.Status');
                         this.ClientMessage = this.proto.lookup('tracker.ClientMessage');
                         this.ServerMessage = this.proto.lookup('tracker.ServerMessage');
                         resolve();

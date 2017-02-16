@@ -16,7 +16,8 @@ class ConnectionsList {
      * @param {Logger} logger               Logger service
      */
     constructor(app, config, logger) {
-        this._list = new Map();
+        this.list = new Map();
+
         this._app = app;
         this._config = config;
         this._logger = logger;
@@ -78,7 +79,7 @@ class ConnectionsList {
             if (!configPath)
                 throw new Error('Could not read bhid.conf');
 
-            this._list.clear();
+            this.list.clear();
             let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
             let openedConnections = new Set();
             for (let section of Object.keys(bhidConfig)) {
@@ -86,10 +87,10 @@ class ConnectionsList {
                     let tracker = section.split('#')[0];
                     if (!tracker)
                         continue;
-                    let conf = this._list.get(tracker);
+                    let conf = this.list.get(tracker);
                     if (!conf) {
                         conf = { serverConnections: [], clientConnections: [] };
-                        this._list.set(tracker, conf);
+                        this.list.set(tracker, conf);
                     }
                     let connection = {
                         name: section.substr(tracker.length + 1, section.length - this.constructor.serverSection.length),
@@ -98,6 +99,7 @@ class ConnectionsList {
                         encrypted: bhidConfig[section]['encrypted'] == 'yes',
                         fixed: bhidConfig[section]['fixed'] == 'yes',
                         clients: bhidConfig[section]['clients'],
+                        connected: 0,
                     };
                     conf.serverConnections.push(connection);
 
@@ -117,10 +119,10 @@ class ConnectionsList {
                     let tracker = section.split('#')[0];
                     if (!tracker)
                         continue;
-                    let conf = this._list.get(tracker);
+                    let conf = this.list.get(tracker);
                     if (!conf) {
                         conf = { serverConnections: [], clientConnections: [] };
-                        this._list.set(tracker, conf);
+                        this.list.set(tracker, conf);
                     }
                     let connection = {
                         name: section.substr(tracker.length + 1, section.length - this.constructor.clientSection.length),
@@ -128,6 +130,7 @@ class ConnectionsList {
                         listenPort: bhidConfig[section]['listen_port'],
                         encrypted: bhidConfig[section]['encrypted'] == 'yes',
                         server: bhidConfig[section]['server'],
+                        connected: 0,
                     };
                     conf.clientConnections.push(connection);
 
@@ -187,6 +190,8 @@ class ConnectionsList {
             }
 
             for (let connection of list.serverConnections) {
+                connection.connected = 0;
+
                 output[trackerName + '#' + connection.name + this.constructor.serverSection] = {
                     connect_address: connection.connectAddress,
                     connect_port: connection.connectPort,
@@ -209,6 +214,8 @@ class ConnectionsList {
                 openedConnections.add(trackerName + '#' + connection.name);
             }
             for (let connection of list.clientConnections) {
+                connection.connected = 0;
+
                 output[trackerName + '#' + connection.name + this.constructor.clientSection] = {
                     listen_address: connection.listenAddress,
                     listen_port: connection.listenPort,
@@ -240,7 +247,7 @@ class ConnectionsList {
             return false;
         }
 
-        this._list.set(trackerName, list);
+        this.list.set(trackerName, list);
         return true;
     }
 

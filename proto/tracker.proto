@@ -179,6 +179,11 @@ message ConnectionsListResponse {
     optional ConnectionsList list = 2;
 }
 
+message Status {
+    required string connection_name = 1;
+    required uint32 connected = 2;
+}
+
 message ClientMessage {
     enum Type {
         INIT_REQUEST = 0;
@@ -190,6 +195,7 @@ message ClientMessage {
         DISCONNECT_REQUEST = 6;
         TREE_REQUEST = 7;
         CONNECTIONS_LIST_REQUEST = 8;
+        STATUS = 9;
         ALIVE = 99;
     }
     required Type type = 1;
@@ -203,6 +209,7 @@ message ClientMessage {
     optional DisconnectRequest disconnect_request = 9;
     optional TreeRequest tree_request = 10;
     optional ConnectionsListRequest connections_list_request = 11;
+    optional Status status = 12;
 }
 
 message ServerMessage {
