@@ -1,6 +1,6 @@
 /**
  * Crypter
- * @module services/crypter
+ * @module peer/services/crypter
  */
 const debug = require('debug')('bhid:crypter');
 const fs = require('fs');
@@ -30,11 +30,11 @@ class Crypter {
     }
 
     /**
-     * Service name is 'crypter'
+     * Service name is 'modules.peer.crypter'
      * @type {string}
      */
     static get provides() {
-        return 'crypter';
+        return 'modules.peer.crypter';
     }
 
     /**

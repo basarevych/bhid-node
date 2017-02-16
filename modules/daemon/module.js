@@ -80,6 +80,9 @@ class Daemon {
         let connectionsListRequest = this._app.get('modules.daemon.events.connectionsListRequest');
         server.on('connections_list_request', connectionsListRequest.handle.bind(connectionsListRequest));
 
+        let setConnectionsRequest = this._app.get('modules.daemon.events.setConnectionsRequest');
+        server.on('set_connections_request', setConnectionsRequest.handle.bind(setConnectionsRequest));
+
         return Promise.resolve();
     }
 }

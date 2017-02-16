@@ -6,6 +6,7 @@ const debug = require('debug')('bhid:command');
 const path = require('path');
 const net = require('net');
 const protobuf = require('protobufjs');
+const read = require('read');
 const SocketWrapper = require('socket-wrapper');
 const Table = require('easy-table');
 
@@ -56,6 +57,8 @@ class Load {
                 this.proto = root;
                 this.ConnectionsListRequest = this.proto.lookup('local.ConnectionsListRequest');
                 this.ConnectionsListResponse = this.proto.lookup('local.ConnectionsListResponse');
+                this.SetConnectionsRequest = this.proto.lookup('local.SetConnectionsRequest');
+                this.SetConnectionsResponse = this.proto.lookup('local.SetConnectionsResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
@@ -77,7 +80,48 @@ class Load {
                         switch (message.connectionsListResponse.response) {
                             case this.ConnectionsListResponse.Result.ACCEPTED:
                                 this.printTable(message.connectionsListResponse.list);
-                                process.exit(0);
+                                if (message.connectionsListResponse.list.serverConnections.length ||
+                                    message.connectionsListResponse.list.clientConnections.length)
+                                {
+                                    read({ prompt: '\nAccept this list? (yes/no): ', terminal: true }, (error, answer) => {
+                                        if (error)
+                                            return this.error(error.message);
+
+                                        if (answer.toLowerCase() == 'yes' || answer.toLowerCase() == 'y') {
+                                            request = this.SetConnectionsRequest.create({
+                                                trackerName: trackerName,
+                                                list: message.connectionsListResponse.list,
+                                            });
+                                            message = this.ClientMessage.create({
+                                                type: this.ClientMessage.Type.SET_CONNECTIONS_REQUEST,
+                                                setConnectionsRequest: request,
+                                            });
+                                            buffer = this.ClientMessage.encode(message).finish();
+                                            this.send(buffer)
+                                                .then(data => {
+                                                    let message = this.ServerMessage.decode(data);
+                                                    if (message.type !== this.ServerMessage.Type.SET_CONNECTIONS_RESPONSE)
+                                                        throw new Error('Invalid reply from daemon');
+
+                                                    switch (message.setConnectionsResponse.response) {
+                                                        case this.SetConnectionsResponse.Result.ACCEPTED:
+                                                            console.log('List saved');
+                                                            process.exit(0);
+                                                            break;
+                                                        case this.SetConnectionsResponse.Result.REJECTED:
+                                                            console.log('Request rejected');
+                                                            process.exit(1);
+                                                            break;
+                                                        default:
+                                                            throw new Error('Unsupported response from daemon');
+                                                    }
+                                                })
+                                                .catch(error => {
+                                                    this.error(error.message);
+                                                });
+                                        }
+                                    });
+                                }
                                 break;
                             case this.ConnectionsListResponse.Result.REJECTED:
                                 console.log('Request rejected');
@@ -131,7 +175,7 @@ class Load {
             table.cell('Peers', row.server);
             table.newRow();
         });
-        console.log(table.toString().trim());
+        console.log(table.toString().trim() + '\n');
     }
 
     /**

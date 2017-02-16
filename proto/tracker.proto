@@ -167,6 +167,18 @@ message ConnectionsList {
     repeated ClientConnection client_connections = 2;
 }
 
+message ConnectionsListRequest {
+}
+
+message ConnectionsListResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+    }
+    required Result response = 1;
+    optional ConnectionsList list = 2;
+}
+
 message ClientMessage {
     enum Type {
         INIT_REQUEST = 0;
@@ -190,6 +202,7 @@ message ClientMessage {
     optional ConnectRequest connect_request = 8;
     optional DisconnectRequest disconnect_request = 9;
     optional TreeRequest tree_request = 10;
+    optional ConnectionsListRequest connections_list_request = 11;
 }
 
 message ServerMessage {
@@ -202,7 +215,8 @@ message ServerMessage {
         CONNECT_RESPONSE = 5;
         DISCONNECT_RESPONSE = 6;
         TREE_RESPONSE = 7;
-        CONNECTIONS_LIST = 8;
+        CONNECTIONS_LIST_RESPONSE = 8;
+        CONNECTIONS_LIST = 9;
         ALIVE = 99;
     }
     required Type type = 1;
@@ -215,5 +229,6 @@ message ServerMessage {
     optional ConnectResponse connect_response = 8;
     optional DisconnectResponse disconnect_response = 9;
     optional TreeResponse tree_response = 10;
-    optional ConnectionsList connections_list = 11;
+    optional ConnectionsListResponse connections_list_response = 11;
+    optional ConnectionsList connections_list = 12;
 }

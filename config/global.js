@@ -10,6 +10,5 @@ module.exports = {
         '!src/servers',
         '!src/services',
         'servers',
-        'services',
     ],
 };

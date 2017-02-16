@@ -43,7 +43,7 @@ class Peer extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'crypter' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.crypter' ];
     }
 
     /**
@@ -101,9 +101,9 @@ class Peer extends EventEmitter {
         try {
             let connection = {
                 name: name,
+                tracker: tracker,
                 peerId: null,
                 server: true,
-                tracker: tracker,
                 registering: false,
                 registered: false,
                 connectAddress: connectAddress,
@@ -216,9 +216,9 @@ class Peer extends EventEmitter {
         debug(`Starting ${name}`);
         let connection = {
             name: name,
+            tracker: tracker,
             peerId: null,
             server: false,
-            tracker: tracker,
             registering: false,
             registered: false,
             listenAddress: listenAddress,

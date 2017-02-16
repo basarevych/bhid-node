@@ -196,6 +196,19 @@ message ConnectionsListResponse {
     optional ConnectionsList list = 2;
 }
 
+message SetConnectionsRequest {
+    required string tracker_name = 1;
+    required ConnectionsList list = 2;
+}
+
+message SetConnectionsResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+    }
+    required Result response = 1;
+}
+
 message ClientMessage {
     enum Type {
         INIT_REQUEST = 0;
@@ -207,6 +220,7 @@ message ClientMessage {
         DISCONNECT_REQUEST = 6;
         TREE_REQUEST = 7;
         CONNECTIONS_LIST_REQUEST = 8;
+        SET_CONNECTIONS_REQUEST = 9;
     }
     required Type type = 1;
     optional InitRequest init_request = 2;
@@ -218,6 +232,7 @@ message ClientMessage {
     optional DisconnectRequest disconnect_request = 8;
     optional TreeRequest tree_request = 9;
     optional ConnectionsListRequest connections_list_request = 10;
+    optional SetConnectionsRequest set_connections_request = 11;
 }
 
 message ServerMessage {
@@ -231,6 +246,7 @@ message ServerMessage {
         DISCONNECT_RESPONSE = 6;
         TREE_RESPONSE = 7;
         CONNECTIONS_LIST_RESPONSE = 8;
+        SET_CONNECTIONS_RESPONSE = 9;
     }
     required Type type = 1;
     optional InitResponse init_response = 2;
@@ -242,4 +258,5 @@ message ServerMessage {
     optional DisconnectResponse disconnect_response = 8;
     optional TreeResponse tree_response = 9;
     optional ConnectionsListResponse connections_list_response = 10;
+    optional SetConnectionsResponse set_connections_response = 11;
 }
