@@ -94,8 +94,6 @@ class Crypter {
             publicKey: keyPair.publicKey,
             privateKey: keyPair.secretKey,
             peerKey: null,
-            inAccepted: false,
-            outAccepted: false,
         };
         this.sessions.set(id, session);
         return id;
