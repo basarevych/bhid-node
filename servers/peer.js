@@ -15,12 +15,13 @@ const SocketWrapper = require('socket-wrapper');
 class Peer extends EventEmitter {
     /**
      * Create the service
-     * @param {App} app                     Application
-     * @param {object} config               Configuration
-     * @param {Logger} logger               Logger service
-     * @param {Crypter} crypter             Crypter service
+     * @param {App} app                             Application
+     * @param {object} config                       Configuration
+     * @param {Logger} logger                       Logger service
+     * @param {Crypter} crypter                     Crypter service
+     * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger, crypter) {
+    constructor(app, config, logger, crypter, connectionsList) {
         super();
 
         this._name = null;
@@ -28,6 +29,7 @@ class Peer extends EventEmitter {
         this._config = config;
         this._logger = logger;
         this._crypter = crypter;
+        this._connectionsList = connectionsList;
     }
 
     /**
@@ -43,7 +45,7 @@ class Peer extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.crypter' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.crypter', 'modules.peer.connectionsList' ];
     }
 
     /**
@@ -82,6 +84,7 @@ class Peer extends EventEmitter {
             )
             .then(() => {
                 debug('Starting the server');
+                this._connectionsList.load();
             });
     }
 
