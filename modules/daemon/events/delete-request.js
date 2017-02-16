@@ -92,7 +92,6 @@ class DeleteRequest {
             );
 
             let request = this.tracker.DeleteRequest.create({
-                token: this.tracker.getToken(message.deleteRequest.trackerName),
                 path: message.deleteRequest.path,
             });
             let relay = this.tracker.ClientMessage.create({
@@ -103,7 +102,7 @@ class DeleteRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.deleteRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'DeleteRequest.handle()'));
+            this.daemon._logger.error(new WError(error, 'DeleteRequest.handle()'));
         }
     }
 

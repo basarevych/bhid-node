@@ -100,7 +100,7 @@ class ConfirmRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.confirmRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'ConfirmRequest.handle()'));
+            this.daemon._logger.error(new WError(error, 'ConfirmRequest.handle()'));
         }
     }
 

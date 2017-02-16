@@ -42,7 +42,6 @@ class SetTokenRequest {
      * @param {object} message      The message
      */
     handle(id, message) {
-        console.log(message);
         let client = this.daemon.clients.get(id);
         if (!client)
             return;
@@ -67,7 +66,7 @@ class SetTokenRequest {
             else
                 reply(this.daemon.SetTokenResponse.Result.REJECTED);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'SetTokenRequest.handle()'));
+            this.daemon._logger.error(new WError(error, 'SetTokenRequest.handle()'));
         }
     }
 

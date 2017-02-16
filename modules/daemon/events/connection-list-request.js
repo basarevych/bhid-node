@@ -92,18 +92,14 @@ class ConnectionsListRequest {
                 this.daemon.constructor.requestTimeout
             );
 
-            let request = this.tracker.ConnectionsListRequest.create({
-                token: this.tracker.getToken(message.connectionsListRequest.trackerName),
-            });
             let relay = this.tracker.ClientMessage.create({
                 type: this.tracker.ClientMessage.Type.CONNECTIONS_LIST_REQUEST,
                 messageId: relayId,
-                connectionsListRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.connectionsListRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'ConnectionsListRequest.handle()'));
+            this.daemon._logger.error(new WError(error, 'ConnectionsListRequest.handle()'));
         }
     }
 

@@ -93,7 +93,6 @@ class TreeRequest {
             );
 
             let request = this.tracker.TreeRequest.create({
-                token: this.tracker.getToken(message.treeRequest.trackerName),
                 daemonName: message.treeRequest.daemonName,
                 path: message.treeRequest.path,
             });
@@ -105,7 +104,7 @@ class TreeRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.treeRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'TreeRequest.handle()'));
+            this.daemon._logger.error(new WError(error, 'TreeRequest.handle()'));
         }
     }
 

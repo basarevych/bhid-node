@@ -103,6 +103,8 @@ class Tracker extends EventEmitter {
                         this.InitResponse = this.proto.lookup('tracker.InitResponse');
                         this.ConfirmRequest = this.proto.lookup('tracker.ConfirmRequest');
                         this.ConfirmResponse = this.proto.lookup('tracker.ConfirmResponse');
+                        this.RegisterDaemonRequest = this.proto.lookup('tracker.RegisterDaemonRequest');
+                        this.RegisterDaemonResponse = this.proto.lookup('tracker.RegisterDaemonResponse');
                         this.CreateRequest = this.proto.lookup('tracker.CreateRequest');
                         this.CreateResponse = this.proto.lookup('tracker.CreateResponse');
                         this.DeleteRequest = this.proto.lookup('tracker.DeleteRequest');
@@ -212,7 +214,7 @@ class Tracker extends EventEmitter {
         if (!name)
             name = this.default;
         let server = this.servers.get(name);
-        if (!server || !server.token)
+        if (!server || !server.token || !server.registered)
             return '';
         return server.token;
     }
@@ -322,6 +324,9 @@ class Tracker extends EventEmitter {
                     break;
                 case this.ServerMessage.Type.CONFIRM_RESPONSE:
                     this.emit('confirm_response', name, message);
+                    break;
+                case this.ServerMessage.Type.REGISTER_DAEMON_RESPONSE:
+                    this.emit('register_daemon_response', name, message);
                     break;
                 case this.ServerMessage.Type.CREATE_RESPONSE:
                     this.emit('create_response', name, message);
@@ -447,7 +452,7 @@ class Tracker extends EventEmitter {
                         }
                     );
 
-                    this.emit('connected', name);
+                    this.emit('connection', name);
                 }
             );
 
@@ -474,6 +479,10 @@ class Tracker extends EventEmitter {
         for (let [ name, timestamp ] of this._timeouts) {
             if (!name)
                 continue;
+            if (!this.servers.has(name)) {
+                this._timeouts.delete(name);
+                continue;
+            }
 
             if (timestamp.receive !== 0 && now >= timestamp.receive) {
                 timestamp.receive = 0;

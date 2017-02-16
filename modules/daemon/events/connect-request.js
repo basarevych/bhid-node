@@ -92,7 +92,6 @@ class ConnectRequest {
             );
 
             let request = this.tracker.ConnectRequest.create({
-                token: this.tracker.getToken(message.connectRequest.trackerName),
                 daemonName: message.connectRequest.daemonName,
                 connectToken: message.connectRequest.token,
             });
@@ -104,7 +103,7 @@ class ConnectRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.connectRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'ConnectRequest.handle()'));
+            this.daemon._logger.error(new WError(error, 'ConnectRequest.handle()'));
         }
     }
 

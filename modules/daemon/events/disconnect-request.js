@@ -92,7 +92,6 @@ class DisconnectRequest {
             );
 
             let request = this.tracker.DisconnectRequest.create({
-                token: this.tracker.getToken(message.disconnectRequest.trackerName),
                 daemonName: message.disconnectRequest.daemonName,
                 path: message.disconnectRequest.path,
             });
@@ -104,7 +103,7 @@ class DisconnectRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.disconnectRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'DisconnectRequest.handle()'));
+            this.daemon._logger.error(new WError(error, 'DisconnectRequest.handle()'));
         }
     }
 

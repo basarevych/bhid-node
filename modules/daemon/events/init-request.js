@@ -100,7 +100,7 @@ class InitRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.initRequest.trackerName, data);
         } catch (error) {
-            this._daemon._logger.error(new WError(error, 'InitRequest.handle()'));
+            this.daemon._logger.error(new WError(error, 'InitRequest.handle()'));
         }
     }
 

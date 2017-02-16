@@ -53,6 +53,9 @@ class Tracker {
 
         let server = this._app.get('servers').get('tracker');
 
+        let connection = this._app.get('modules.tracker.events.connection');
+        server.on('connection', connection.handle.bind(connection));
+
         return Promise.resolve();
     }
 }

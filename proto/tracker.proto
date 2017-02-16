@@ -27,22 +27,33 @@ message ConfirmResponse {
     optional string token = 2;
 }
 
+message RegisterDaemonRequest {
+    required string token = 1;
+}
+
+message RegisterDaemonResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+    }
+    required Result response = 1;
+}
+
 message CreateRequest {
     enum Type {
         SERVER = 0;
         CLIENT = 1;
         NOT_CONNECTED = 2;
     }
-    required string token = 1;
-    optional string daemon_name = 2;
-    required string path = 3;
-    required Type type = 4;
-    required bool encrypted = 5;
-    required bool fixed = 6;
-    optional string connect_address = 7;
-    required string connect_port = 8;
-    optional string listen_address = 9;
-    required string listen_port = 10;
+    optional string daemon_name = 1;
+    required string path = 2;
+    required Type type = 3;
+    required bool encrypted = 4;
+    required bool fixed = 5;
+    optional string connect_address = 6;
+    required string connect_port = 7;
+    optional string listen_address = 8;
+    required string listen_port = 9;
 }
 
 message CreateResponse {
@@ -58,8 +69,7 @@ message CreateResponse {
 }
 
 message DeleteRequest {
-    required string token = 1;
-    required string path = 2;
+    required string path = 1;
 }
 
 message DeleteResponse {
@@ -73,9 +83,8 @@ message DeleteResponse {
 }
 
 message ConnectRequest {
-    required string token = 1;
-    optional string daemon_name = 2;
-    required string connect_token = 3;
+    optional string daemon_name = 1;
+    required string connect_token = 2;
 }
 
 message ConnectResponse {
@@ -88,9 +97,8 @@ message ConnectResponse {
 }
 
 message DisconnectRequest {
-    required string token = 1;
-    optional string daemon_name = 2;
-    required string path = 3;
+    optional string daemon_name = 1;
+    required string path = 2;
 }
 
 message DisconnectResponse {
@@ -105,9 +113,8 @@ message DisconnectResponse {
 }
 
 message TreeRequest {
-    required string token = 1;
-    optional string daemon_name = 2;
-    optional string path = 3;
+    optional string daemon_name = 1;
+    optional string path = 2;
 }
 
 message Tree {
@@ -138,10 +145,6 @@ message TreeResponse {
     optional Tree tree = 2;
 }
 
-message ConnectionsListRequest {
-    required string token = 1;
-}
-
 message ServerConnection {
     required string name = 1;
     required string connect_address = 2;
@@ -164,59 +167,53 @@ message ConnectionsList {
     repeated ClientConnection client_connections = 2;
 }
 
-message ConnectionsListResponse {
-    enum Result {
-        ACCEPTED = 0;
-        REJECTED = 1;
-    }
-    required Result response = 1;
-    optional ConnectionsList list = 2;
-}
-
 message ClientMessage {
     enum Type {
         INIT_REQUEST = 0;
         CONFIRM_REQUEST = 1;
-        CREATE_REQUEST = 2;
-        DELETE_REQUEST = 3;
-        CONNECT_REQUEST = 4;
-        DISCONNECT_REQUEST = 5;
-        TREE_REQUEST = 6;
-        CONNECTIONS_LIST_REQUEST = 7;
+        REGISTER_DAEMON_REQUEST = 2;
+        CREATE_REQUEST = 3;
+        DELETE_REQUEST = 4;
+        CONNECT_REQUEST = 5;
+        DISCONNECT_REQUEST = 6;
+        TREE_REQUEST = 7;
+        CONNECTIONS_LIST_REQUEST = 8;
         ALIVE = 99;
     }
     required Type type = 1;
     optional string message_id = 2;
     optional InitRequest init_request = 3;
     optional ConfirmRequest confirm_request = 4;
-    optional CreateRequest create_request = 5;
-    optional DeleteRequest delete_request = 6;
-    optional ConnectRequest connect_request = 7;
-    optional DisconnectRequest disconnect_request = 8;
-    optional TreeRequest tree_request = 9;
-    optional ConnectionsListRequest connections_list_request = 10;
+    optional RegisterDaemonRequest register_daemon_request = 5;
+    optional CreateRequest create_request = 6;
+    optional DeleteRequest delete_request = 7;
+    optional ConnectRequest connect_request = 8;
+    optional DisconnectRequest disconnect_request = 9;
+    optional TreeRequest tree_request = 10;
 }
 
 message ServerMessage {
     enum Type {
         INIT_RESPONSE = 0;
         CONFIRM_RESPONSE = 1;
-        CREATE_RESPONSE = 2;
-        DELETE_RESPONSE = 3;
-        CONNECT_RESPONSE = 4;
-        DISCONNECT_RESPONSE = 5;
-        TREE_RESPONSE = 6;
-        CONNECTIONS_LIST_RESPONSE = 7;
+        REGISTER_DAEMON_RESPONSE = 2;
+        CREATE_RESPONSE = 3;
+        DELETE_RESPONSE = 4;
+        CONNECT_RESPONSE = 5;
+        DISCONNECT_RESPONSE = 6;
+        TREE_RESPONSE = 7;
+        CONNECTIONS_LIST = 8;
         ALIVE = 99;
     }
     required Type type = 1;
     optional string message_id = 2;
     optional InitResponse init_response = 3;
     optional ConfirmResponse confirm_response = 4;
-    optional CreateResponse create_response = 5;
-    optional DeleteResponse delete_response = 6;
-    optional ConnectResponse connect_response = 7;
-    optional DisconnectResponse disconnect_response = 8;
-    optional TreeResponse tree_response = 9;
-    optional ConnectionsListResponse connections_list_response = 10;
+    optional RegisterDaemonResponse register_daemon_response = 5;
+    optional CreateResponse create_response = 6;
+    optional DeleteResponse delete_response = 7;
+    optional ConnectResponse connect_response = 8;
+    optional DisconnectResponse disconnect_response = 9;
+    optional TreeResponse tree_response = 10;
+    optional ConnectionsList connections_list = 11;
 }
