@@ -60,23 +60,38 @@ class Install {
 
                 try {
                     fs.accessSync(configDir, fs.constants.F_OK);
-                    return error('Configuration directory already exists');
+                    return this.error('Configuration directory already exists');
                 } catch (error) {
                     // do nothing
                 }
 
                 debug('Creating config dir');
                 fs.mkdirSync(configDir, 0o750);
-                fs.symlinkSync(path.join(__dirname, '..', 'config', 'local.js'), path.join(configDir, 'config.js'));
                 fs.mkdirSync(path.join(configDir, 'id'), 0o750);
                 fs.mkdirSync(path.join(configDir, 'peers'), 0o755);
                 fs.mkdirSync(path.join(configDir, 'certs'), 0o755);
-                fs.mkdirSync('/var/run/bhid', 0o750);
-                fs.mkdirSync('/var/log/bhid', 0o750);
+                try {
+                    fs.mkdirSync('/var/run/bhid', 0o750);
+                } catch (error) {
+                    // do nothing
+                }
+                try {
+                    fs.mkdirSync('/var/log/bhid', 0o750);
+                } catch (error) {
+                    // do nothing
+                }
 
                 debug('Creating default config');
                 let config = fs.readFileSync(path.join(__dirname, '..', 'bhid.conf'), { encoding: 'utf8'});
                 fs.writeFileSync(path.join(configDir, 'bhid.conf'), config, { mode: 0o640 });
+                config = fs.readFileSync(path.join(__dirname, '..', 'config', 'local.js.example'), { encoding: 'utf8'});
+                fs.writeFileSync(path.join(configDir, 'config.js'), config, { mode: 0o640 });
+
+                try {
+                    fs.symlinkSync(path.join(configDir, 'config.js'), path.join(__dirname, '..', 'config', 'local.js'));
+                } catch (error) {
+                    // do nothing
+                }
 
                 try {
                     fs.accessSync('/etc/systemd/system', fs.constants.F_OK);
