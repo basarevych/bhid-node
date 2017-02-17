@@ -1,1 +1,0 @@
-/usr/local/etc/bhid/config.js
