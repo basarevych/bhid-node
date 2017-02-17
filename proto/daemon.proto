@@ -41,8 +41,8 @@ message OuterMessage {
         ALIVE = 99;
     }
     required Type type = 1;
-    optional ConnectRequest request = 2;
-    optional ConnectResponse response = 3;
+    optional ConnectRequest connect_request = 2;
+    optional ConnectResponse connect_response = 3;
     optional InnerMessage message = 5;
     optional EncryptedData encrypted_message = 6;
 }

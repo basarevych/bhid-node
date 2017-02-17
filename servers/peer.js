@@ -107,11 +107,31 @@ class Peer extends EventEmitter {
                         this.EncryptedData = this.proto.lookup('daemon.EncryptedData');
                         this.InnerMessage = this.proto.lookup('daemon.InnerMessage');
                         this.OuterMessage = this.proto.lookup('daemon.OuterMessage');
+
                         resolve();
                     } catch (error) {
                         reject(new WError(error, 'Peer.init()'));
                     }
                 })
+            })
+            .then(() => {
+                let configPath;
+                for (let candidate of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
+                    try {
+                        fs.accessSync(path.join(candidate, 'bhid.conf'), fs.constants.F_OK);
+                        configPath = candidate;
+                        break;
+                    } catch (error) {
+                        // do nothing
+                    }
+                }
+
+                if (!configPath)
+                    throw new Error('Could not read bhid.conf');
+
+                let publicKey = fs.readFileSync(path.join(configPath, 'id', 'public.rsa'), 'utf8');
+                let privateKey = fs.readFileSync(path.join(configPath, 'id', 'private.rsa'), 'utf8');
+                this._crypter.init(publicKey, privateKey);
             });
     }
 
