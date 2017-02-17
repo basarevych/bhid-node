@@ -130,4 +130,4 @@ class ConnectRequest {
     }
 }
 
-module.exports = Connection;
+module.exports = ConnectRequest;

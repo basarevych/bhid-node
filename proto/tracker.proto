@@ -29,6 +29,8 @@ message ConfirmResponse {
 
 message RegisterDaemonRequest {
     required string token = 1;
+    required string identity = 2;
+    required string public_key = 3;
 }
 
 message RegisterDaemonResponse {

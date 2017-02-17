@@ -15,11 +15,13 @@ class Connection {
      * @param {App} app                         The application
      * @param {object} config                   Configuration
      * @param {Logger} logger                   Logger service
+     * @param {Crypter} crypter                 Crypter service
      */
-    constructor(app, config, logger) {
+    constructor(app, config, logger, crypter) {
         this._app = app;
         this._config = config;
         this._logger = logger;
+        this._crypter = crypter;
     }
 
     /**
@@ -35,7 +37,7 @@ class Connection {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.crypter' ];
     }
 
     /**
@@ -74,6 +76,8 @@ class Connection {
 
             let request = this.tracker.RegisterDaemonRequest.create({
                 token: server.token,
+                identity: this._crypter.identity,
+                publicKey: this._crypter.publicKey.toString(),
             });
             let msg = this.tracker.ClientMessage.create({
                 type: this.tracker.ClientMessage.Type.REGISTER_DAEMON_REQUEST,
