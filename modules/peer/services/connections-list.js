@@ -93,7 +93,7 @@ class ConnectionsList {
                         this.list.set(tracker, conf);
                     }
                     let connection = {
-                        name: section.substr(tracker.length + 1, section.length - this.constructor.serverSection.length),
+                        name: section.substring(tracker.length + 1, section.length - this.constructor.serverSection.length),
                         connectAddress: bhidConfig[section]['connect_address'],
                         connectPort: bhidConfig[section]['connect_port'],
                         encrypted: bhidConfig[section]['encrypted'] == 'yes',
@@ -114,7 +114,7 @@ class ConnectionsList {
                             peers: connection.clients,
                         }
                     );
-                    openedConnections.add(section.substr(0, section.length - this.constructor.serverSection.length));
+                    openedConnections.add(section.substring(0, section.length - this.constructor.serverSection.length));
                 } else if (section.endsWith(this.constructor.clientSection)) {
                     let tracker = section.split('#')[0];
                     if (!tracker)
@@ -125,7 +125,7 @@ class ConnectionsList {
                         this.list.set(tracker, conf);
                     }
                     let connection = {
-                        name: section.substr(tracker.length + 1, section.length - this.constructor.clientSection.length),
+                        name: section.substring(tracker.length + 1, section.length - this.constructor.clientSection.length),
                         listenAddress: bhidConfig[section]['listen_address'],
                         listenPort: bhidConfig[section]['listen_port'],
                         encrypted: bhidConfig[section]['encrypted'] == 'yes',
@@ -144,7 +144,7 @@ class ConnectionsList {
                             peers: connection.server,
                         }
                     );
-                    openedConnections.add(section.substr(0, section.length - this.constructor.clientSection.length));
+                    openedConnections.add(section.substring(0, section.length - this.constructor.clientSection.length));
                 }
 
                 for (let connection of this._peer.connections.keys()) {
