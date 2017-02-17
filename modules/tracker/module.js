@@ -58,6 +58,7 @@ class Tracker {
 
         let registration = this._app.get('modules.tracker.events.registration');
         server.on('registration', registration.handle.bind(registration));
+        server.on('token', registration.handle.bind(registration));
 
         return Promise.resolve();
     }

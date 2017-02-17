@@ -264,6 +264,13 @@ class Tracker extends EventEmitter {
             }
 
             fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(bhidConfig));
+
+            if (oldToken) {
+                server.socket.end();
+                server.wrapper.detach();
+            } else {
+                this.emit('token', name);
+            }
         } catch (error) {
             server.token = oldToken;
             this._logger.error(new WError(error, 'Tracker.setToken()'));
