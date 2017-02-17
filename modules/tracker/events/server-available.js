@@ -44,14 +44,14 @@ class ServerAvailable {
      * @param {object} message                  The message
      */
     handle(name, message) {
-        let connectionName = name + '#' + message.serverAvailable.connectionName;
+        let connectionName = name + '#' + message.server.connectionName;
         debug(`Got SERVER AVAILABLE for ${connectionName}`);
 
         let connection = this.peer.connections.get(connectionName);
         if (!connection || connection.server)
             return;
 
-        this.peer.connect(connectionName, 'internal', message.serverAvailable.insternalAddress, message.serverAvailable.insternalPort);
+        this.peer.connect(connectionName, 'internal', message.server.internalAddress, message.server.internalPort);
     }
 
     /**

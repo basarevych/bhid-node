@@ -60,6 +60,9 @@ class Tracker {
         server.on('registration', registration.handle.bind(registration));
         server.on('token', registration.handle.bind(registration));
 
+        let serverAvailable = this._app.get('modules.tracker.events.serverAvailable');
+        server.on('server_available', serverAvailable.handle.bind(serverAvailable));
+
         return Promise.resolve();
     }
 }

@@ -102,11 +102,11 @@ class Peer extends EventEmitter {
 
                     try {
                         this.proto = root;
-                        this.ConnectRequest = this.proto.lookup('tracker.ConnectRequest');
-                        this.ConnectResponse = this.proto.lookup('tracker.ConnectResponse');
-                        this.EncryptedData = this.proto.lookup('tracker.EncryptedData');
-                        this.InnerMessage = this.proto.lookup('tracker.InnerMessage');
-                        this.OuterMessage = this.proto.lookup('tracker.OuterMessage');
+                        this.ConnectRequest = this.proto.lookup('daemon.ConnectRequest');
+                        this.ConnectResponse = this.proto.lookup('daemon.ConnectResponse');
+                        this.EncryptedData = this.proto.lookup('daemon.EncryptedData');
+                        this.InnerMessage = this.proto.lookup('daemon.InnerMessage');
+                        this.OuterMessage = this.proto.lookup('daemon.OuterMessage');
                         resolve();
                     } catch (error) {
                         reject(new WError(error, 'Peer.init()'));
@@ -353,8 +353,7 @@ class Peer extends EventEmitter {
                         );
                         connection[type].connected = true;
 
-                        this._logger.info(`Сonnected for ${name} to ${connection.socket.address().address}:${connection.socket.address().port}`);
-                        this.emit('connection', name, sessionId);
+                        this.emit('connection', name, connection.sessionId);
                     }
                 );
                 this._timeouts.set(
@@ -769,7 +768,7 @@ class Peer extends EventEmitter {
                 timestamp.send = 0;
                 this.onTimeout(timestamp.name, id);
             } else if (timestamp.send !== 0 && now >= timestamp.send) {
-                this._send(timestamp.name, id, null);
+                this.send(timestamp.name, id, null);
             }
         }
     }

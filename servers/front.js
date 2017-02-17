@@ -316,11 +316,11 @@ class Front extends EventEmitter {
      * @param {string} tunnelId                 Tunnel ID
      */
     close(name, tunnelId) {
-        debug(`Closing front for ${name}`);
         let connection = this.connections.get(name);
         if (!connection)
             return;
 
+        debug(`Closing front for ${name}`);
         if (connection.server) {
             for (let [ id, info ] of connection.targets) {
                 if (info.tunnelId === tunnelId) {
