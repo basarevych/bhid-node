@@ -83,7 +83,7 @@ class Load {
                                 if (message.connectionsListResponse.list.serverConnections.length ||
                                     message.connectionsListResponse.list.clientConnections.length)
                                 {
-                                    read({ prompt: '\nAccept this list? (yes/no): ', terminal: true }, (error, answer) => {
+                                    read({ prompt: '\nAccept this list? (yes/no): ' }, (error, answer) => {
                                         if (error)
                                             return this.error(error.message);
 

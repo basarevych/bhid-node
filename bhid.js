@@ -5,6 +5,7 @@
 const argv = require('minimist')(process.argv.slice(2));
 const path = require('path');
 const fs = require('fs');
+const execFile = require('child_process').execFile;
 const Runner = require(path.join(__dirname, 'node_modules', 'arpen', 'src', 'services', 'runner.js'));
 
 let pidPath = path.join('/var', 'run', 'bhid', 'bhid.pid');
@@ -26,19 +27,33 @@ function usage() {
     console.log('\trun\t\tRun the program');
 }
 
-function exec(command, params = []) {
+function execDaemon() {
     let runner = new Runner();
-    let proc = runner.spawn(command, params);
+    let proc = runner.spawn(path.join(__dirname, 'bin', 'daemon'), [ pidPath, 'daemon', 'tracker', 'peer', 'front' ]);
     proc.cmd.on('data', data => { process.stdout.write(data); });
     return proc.promise;
 }
 
-function execDaemon() {
-    return exec(path.join(__dirname, 'bin', 'daemon'), [ pidPath, 'daemon', 'tracker' ]);
-}
-
 function execCmd() {
-    return exec(path.join(__dirname, 'bin', 'cmd'), process.argv.slice(2));
+    return new Promise((resolve, reject) => {
+        try {
+            let proc = execFile(
+                path.join(__dirname, 'bin', 'cmd'),
+                process.argv.slice(2),
+                (error, stdout, stderr) => {
+                    resolve({
+                        code: error ? error.code : 0,
+                        stdout: stdout,
+                        stderr: stderr,
+                    });
+                }
+            );
+            proc.stdout.pipe(process.stdout);
+            process.stdin.pipe(proc.stdin);
+        } catch (error) {
+            reject(error);
+        }
+    });
 }
 
 if (!argv['_'].length) {
