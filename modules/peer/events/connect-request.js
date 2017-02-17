@@ -99,7 +99,7 @@ class ConnectRequest {
                         type: this.peer.OuterMessage.Type.BYE,
                     });
                     buffer = this.peer.OuterMessage.encode(reply).finish();
-                    this._send(name, sessionId, buffer, true);
+                    this.peer.send(name, sessionId, buffer, true);
                 }
             })
             .catch(error => {

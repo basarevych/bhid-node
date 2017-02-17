@@ -145,8 +145,28 @@ class Crypter {
 
                 return new Promise((resolve, reject) => {
                     try {
-                        this._tracker.lookupIdentity(tracker, identity, resolve);
-                        setTimeout(() => { resolve(false); }, this.constructor.lookupTimeout);
+                        let requestId = this._tracker.sendLookupIdentityRequest(tracker, identity);
+                        if (!requestId)
+                            return resolve(false);
+
+                        let onResponse = (name, message) => {
+                            if (message.messageId == requestId) {
+                                this._tracker.removeListener('lookup_identity_response', onResponse);
+
+                                if (message.lookupIdentityResponse.response != this._tracker.LookupIdentityResponse.Result.FOUND)
+                                    return resolve(false);
+
+                                resolve({
+                                    name: message.lookupIdentityResponse.name,
+                                    key: new NodeRSA(message.lookupIdentityResponse.key),
+                                });
+                            }
+                        };
+                        this._tracker.on('lookup_identity_response', onResponse);
+                        setTimeout(() => {
+                            this._tracker.removeListener('lookup_identity_response', onResponse);
+                            resolve(false);
+                        }, this.constructor.lookupTimeout);
                     } catch (error) {
                         reject(new new WError(error, 'Crypter.verify()'));
                     }
@@ -160,10 +180,10 @@ class Crypter {
                 if (!connection)
                     return { verified: false };
                 if (connection.server) {
-                    if (connection.fixed && !connection.peers.has(peer.name))
+                    if (connection.fixed && connection.peers.indexOf(peer.name) == -1)
                         return { verified: false };
                 } else {
-                    if (!connection.peers.has(peer.name))
+                    if (connection.peers.indexOf(peer.name) == -1)
                         return { verified: false };
                 }
 
@@ -243,6 +263,17 @@ class Crypter {
             return this._tracker_instance;
         this._tracker_instance = this._app.get('servers').get('tracker');
         return this._tracker_instance;
+    }
+
+    /**
+     * Retrieve peer server
+     * @return {Peer}
+     */
+    get _peer() {
+        if (this._peer_instance)
+            return this._peer_instance;
+        this._peer_instance = this._app.get('servers').get('peer');
+        return this._peer_instance;
     }
 
     /**

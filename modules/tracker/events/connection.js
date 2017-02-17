@@ -77,7 +77,7 @@ class Connection {
             let request = this.tracker.RegisterDaemonRequest.create({
                 token: server.token,
                 identity: this._crypter.identity,
-                publicKey: this._crypter.publicKey.toString(),
+                key: this.peer.publicKey,
             });
             let msg = this.tracker.ClientMessage.create({
                 type: this.tracker.ClientMessage.Type.REGISTER_DAEMON_REQUEST,

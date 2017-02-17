@@ -3,8 +3,8 @@ package daemon;
 
 message ConnectRequest {
     required string identity = 1;
-    required string public_key = 2;
-    required string signature = 3;
+    required bytes public_key = 2;
+    required bytes signature = 3;
     required bool encrypted = 4;
 }
 

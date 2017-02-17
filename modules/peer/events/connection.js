@@ -57,7 +57,7 @@ class Connection {
         try {
             let request = this.peer.ConnectRequest.create({
                 identity: this._crypter.identity,
-                publicKey: session.publicKey.toString(),
+                publicKey: session.publicKey,
                 signature: this._crypter.sign(session.publicKey),
                 encrypted: connection.encrypted,
             });

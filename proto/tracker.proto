@@ -30,7 +30,7 @@ message ConfirmResponse {
 message RegisterDaemonRequest {
     required string token = 1;
     required string identity = 2;
-    required string public_key = 3;
+    required string key = 3;
 }
 
 message RegisterDaemonResponse {
@@ -194,6 +194,20 @@ message ServerAvailable {
     required string internal_port = 3;
 }
 
+message LookupIdentityRequest {
+    required string identity = 1;
+}
+
+message LookupIdentityResponse {
+    enum Result {
+        FOUND = 0;
+        NOT_FOUND = 1;
+    }
+    required Result response = 1;
+    optional string name = 2;
+    optional string key = 3;
+}
+
 message ClientMessage {
     enum Type {
         INIT_REQUEST = 0;
@@ -206,6 +220,7 @@ message ClientMessage {
         TREE_REQUEST = 7;
         CONNECTIONS_LIST_REQUEST = 8;
         STATUS = 9;
+        LOOKUP_IDENTITY_REQUEST = 10;
         ALIVE = 99;
     }
     required Type type = 1;
@@ -220,6 +235,7 @@ message ClientMessage {
     optional TreeRequest tree_request = 10;
     optional ConnectionsListRequest connections_list_request = 11;
     optional Status status = 12;
+    optional LookupIdentityRequest lookup_identity_request = 13;
 }
 
 message ServerMessage {
@@ -235,6 +251,7 @@ message ServerMessage {
         CONNECTIONS_LIST_RESPONSE = 8;
         CONNECTIONS_LIST = 9;
         SERVER_AVAILABLE = 10;
+        LOOKUP_IDENTITY_RESPONSE = 11;
         ALIVE = 99;
     }
     required Type type = 1;
@@ -250,4 +267,5 @@ message ServerMessage {
     optional ConnectionsListResponse connections_list_response = 11;
     optional ConnectionsList connections_list = 12;
     optional ServerAvailable server = 13;
+    optional LookupIdentityResponse lookupIdentityResponse = 14;
 }

@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const ini = require('ini');
 const tls = require('tls');
+const uuid = require('uuid');
 const protobuf = require('protobufjs');
 const EventEmitter = require('events');
 const WError = require('verror').WError;
@@ -122,6 +123,8 @@ class Tracker extends EventEmitter {
                         this.ConnectionsListResponse = this.proto.lookup('tracker.ConnectionsListResponse');
                         this.Status = this.proto.lookup('tracker.Status');
                         this.ServerAvailable = this.proto.lookup('tracker.ServerAvailable');
+                        this.LookupIdentityRequest = this.proto.lookup('tracker.LookupIdentityRequest');
+                        this.LookupIdentityResponse = this.proto.lookup('tracker.LookupIdentityResponse');
                         this.ClientMessage = this.proto.lookup('tracker.ClientMessage');
                         this.ServerMessage = this.proto.lookup('tracker.ServerMessage');
                         resolve();
@@ -312,6 +315,37 @@ class Tracker extends EventEmitter {
     }
 
     /**
+     * Send lookup identity request message
+     * @param {string} trackerName          Tracker name
+     * @param {string} identity             Identity
+     */
+    sendLookupIdentityRequest(trackerName, identity) {
+        let server = this.servers.get(trackerName);
+        if (!server || !server.registered)
+            return null;
+
+        try {
+            debug(`Sending LOOKUP IDENTITY to ${trackerName}`);
+            let id = uuid.v1();
+            let request = this.LookupIdentityRequest.create({
+                identity: identity,
+            });
+            let message = this.ClientMessage.create({
+                type: this.ClientMessage.Type.LOOKUP_IDENTITY_REQUEST,
+                messageId: id,
+                lookupIdentityRequest: request,
+            });
+            let buffer = this.ClientMessage.encode(message).finish();
+            this.send(trackerName, buffer);
+            return id;
+        } catch (error) {
+            this._logger.error(new WError(error, `Tracker.sendLookupIdentityRequest()`));
+        }
+
+        return null;
+    }
+
+    /**
      * Send message
      * @param {string} name                 Tracker name
      * @param {Buffer|null} data            Data to send
@@ -388,6 +422,9 @@ class Tracker extends EventEmitter {
                     break;
                 case this.ServerMessage.Type.SERVER_AVAILABLE:
                     this.emit('server_available', name, message);
+                    break;
+                case this.ServerMessage.Type.LOOKUP_IDENTITY_RESPONSE:
+                    this.emit('lookup_identity_response', name, message);
                     break;
             }
         } catch (error) {

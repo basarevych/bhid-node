@@ -129,9 +129,9 @@ class Peer extends EventEmitter {
                 if (!configPath)
                     throw new Error('Could not read bhid.conf');
 
-                let publicKey = fs.readFileSync(path.join(configPath, 'id', 'public.rsa'), 'utf8');
-                let privateKey = fs.readFileSync(path.join(configPath, 'id', 'private.rsa'), 'utf8');
-                this._crypter.init(publicKey, privateKey);
+                this.publicKey = fs.readFileSync(path.join(configPath, 'id', 'public.rsa'), 'utf8');
+                this.privateKey = fs.readFileSync(path.join(configPath, 'id', 'private.rsa'), 'utf8');
+                this._crypter.init(this.publicKey, this.privateKey);
             });
     }
 
@@ -613,16 +613,16 @@ class Peer extends EventEmitter {
                 if (!info.verified || !info.accepted) {
                     switch (message.type) {
                         case this.OuterMessage.Type.CONNECT_REQUEST:
-                            this.emit('connect_request', name, session, message);
+                            this.emit('connect_request', name, sessionId, message);
                             break;
                         case this.OuterMessage.Type.CONNECT_RESPONSE:
-                            this.emit('connect_response', name, session, message);
+                            this.emit('connect_response', name, sessionId, message);
                             break;
                     }
                 } else {
                     switch (message.type) {
                         case this.OuterMessage.Type.DATA:
-                            this.emit('data', name, session, message);
+                            this.emit('data', name, sessionId, message);
                             break;
                     }
                 }
