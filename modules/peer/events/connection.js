@@ -57,15 +57,16 @@ class Connection {
         try {
             let request = this.peer.ConnectRequest.create({
                 identity: this._crypter.identity,
-                publicKey: session.publicKey,
+                publicKey: session.publicKey.toString(),
                 signature: this._crypter.sign(session.publicKey),
                 encrypted: connection.encrypted,
             });
-            let msg = this.peer.ClientMessage.create({
+            let msg = this.peer.OuterMessage.create({
                 type: this.peer.OuterMessage.Type.CONNECT_REQUEST,
                 connectRequest: request,
             });
-            let data = this.peer.ClientMessage.encode(msg).finish();
+            let data = this.peer.OuterMessage.encode(msg).finish();
+            debug(`Sending CONNECT REQUEST`);
             this.peer.send(name, sessionId, data);
         } catch (error) {
             this._logger.error(new WError(error, 'Connection.handle()'));
