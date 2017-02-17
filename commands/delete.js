@@ -122,18 +122,27 @@ class Delete {
     send(request) {
         return new Promise((resolve, reject) => {
             let sock = path.join('/var', 'run', this._config.project, this._config.instance + '.sock');
-            let socket = net.connect(sock, () => {
-                debug('Connected to daemon');
-                wrapper.send(request);
-            });
-            let wrapper = new SocketWrapper(socket);
-            wrapper.on('receive', data => {
-                debug('Got daemon reply');
-                socket.end();
-                resolve(data);
-            });
-            socket.on('error', error => { this.error(error); });
-            socket.on('close', () => { reject(new Error('Socket terminated')); });
+            let attempts = 0;
+            let connect = () => {
+                if (++attempts > 10)
+                    return reject(new Error('Could not connect to daemon'));
+
+                let socket = net.connect(sock, () => {
+                    debug('Connected to daemon');
+                    socket.on('error', error => { this.error(error); });
+                    socket.on('close', () => { reject(new Error('Socket terminated')); });
+
+                    let wrapper = new SocketWrapper(socket);
+                    wrapper.on('receive', data => {
+                        debug('Got daemon reply');
+                        socket.end();
+                        resolve(data);
+                    });
+                    wrapper.send(request);
+                });
+                socket.once('close', () => { setTimeout(() => { connect(); }, 500); });
+            };
+            connect();
         });
     }
 

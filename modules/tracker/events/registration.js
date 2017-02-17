@@ -53,28 +53,32 @@ class Registration {
             if (tracker != name)
                 continue;
 
-            for (let connection of connections.serverConnections.concat(connections.clientConnections)) {
+            for (let connection of connections.serverConnections) {
                 let info = this.peer.connections.get(tracker + '#' + connection.name);
-                if (!info || !info.utp)
+                if (!info)
+                    continue;
+                let address = info.utp.getUdpSocket().address();
+                if (!address)
                     continue;
 
-                try {
-                    debug(`Sending STATUS of ${connection.name} to ${tracker}`);
-                    let status = this.tracker.Status.create({
-                        connectionName: connection.name,
-                        connected: connection.connected,
-                        internalAddress: info.utp.getUdpSocket().address().address,
-                        internalPort: info.utp.getUdpSocket().address().port.toString(),
-                    });
-                    let message = this.tracker.ClientMessage.create({
-                        type: this.tracker.ClientMessage.Type.STATUS,
-                        status: status,
-                    });
-                    let buffer = this.tracker.ClientMessage.encode(message).finish();
-                    this.tracker.send(tracker, buffer);
-                } catch (error) {
-                    this._logger.error(new WError(error, `Registration.handle()`));
-                }
+                this.tracker.sendStatus(
+                    tracker,
+                    connection.name,
+                    connection.connected,
+                    address.address,
+                    address.port
+                );
+            }
+            for (let connection of connections.clientConnections) {
+                let info = this.peer.connections.get(tracker + '#' + connection.name);
+                if (!info)
+                    continue;
+
+                this.tracker.sendStatus(
+                    tracker,
+                    connection.name,
+                    connection.connected
+                );
             }
         }
     }

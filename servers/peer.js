@@ -186,6 +186,13 @@ class Peer extends EventEmitter {
                 })
                 .then(() => {
                     debug(`Network server for ${name} started`);
+                    this._tracker.sendStatus(
+                        tracker,
+                        name.split('#')[0],
+                        0,
+                        connection.utp.getUdpSocket().address().address,
+                        connection.utp.getUdpSocket().address().port
+                    );
                 })
                 .catch(error => {
                     this.connections.delete(name);
@@ -245,6 +252,7 @@ class Peer extends EventEmitter {
             },
         };
         this.connections.set(name, connection);
+        this._tracker.sendStatus(tracker, name.split('#')[0], 0);
     }
 
     /**
@@ -764,6 +772,17 @@ class Peer extends EventEmitter {
                 this._send(timestamp.name, id, null);
             }
         }
+    }
+
+    /**
+     * Retrieve tracker server
+     * @return {Tracker}
+     */
+    get _tracker() {
+        if (this._tracker_instance)
+            return this._tracker_instance;
+        this._tracker_instance = this._app.get('servers').get('tracker');
+        return this._tracker_instance;
     }
 
     /**

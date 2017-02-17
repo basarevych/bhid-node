@@ -280,6 +280,38 @@ class Tracker extends EventEmitter {
     }
 
     /**
+     * Send status message
+     * @param {string} trackerName          Tracker name
+     * @param {string} connectionName       Connection name
+     * @param {number} connected            Number of peers
+     * @param {string} [internalAddress]    Internal address
+     * @param {string} [internalPort]       Internal port
+     */
+    sendStatus(trackerName, connectionName, connected, internalAddress, internalPort) {
+        let server = this.servers.get(trackerName);
+        if (!server || !server.registered)
+            return;
+
+        try {
+            debug(`Sending STATUS of ${connectionName} to ${trackerName}`);
+            let status = this.Status.create({
+                connectionName: connectionName,
+                connected: connected,
+                internalAddress: internalAddress ? internalAddress.toString() : undefined,
+                internalPort: internalPort ? internalPort.toString() : undefined,
+            });
+            let message = this.ClientMessage.create({
+                type: this.ClientMessage.Type.STATUS,
+                status: status,
+            });
+            let buffer = this.ClientMessage.encode(message).finish();
+            this.send(trackerName, buffer);
+        } catch (error) {
+            this._logger.error(new WError(error, `Tracker.sendStatus()`));
+        }
+    }
+
+    /**
      * Send message
      * @param {string} name                 Tracker name
      * @param {Buffer|null} data            Data to send
