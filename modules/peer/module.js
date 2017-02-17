@@ -51,10 +51,7 @@ class Peer {
         if (this._config.get(`servers.${name}.class`) != 'servers.peer')
             return Promise.resolve();
 
-        let tracker = this._app.get('servers').get('tracker');
-
-        let registration = this._app.get('modules.peer.events.registration');
-        tracker.on('registration', registration.handle.bind(registration));
+        let server = this._app.get('servers').get('tracker');
 
         return Promise.resolve();
     }

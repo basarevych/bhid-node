@@ -1,6 +1,6 @@
 /**
  * Registration event
- * @module peer/events/registration
+ * @module tracker/events/registration
  */
 const debug = require('debug')('bhid:peer');
 const uuid = require('uuid');
@@ -23,11 +23,11 @@ class Registration {
     }
 
     /**
-     * Service name is 'modules.peer.events.registration'
+     * Service name is 'modules.tracker.events.registration'
      * @type {string}
      */
     static get provides() {
-        return 'modules.peer.events.registration';
+        return 'modules.tracker.events.registration';
     }
 
     /**
