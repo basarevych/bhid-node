@@ -125,20 +125,26 @@ class Connect {
                 if (++attempts > 10)
                     return reject(new Error('Could not connect to daemon'));
 
+                let connected = false;
                 let socket = net.connect(sock, () => {
                     debug('Connected to daemon');
-                    socket.on('error', error => { this.error(error); });
-                    socket.on('close', () => { reject(new Error('Socket terminated')); });
+                    connected = true;
+                    socket.once('error', error => { this.error(error.message) });
 
                     let wrapper = new SocketWrapper(socket);
                     wrapper.on('receive', data => {
                         debug('Got daemon reply');
-                        socket.end();
                         resolve(data);
+                        socket.end();
                     });
                     wrapper.send(request);
                 });
-                socket.once('close', () => { setTimeout(() => { connect(); }, 500); });
+                socket.once('close', () => {
+                    if (connected)
+                        reject(new Error('Socket terminated'));
+                    else
+                        setTimeout(() => { connect(); }, 500);
+                });
             };
             connect();
         });
