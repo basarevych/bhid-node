@@ -345,6 +345,8 @@ class Peer extends EventEmitter {
                             }
                         );
                         connection[type].connected = true;
+
+                        this._logger.info(`Сonnected for ${name} to ${connection.socket.address().address}:${connection.socket.address().port}`);
                         this.emit('connection', name, sessionId);
                     }
                 );

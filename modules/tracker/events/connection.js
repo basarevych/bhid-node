@@ -2,7 +2,7 @@
  * Connection event
  * @module tracker/events/connection
  */
-const debug = require('debug')('bhid:daemon');
+const debug = require('debug')('bhid:tracker');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 

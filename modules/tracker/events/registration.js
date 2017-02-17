@@ -2,7 +2,7 @@
  * Registration event
  * @module tracker/events/registration
  */
-const debug = require('debug')('bhid:peer');
+const debug = require('debug')('bhid:tracker');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
