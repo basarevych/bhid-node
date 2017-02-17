@@ -24,7 +24,7 @@ function usage() {
     console.log('\tdisconnect\tDisconnect the daemon from given path');
     console.log('\ttree\t\tPrint user tree');
     console.log('\tload\t\tLoad current connection configuration from tracker');
-    console.log('\trun\t\tRun the program');
+    console.log('\trun\t\tRun the daemon');
 }
 
 function execDaemon() {
@@ -94,11 +94,6 @@ switch (argv['_'][0]) {
                 console.log('\tThis command will register the program in the system');
                 console.log('\tand will create configuration in /etc/bhid by default');
                 break;
-            case 'run':
-                console.log('Usage: bhid run\n');
-                console.log('\tThis command will start the daemon');
-                console.log('\tYou might want to run "systemctl bhid start" instead');
-                break;
             case 'init':
                 console.log('Usage: bhid init <email> <daemon-name> [-t <tracker>]\n');
                 console.log('\tInitialize your and daemon accounts on the tracker');
@@ -138,6 +133,11 @@ switch (argv['_'][0]) {
             case 'load':
                 console.log('Usage: bhid load [-t <tracker>]\n');
                 console.log('\tLoad and save locally connection configuration');
+                break;
+            case 'run':
+                console.log('Usage: bhid run\n');
+                console.log('\tThis command will start the daemon');
+                console.log('\tYou might want to run "systemctl bhid start" instead');
                 break;
             default:
                 console.log('Usage: bhid help <command>');
