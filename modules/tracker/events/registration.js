@@ -53,7 +53,7 @@ class Registration {
             if (tracker != name)
                 continue;
 
-            for (let connection of connections.serverConnections) {
+            for (let [ connectionName, connection ] of connections.serverConnections) {
                 let info = this.peer.connections.get(tracker + '#' + connection.name);
                 if (!info)
                     continue;
@@ -69,7 +69,7 @@ class Registration {
                     address.port
                 );
             }
-            for (let connection of connections.clientConnections) {
+            for (let [ connectionName, connection ] of connections.clientConnections) {
                 let info = this.peer.connections.get(tracker + '#' + connection.name);
                 if (!info)
                     continue;

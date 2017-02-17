@@ -208,6 +208,25 @@ message LookupIdentityResponse {
     optional string key = 3;
 }
 
+message PunchRequest {
+    required string connection_name = 1;
+}
+
+message AddressRequest {
+    required string connection_name = 1;
+    required string request_id = 2;
+}
+
+message AddressResponse {
+    required string request_id = 1;
+}
+
+message PeerAvailable {
+    required string connection_name = 1;
+    required string external_address = 2;
+    required string external_port = 3;
+}
+
 message ClientMessage {
     enum Type {
         INIT_REQUEST = 0;
@@ -221,6 +240,8 @@ message ClientMessage {
         CONNECTIONS_LIST_REQUEST = 8;
         STATUS = 9;
         LOOKUP_IDENTITY_REQUEST = 10;
+        PUNCH_REQUEST = 11;
+        ADDRESS_RESPONSE = 12;
         ALIVE = 99;
     }
     required Type type = 1;
@@ -236,6 +257,8 @@ message ClientMessage {
     optional ConnectionsListRequest connections_list_request = 11;
     optional Status status = 12;
     optional LookupIdentityRequest lookup_identity_request = 13;
+    optional PunchRequest punch_request = 14;
+    optional AddressResponse address_response = 15;
 }
 
 message ServerMessage {
@@ -252,6 +275,8 @@ message ServerMessage {
         CONNECTIONS_LIST = 9;
         SERVER_AVAILABLE = 10;
         LOOKUP_IDENTITY_RESPONSE = 11;
+        ADDRESS_REQUEST = 12;
+        PEER_AVAILABLE = 13;
         ALIVE = 99;
     }
     required Type type = 1;
@@ -266,6 +291,8 @@ message ServerMessage {
     optional TreeResponse tree_response = 10;
     optional ConnectionsListResponse connections_list_response = 11;
     optional ConnectionsList connections_list = 12;
-    optional ServerAvailable server = 13;
+    optional ServerAvailable server_available = 13;
     optional LookupIdentityResponse lookupIdentityResponse = 14;
+    optional AddressRequest address_request = 15;
+    optional PeerAvailable peer_available = 16;
 }

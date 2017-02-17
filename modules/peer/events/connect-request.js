@@ -12,16 +12,18 @@ const WError = require('verror').WError;
 class ConnectRequest {
     /**
      * Create service
-     * @param {App} app                         The application
-     * @param {object} config                   Configuration
-     * @param {Logger} logger                   Logger service
-     * @param {Crypter} crypter                 Crypter service
+     * @param {App} app                             The application
+     * @param {object} config                       Configuration
+     * @param {Logger} logger                       Logger service
+     * @param {Crypter} crypter                     Crypter service
+     * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger, crypter) {
+    constructor(app, config, logger, crypter, connectionsList) {
         this._app = app;
         this._config = config;
         this._logger = logger;
         this._crypter = crypter;
+        this._connectionsList = connectionsList;
     }
 
     /**
@@ -37,7 +39,7 @@ class ConnectRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.crypter' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.crypter', 'modules.peer.connectionsList' ];
     }
 
     /**
@@ -107,6 +109,26 @@ class ConnectRequest {
                         this.front.openServer(name, sessionId, connection.connectAddress, connection.connectPort);
                     else
                         this.front.openClient(name, sessionId, connection.listenAddress, connection.listenPort);
+
+                    let connectionName = connection.name.split('#')[1];
+                    let trackedConnections = this._connectionsList.list.get(connection.tracker);
+                    if (trackedConnections) {
+                        let connected;
+                        let serverInfo = trackedConnections.serverConnections.get(connectionName);
+                        let clientInfo = trackedConnections.clientConnections.get(connectionName);
+                        if (serverInfo)
+                            connected = ++serverInfo.connected;
+                        else if (clientInfo)
+                            connected = ++clientInfo.connected;
+
+                        if (connected) {
+                            this.tracker.sendStatus(
+                                connection.tracker,
+                                connectionName,
+                                connected
+                            );
+                        }
+                    }
                 }
             })
             .catch(error => {

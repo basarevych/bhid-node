@@ -125,6 +125,10 @@ class Tracker extends EventEmitter {
                         this.ServerAvailable = this.proto.lookup('tracker.ServerAvailable');
                         this.LookupIdentityRequest = this.proto.lookup('tracker.LookupIdentityRequest');
                         this.LookupIdentityResponse = this.proto.lookup('tracker.LookupIdentityResponse');
+                        this.PunchRequest = this.proto.lookup('tracker.PunchRequest');
+                        this.AddressRequest = this.proto.lookup('tracker.AddressRequest');
+                        this.AddressResponse = this.proto.lookup('tracker.AddressResponse');
+                        this.PeerAvailable = this.proto.lookup('tracker.PeerAvailable');
                         this.ClientMessage = this.proto.lookup('tracker.ClientMessage');
                         this.ServerMessage = this.proto.lookup('tracker.ServerMessage');
                         resolve();
@@ -283,6 +287,33 @@ class Tracker extends EventEmitter {
     }
 
     /**
+     * Send message
+     * @param {string} name                 Tracker name
+     * @param {Buffer|null} data            Data to send
+     */
+    send(name, data) {
+        if (!name)
+            name = this.default;
+        let server = this.servers.get(name);
+        if (!server || !server.socket || !server.wrapper)
+            return;
+
+        if (!data) {
+            try {
+                let message = this.ClientMessage.create({
+                    type: this.ClientMessage.Type.ALIVE,
+                });
+                data = this.ClientMessage.encode(message).finish();
+            } catch (error) {
+                this._logger.error(new WError(error, `Tracker.send()`));
+                return;
+            }
+        }
+
+        server.wrapper.send(data);
+    }
+
+    /**
      * Send status message
      * @param {string} trackerName          Tracker name
      * @param {string} connectionName       Connection name
@@ -346,30 +377,29 @@ class Tracker extends EventEmitter {
     }
 
     /**
-     * Send message
-     * @param {string} name                 Tracker name
-     * @param {Buffer|null} data            Data to send
+     * Send punch request message
+     * @param {string} trackerName          Tracker name
+     * @param {string} connectionName       Connection name
      */
-    send(name, data) {
-        if (!name)
-            name = this.default;
-        let server = this.servers.get(name);
-        if (!server || !server.socket || !server.wrapper)
+    sendPunchRequest(trackerName, connectionName) {
+        let server = this.servers.get(trackerName);
+        if (!server || !server.registered)
             return;
 
-        if (!data) {
-            try {
-                let message = this.ClientMessage.create({
-                    type: this.ClientMessage.Type.ALIVE,
-                });
-                data = this.ClientMessage.encode(message).finish();
-            } catch (error) {
-                this._logger.error(new WError(error, `Tracker.send()`));
-                return;
-            }
+        try {
+            debug(`Sending PUNCH REQUEST of ${connectionName} to ${trackerName}`);
+            let request = this.PunchRequest.create({
+                connectionName: connectionName,
+            });
+            let message = this.ClientMessage.create({
+                type: this.ClientMessage.Type.PUNCH_REQUEST,
+                punchRequest: request,
+            });
+            let buffer = this.ClientMessage.encode(message).finish();
+            this.send(trackerName, buffer);
+        } catch (error) {
+            this._logger.error(new WError(error, `Tracker.sendPunchRequest()`));
         }
-
-        server.wrapper.send(data);
     }
 
     /**
@@ -425,6 +455,12 @@ class Tracker extends EventEmitter {
                     break;
                 case this.ServerMessage.Type.LOOKUP_IDENTITY_RESPONSE:
                     this.emit('lookup_identity_response', name, message);
+                    break;
+                case this.ServerMessage.Type.ADDRESS_REQUEST:
+                    this.emit('address_request', name, message);
+                    break;
+                case this.ServerMessage.Type.PEER_AVAILABLE:
+                    this.emit('peer_available', name, message);
                     break;
             }
         } catch (error) {

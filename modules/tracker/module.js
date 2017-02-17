@@ -63,6 +63,12 @@ class Tracker {
         let serverAvailable = this._app.get('modules.tracker.events.serverAvailable');
         server.on('server_available', serverAvailable.handle.bind(serverAvailable));
 
+        let addressRequest = this._app.get('modules.tracker.events.addressRequest');
+        server.on('address_request', addressRequest.handle.bind(addressRequest));
+
+        let peerAvailable = this._app.get('modules.tracker.events.peerAvailable');
+        server.on('peer_available', peerAvailable.handle.bind(peerAvailable));
+
         return Promise.resolve();
     }
 }

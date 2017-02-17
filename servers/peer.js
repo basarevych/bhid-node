@@ -636,7 +636,6 @@ class Peer extends EventEmitter {
                 killed = true;
             }
 
-            console.log(error.stack);
             if (!killed)
                 this._logger.error(`Peer ${name} protocol error: ${error.message}`);
         }
@@ -713,14 +712,15 @@ class Peer extends EventEmitter {
             connection.external.rejected = false;
             connection.external.verified = false;
 
+            let parts = connection.name.split('#');
             if (reconnect === 'external') {
-//                this.app.tracker.sendPunchRequest(connection.tracker, connection.name);
+                this._tracker.sendPunchRequest(parts[0], parts[1]);
             } else if (reconnect === 'internal') {
-                this.connect(name, 'internal', connection.internal.address, connection.internal.port);
+                this.connect(connection.name, 'internal', connection.internal.address, connection.internal.port);
             } else {
                 this._logger.info(`Connection to ${name} failed`);
                 setTimeout(() => {
-//                    this.app.tracker.sendStatus(connection.tracker, name, 0);
+                    this._tracker.sendStatus(parts[0], parts[1], 0);
                 }, 1000);
             }
         }

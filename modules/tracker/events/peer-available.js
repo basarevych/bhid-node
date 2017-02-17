@@ -1,15 +1,15 @@
 /**
- * Server Available event
- * @module tracker/events/server-available
+ * Peer Available event
+ * @module tracker/events/peer-available
  */
 const debug = require('debug')('bhid:tracker');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Server Available event class
+ * Peer Available event class
  */
-class ServerAvailable {
+class PeerAvailable {
     /**
      * Create service
      * @param {App} app                         The application
@@ -23,11 +23,11 @@ class ServerAvailable {
     }
 
     /**
-     * Service name is 'modules.tracker.events.serverAvailable'
+     * Service name is 'modules.tracker.events.peerAvailable'
      * @type {string}
      */
     static get provides() {
-        return 'modules.tracker.events.serverAvailable';
+        return 'modules.tracker.events.peerAvailable';
     }
 
     /**
@@ -44,19 +44,28 @@ class ServerAvailable {
      * @param {object} message                  The message
      */
     handle(name, message) {
-        let connectionName = name + '#' + message.serverAvailable.connectionName;
-        debug(`Got SERVER AVAILABLE for ${connectionName}`);
+        let connectionName = name + '#' + message.peerAvailable.connectionName;
+        debug(`Got PEER AVAILABLE for ${connectionName}`);
 
         let connection = this.peer.connections.get(connectionName);
-        if (!connection || connection.server)
+        if (!connection)
             return;
 
-        this.peer.connect(
-            connectionName,
-            'internal',
-            message.serverAvailable.internalAddress,
-            message.serverAvailable.internalPort
-        );
+        if (connection.server) {
+            debug(`Punching ${name}: ${message.peerAvailable.externalAddress}:${message.peerAvailable.externalPort}`);
+            connection.utp.punch(
+                this.peer.constructor.punchingAttempts,
+                message.peerAvailable.externalPort,
+                message.peerAvailable.externalAddress
+            );
+        } else {
+            this.peer.connect(
+                connectionName,
+                'external',
+                message.peerAvailable.externalAddress,
+                message.peerAvailable.externalPort
+            );
+        }
     }
 
     /**
@@ -82,4 +91,4 @@ class ServerAvailable {
     }
 }
 
-module.exports = ServerAvailable;
+module.exports = PeerAvailable;

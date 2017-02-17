@@ -89,7 +89,7 @@ class ConnectionsList {
                         continue;
                     let conf = this.list.get(tracker);
                     if (!conf) {
-                        conf = { serverConnections: [], clientConnections: [] };
+                        conf = { serverConnections: new Map(), clientConnections: new Map() };
                         this.list.set(tracker, conf);
                     }
                     let connection = {
@@ -101,7 +101,7 @@ class ConnectionsList {
                         clients: bhidConfig[section]['clients'],
                         connected: 0,
                     };
-                    conf.serverConnections.push(connection);
+                    conf.serverConnections.set(connection.name, connection);
 
                     this._peer.openServer(
                         tracker,
@@ -121,7 +121,7 @@ class ConnectionsList {
                         continue;
                     let conf = this.list.get(tracker);
                     if (!conf) {
-                        conf = { serverConnections: [], clientConnections: [] };
+                        conf = { serverConnections: new Map(), clientConnections: new Map() };
                         this.list.set(tracker, conf);
                     }
                     let connection = {
@@ -132,7 +132,7 @@ class ConnectionsList {
                         server: bhidConfig[section]['server'],
                         connected: 0,
                     };
-                    conf.clientConnections.push(connection);
+                    conf.clientConnections.set(connection.name, connection);
 
                     this._peer.openClient(
                         tracker,
@@ -163,6 +163,7 @@ class ConnectionsList {
      * @param {object} list                 Connections list
      */
     set(trackerName, list) {
+        let conf = { serverConnections: new Map(), clientConnections: new Map() };
         try {
             let configPath;
             for (let candidate of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
@@ -212,6 +213,9 @@ class ConnectionsList {
                     }
                 );
                 openedConnections.add(trackerName + '#' + connection.name);
+
+                connection.connected = 0;
+                conf.serverConnections.set(connection.name, connection);
             }
             for (let connection of list.clientConnections) {
                 connection.connected = 0;
@@ -234,6 +238,9 @@ class ConnectionsList {
                     }
                 );
                 openedConnections.add(trackerName + '#' + connection.name);
+
+                connection.connected = 0;
+                conf.clientConnections.set(connection.name, connection);
             }
 
             fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(output));
@@ -247,7 +254,7 @@ class ConnectionsList {
             return false;
         }
 
-        this.list.set(trackerName, list);
+        this.list.set(trackerName, conf);
         return true;
     }
 
