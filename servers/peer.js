@@ -613,16 +613,16 @@ class Peer extends EventEmitter {
                 if (!info.verified || !info.accepted) {
                     switch (message.type) {
                         case this.OuterMessage.Type.CONNECT_REQUEST:
-                            this.emit('connect_request', session, message);
+                            this.emit('connect_request', name, session, message);
                             break;
                         case this.OuterMessage.Type.CONNECT_RESPONSE:
-                            this.emit('connect_response', session, message);
+                            this.emit('connect_response', name, session, message);
                             break;
                     }
                 } else {
                     switch (message.type) {
                         case this.OuterMessage.Type.DATA:
-                            this.emit('data', session, message);
+                            this.emit('data', name, session, message);
                             break;
                     }
                 }
