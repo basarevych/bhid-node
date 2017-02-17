@@ -65,7 +65,6 @@ class Daemon extends EventEmitter {
      */
     init(name) {
         this._name = name;
-        this._logger.setLogStream('daemon.log', this._config.get(`servers.${name}.log`));
 
         return new Promise((resolve, reject) => {
                 debug('Loading protocol');

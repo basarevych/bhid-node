@@ -67,7 +67,6 @@ class Front extends EventEmitter {
      */
     init(name) {
         this._name = name;
-        this._logger.setLogStream('front.log', this._config.get(`servers.${name}.log`));
         return Promise.resolve();
     }
 

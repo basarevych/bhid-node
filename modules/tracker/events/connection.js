@@ -14,10 +14,12 @@ class Connection {
      * Create service
      * @param {App} app                         The application
      * @param {object} config                   Configuration
+     * @param {Logger} logger                   Logger service
      */
-    constructor(app, config) {
+    constructor(app, config, logger) {
         this._app = app;
         this._config = config;
+        this._logger = logger;
     }
 
     /**
@@ -33,7 +35,7 @@ class Connection {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config' ];
+        return [ 'app', 'config', 'logger' ];
     }
 
     /**
@@ -81,7 +83,7 @@ class Connection {
             let data = this.tracker.ClientMessage.encode(msg).finish();
             this.tracker.send(name, data);
         } catch (error) {
-            this.tracker._logger.error(new WError(error, 'Connection.handle()'));
+            this._logger.error(new WError(error, 'Connection.handle()'));
         }
     }
 

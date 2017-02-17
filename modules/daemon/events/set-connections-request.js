@@ -14,11 +14,13 @@ class SetConnectionsRequest {
      * Create service
      * @param {App} app                             The application
      * @param {object} config                       Configuration
+     * @param {Logger} logger                       Logger service
      * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, connectionsList) {
+    constructor(app, config, logger, connectionsList) {
         this._app = app;
         this._config = config;
+        this._logger = logger;
         this._connectionsList = connectionsList;
     }
 
@@ -35,7 +37,7 @@ class SetConnectionsRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
     }
 
     /**
@@ -73,7 +75,7 @@ class SetConnectionsRequest {
             else
                 reply(this.daemon.SetConnectionsResponse.Result.REJECTED);
         } catch (error) {
-            this.daemon._logger.error(new WError(error, 'SetConnectionsRequest.handle()'));
+            this._logger.error(new WError(error, 'SetConnectionsRequest.handle()'));
         }
     }
 

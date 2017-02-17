@@ -14,10 +14,12 @@ class DeleteRequest {
      * Create service
      * @param {App} app                         The application
      * @param {object} config                   Configuration
+     * @param {Logger} logger                   Logger service
      */
-    constructor(app, config) {
+    constructor(app, config, logger) {
         this._app = app;
         this._config = config;
+        this._logger = logger;
     }
 
     /**
@@ -33,7 +35,7 @@ class DeleteRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config' ];
+        return [ 'app', 'config', 'logger' ];
     }
 
     /**
@@ -102,7 +104,7 @@ class DeleteRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.deleteRequest.trackerName, data);
         } catch (error) {
-            this.daemon._logger.error(new WError(error, 'DeleteRequest.handle()'));
+            this._logger.error(new WError(error, 'DeleteRequest.handle()'));
         }
     }
 

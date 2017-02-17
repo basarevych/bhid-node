@@ -21,35 +21,15 @@ module.exports = {
     servers: {
         daemon: {
             class: 'servers.daemon',
-            log: {
-                path: '/var/log/bhid',
-                interval: '1d',
-                mode: 0o640,
-            },
         },
         tracker: {
             class: 'servers.tracker',
-            log: {
-                path: '/var/log/bhid',
-                interval: '1d',
-                mode: 0o640,
-            },
         },
         peer: {
             class: 'servers.peer',
-            log: {
-                path: '/var/log/bhid',
-                interval: '1d',
-                mode: 0o640,
-            },
         },
         front: {
             class: 'servers.front',
-            log: {
-                path: '/var/log/bhid',
-                interval: '1d',
-                mode: 0o640,
-            },
         },
     },
 
@@ -78,6 +58,15 @@ module.exports = {
         },
     },
 
+    logs: {
+        main: {
+            default: true,
+            name: 'bhid.log',
+            path: '/var/log/bhid',
+            interval: '1d',
+            mode: 0o640,
+        },
+    },
 /*
     user: { // Drop privileges, otherwise comment out this section
         uid: 'www',

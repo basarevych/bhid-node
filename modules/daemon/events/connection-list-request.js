@@ -14,10 +14,12 @@ class ConnectionsListRequest {
      * Create service
      * @param {App} app                         The application
      * @param {object} config                   Configuration
+     * @param {Logger} logger                   Logger service
      */
-    constructor(app, config) {
+    constructor(app, config, logger) {
         this._app = app;
         this._config = config;
+        this._logger = logger;
     }
 
     /**
@@ -33,7 +35,7 @@ class ConnectionsListRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config' ];
+        return [ 'app', 'config', 'logger' ];
     }
 
     /**
@@ -99,7 +101,7 @@ class ConnectionsListRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.connectionsListRequest.trackerName, data);
         } catch (error) {
-            this.daemon._logger.error(new WError(error, 'ConnectionsListRequest.handle()'));
+            this._logger.error(new WError(error, 'ConnectionsListRequest.handle()'));
         }
     }
 

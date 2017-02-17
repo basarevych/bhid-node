@@ -14,10 +14,12 @@ class ServerAvailable {
      * Create service
      * @param {App} app                         The application
      * @param {object} config                   Configuration
+     * @param {Logger} logger                   Logger service
      */
-    constructor(app, config) {
+    constructor(app, config, logger) {
         this._app = app;
         this._config = config;
+        this._logger = logger;
     }
 
     /**
@@ -33,7 +35,7 @@ class ServerAvailable {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config' ];
+        return [ 'app', 'config', 'logger' ];
     }
 
     /**
