@@ -106,18 +106,18 @@ class Front extends EventEmitter {
      * @param {string} port                     Server port
      */
     openServer(name, tunnelId, address, port) {
-        debug(`Opening front for ${name}`);
-        if (!this.connections.has(name)) {
-            let connection = {
-                name: name,
-                server: true,
-                address: address,
-                port: port,
-                targets: new Map(),
-            };
+        if (this.connections.has(name))
+            return;
 
-            this.connections.set(name, connection);
-        }
+        debug(`Opening front for ${name}`);
+        let connection = {
+            name: name,
+            server: true,
+            address: address,
+            port: port,
+            targets: new Map(),
+        };
+        this.connections.set(name, connection);
     }
 
     /**
@@ -128,10 +128,10 @@ class Front extends EventEmitter {
      * @param {string} port                     Listen port
      */
     openClient(name, tunnelId, address, port) {
-        debug(`Opening front for ${name}`);
         if (this.connections.has(name))
             return;
 
+        debug(`Opening front for ${name}`);
         let connection = {
             name: name,
             server: false,
@@ -140,11 +140,10 @@ class Front extends EventEmitter {
             tcp: null,
             clients: new Map(),
         };
+        this.connections.set(name, connection);
 
         connection.tcp = net.createServer(socket => { this.onConnection(name, tunnelId, socket); });
         connection.tcp.once('error', error => { this.onServerError(name, error); });
-
-        this.connections.set(name, connection);
 
         let bind = () => {
             let newCon = this.connections.get(name);

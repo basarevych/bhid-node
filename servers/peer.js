@@ -494,16 +494,16 @@ class Peer extends EventEmitter {
                 });
                 message = this.OuterMessage.create({
                     type: this.OuterMessage.Type.DATA,
-                    encrypedMessage: msg,
+                    encryptedMessage: msg,
                 });
             } else {
                 message = this.OuterMessage.create({
                     type: this.OuterMessage.Type.DATA,
-                    message: msg,
+                    message: data,
                 });
             }
             let buffer = this.OuterMessage.encode(message).finish();
-            this._send(name, sessionId, buffer);
+            this.send(name, sessionId, buffer);
         } catch (error) {
             this._logger.error(new WError(error, `Peer.sendInnerMessage(): ${name}`));
         }
@@ -636,6 +636,7 @@ class Peer extends EventEmitter {
                 killed = true;
             }
 
+            console.log(error.stack);
             if (!killed)
                 this._logger.error(`Peer ${name} protocol error: ${error.message}`);
         }

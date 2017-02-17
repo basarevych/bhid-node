@@ -101,6 +101,13 @@ class ConnectRequest {
                     buffer = this.peer.OuterMessage.encode(reply).finish();
                     this.peer.send(name, sessionId, buffer, true);
                 }
+
+                if (info.verified && info.accepted) {
+                    if (connection.server)
+                        this.front.openServer(name, sessionId, connection.connectAddress, connection.connectPort);
+                    else
+                        this.front.openClient(name, sessionId, connection.listenAddress, connection.listenPort);
+                }
             })
             .catch(error => {
                 this._logger.error(new WError(error, `ConnectRequest.handle()`));
@@ -127,6 +134,17 @@ class ConnectRequest {
             return this._peer;
         this._peer = this._app.get('servers').get('peer');
         return this._peer;
+    }
+
+    /**
+     * Retrieve front server
+     * @return {Front}
+     */
+    get front() {
+        if (this._front)
+            return this._front;
+        this._front = this._app.get('servers').get('front');
+        return this._front;
     }
 }
 

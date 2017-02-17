@@ -59,6 +59,12 @@ class Peer {
         let connectRequest = this._app.get('modules.peer.events.connectRequest');
         server.on('connect_request', connectRequest.handle.bind(connectRequest));
 
+        let connectResponse = this._app.get('modules.peer.events.connectResponse');
+        server.on('connect_response', connectResponse.handle.bind(connectResponse));
+
+        let data = this._app.get('modules.peer.events.data');
+        server.on('data', data.handle.bind(data));
+
         return Promise.resolve();
     }
 }

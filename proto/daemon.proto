@@ -43,6 +43,6 @@ message OuterMessage {
     required Type type = 1;
     optional ConnectRequest connect_request = 2;
     optional ConnectResponse connect_response = 3;
-    optional InnerMessage message = 5;
+    optional bytes message = 5;
     optional EncryptedData encrypted_message = 6;
 }
