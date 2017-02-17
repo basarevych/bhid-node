@@ -182,6 +182,14 @@ message ConnectionsListResponse {
 message Status {
     required string connection_name = 1;
     required uint32 connected = 2;
+    optional string internal_address = 3;
+    optional string internal_port = 4;
+}
+
+message ServerAvailable {
+    required string connection_name = 1;
+    required string internal_address = 2;
+    required string internal_port = 3;
 }
 
 message ClientMessage {
@@ -224,6 +232,7 @@ message ServerMessage {
         TREE_RESPONSE = 7;
         CONNECTIONS_LIST_RESPONSE = 8;
         CONNECTIONS_LIST = 9;
+        SERVER_AVAILABLE = 10;
         ALIVE = 99;
     }
     required Type type = 1;
@@ -238,4 +247,5 @@ message ServerMessage {
     optional TreeResponse tree_response = 10;
     optional ConnectionsListResponse connections_list_response = 11;
     optional ConnectionsList connections_list = 12;
+    optional ServerAvailable server = 13;
 }

@@ -52,11 +52,17 @@ class Registration {
                 continue;
 
             for (let connection of connections.serverConnections.concat(connections.clientConnections)) {
+                let info = this.peer.connections.get(tracker + '#' + connection.name);
+                if (!info || !info.utp)
+                    continue;
+
                 try {
                     debug(`Sending STATUS of ${connection.name} to ${tracker}`);
                     let status = this.tracker.Status.create({
                         connectionName: connection.name,
                         connected: connection.connected,
+                        internalAddress: info.utp.getUdpSocket().address().address,
+                        internalPort: info.utp.getUdpSocket().address().port.toString(),
                     });
                     let message = this.tracker.ClientMessage.create({
                         type: this.tracker.ClientMessage.Type.STATUS,
@@ -72,17 +78,6 @@ class Registration {
     }
 
     /**
-     * Retrieve daemon server
-     * @return {Daemon}
-     */
-    get daemon() {
-        if (this._daemon)
-            return this._daemon;
-        this._daemon = this._app.get('servers').get('daemon');
-        return this._daemon;
-    }
-
-    /**
      * Retrieve tracker server
      * @return {Tracker}
      */
@@ -91,6 +86,17 @@ class Registration {
             return this._tracker;
         this._tracker = this._app.get('servers').get('tracker');
         return this._tracker;
+    }
+
+    /**
+     * Retrieve peer server
+     * @return {Peer}
+     */
+    get peer() {
+        if (this._peer)
+            return this._peer;
+        this._peer = this._app.get('servers').get('peer');
+        return this._peer;
     }
 }
 
