@@ -685,11 +685,9 @@ class Peer extends EventEmitter {
             let serverInfo = trackedConnections.serverConnections.get(connection.name.split('#')[1]);
             let clientInfo = trackedConnections.clientConnections.get(connection.name.split('#')[1]);
             if (serverInfo && serverInfo.connected > 0 && info.verified && info.accepted) {
-                if (--serverInfo.connected < 0)
-                    serverInfo.connected = 0;
+                serverInfo.connected--;
             } else if (clientInfo && clientInfo.connected > 0 && info.verified && info.accepted) {
-                if (--clientInfo.connected < 0)
-                    clientInfo.connected = 0;
+                clientInfo.connected--;
             }
         }
 
@@ -728,6 +726,9 @@ class Peer extends EventEmitter {
                     reconnect = 'external';
                 }
             }
+
+            connection.verified = false;
+            connection.accepted = false;
 
             connection.internal.connecting = false;
             connection.internal.connected = false;
