@@ -258,18 +258,17 @@ class Peer extends EventEmitter {
                 connecting: false,
                 connected: false,
                 rejected: false,
-                verified: false,
-                accepted: false,
             },
             external: {
                 address: null,
                 port: null,
+                punchingTimer: null,
                 connecting: false,
                 connected: false,
                 rejected: false,
-                verified: false,
-                accepted: false,
             },
+            verified: false,
+            accepted: false,
         };
         this.connections.set(name, connection);
         this._tracker.sendStatus(tracker, name.split('#')[0], 0);
@@ -314,10 +313,17 @@ class Peer extends EventEmitter {
             connection[type].address = address;
             connection[type].port = port;
 
+            if (type == 'external' && connection[type].punchingTimer) {
+                clearTimeout(connection[type].punchingTimer);
+                connection[type].punchingTimer = null;
+            }
+
+            connection.verified = false;
+            connection.accepted = false;
+
             connection[type].connecting = true;
             connection[type].connected = false;
             connection[type].rejected = false;
-            connection[type].verified = false;
 
             try {
                 this._logger.info(`Initiating ${type} connection to ${name} (${address}:${port})`);
@@ -632,7 +638,12 @@ class Peer extends EventEmitter {
             if (!info.verified) {
                 info.socket.end();
                 info.wrapper.detach();
-                info.rejected = true;
+                if (!connection.server) {
+                    if (info.internal.connected)
+                        info.internal.rejected = true;
+                    if (info.external.connected)
+                        info.external.rejected = true;
+                }
                 killed = true;
             }
 
@@ -668,6 +679,20 @@ class Peer extends EventEmitter {
         if (!connection)
             return;
 
+        let trackedConnections = this._connectionsList.list.get(connection.tracker);
+        if (trackedConnections) {
+            let info = connection.server ? connection.clients.get(sessionId) : connection;
+            let serverInfo = trackedConnections.serverConnections.get(connection.name.split('#')[1]);
+            let clientInfo = trackedConnections.clientConnections.get(connection.name.split('#')[1]);
+            if (serverInfo && serverInfo.connected > 0 && info.verified && info.accepted) {
+                if (--serverInfo.connected < 0)
+                    serverInfo.connected = 0;
+            } else if (clientInfo && clientInfo.connected > 0 && info.verified && info.accepted) {
+                if (--clientInfo.connected < 0)
+                    clientInfo.connected = 0;
+            }
+        }
+
         if (connection.server) {
             let client = connection.clients.get(sessionId);
             if (client) {
@@ -679,6 +704,8 @@ class Peer extends EventEmitter {
                 }
                 connection.clients.delete(sessionId);
             }
+            let parts = name.split('#');
+            this._tracker.sendStatus(parts[0], parts[1]);
         } else {
             if (connection.socket) {
                 if (!connection.socket.destroyed)
@@ -705,22 +732,28 @@ class Peer extends EventEmitter {
             connection.internal.connecting = false;
             connection.internal.connected = false;
             connection.internal.rejected = false;
-            connection.internal.verified = false;
 
             connection.external.connecting = false;
             connection.external.connected = false;
             connection.external.rejected = false;
-            connection.external.verified = false;
 
             let parts = connection.name.split('#');
             if (reconnect === 'external') {
+                connection.external.punchingTimer = setTimeout(
+                    () => {
+                        connection.external.punchingTimer = null;
+                        let parts = name.split('#');
+                        this._tracker.sendStatus(parts[0], parts[1]);
+                    },
+                    this.constructor.connectTimeout
+                );
                 this._tracker.sendPunchRequest(parts[0], parts[1]);
             } else if (reconnect === 'internal') {
                 this.connect(connection.name, 'internal', connection.internal.address, connection.internal.port);
             } else {
                 this._logger.info(`Connection to ${name} failed`);
                 setTimeout(() => {
-                    this._tracker.sendStatus(parts[0], parts[1], 0);
+                    this._tracker.sendStatus(parts[0], parts[1]);
                 }, 1000);
             }
         }

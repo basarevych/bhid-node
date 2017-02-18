@@ -19,11 +19,12 @@ const SocketWrapper = require('socket-wrapper');
 class Tracker extends EventEmitter {
     /**
      * Create the service
-     * @param {App} app                     Application
-     * @param {object} config               Configuration
-     * @param {Logger} logger               Logger service
+     * @param {App} app                             Application
+     * @param {object} config                       Configuration
+     * @param {Logger} logger                       Logger service
+     * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger) {
+    constructor(app, config, logger, connectionsList) {
         super();
 
         this.servers = new Map();
@@ -32,6 +33,7 @@ class Tracker extends EventEmitter {
         this._name = null;
         this._app = app;
         this._config = config;
+        this._connectionsList = connectionsList;
         this._logger = logger;
         this._timeouts = new Map();
     }
@@ -49,7 +51,7 @@ class Tracker extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
     }
 
     /**
@@ -317,7 +319,7 @@ class Tracker extends EventEmitter {
      * Send status message
      * @param {string} trackerName          Tracker name
      * @param {string} connectionName       Connection name
-     * @param {number} connected            Number of peers
+     * @param {number} [connected]          Number of peers
      * @param {string} [internalAddress]    Internal address
      * @param {string} [internalPort]       Internal port
      */
@@ -325,6 +327,19 @@ class Tracker extends EventEmitter {
         let server = this.servers.get(trackerName);
         if (!server || !server.registered)
             return;
+
+        if (typeof connected == 'undefined') {
+            connected = 0;
+            let trackedConnections = this._connectionsList.list.get(trackerName);
+            if (trackedConnections) {
+                let serverInfo = trackedConnections.serverConnections.get(connectionName);
+                let clientInfo = trackedConnections.clientConnections.get(connectionName);
+                if (serverInfo)
+                    connected = serverInfo.connected;
+                else if (clientInfo)
+                    connected = clientInfo.connected;
+            }
+        }
 
         try {
             debug(`Sending STATUS of ${connectionName} to ${trackerName}`);

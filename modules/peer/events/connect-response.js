@@ -15,11 +15,13 @@ class ConnectResponse {
      * @param {App} app                         The application
      * @param {object} config                   Configuration
      * @param {Logger} logger                   Logger service
+     * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger) {
+    constructor(app, config, logger, connectionsList) {
         this._app = app;
         this._config = config;
         this._logger = logger;
+        this._connectionsList = connectionsList;
     }
 
     /**
@@ -35,7 +37,7 @@ class ConnectResponse {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
     }
 
     /**
@@ -54,14 +56,41 @@ class ConnectResponse {
             return;
 
         info.accepted = (message.connectResponse.response == this.peer.ConnectResponse.Result.ACCEPTED);
-        if (!info.accepted)
+        if (!info.accepted) {
             this._logger.info(`Peer of ${name} rejected our connection request`);
+            if (!connection.server) {
+                if (connection.internal.connected)
+                    connection.internal.rejected = true;
+                else if (connection.external.connected)
+                    connection.external.rejected = true;
+            }
+        }
 
         if (info.verified && info.accepted) {
             if (connection.server)
                 this.front.openServer(name, sessionId, connection.connectAddress, connection.connectPort);
             else
                 this.front.openClient(name, sessionId, connection.listenAddress, connection.listenPort);
+
+            let connectionName = connection.name.split('#')[1];
+            let trackedConnections = this._connectionsList.list.get(connection.tracker);
+            if (trackedConnections) {
+                let connected;
+                let serverInfo = trackedConnections.serverConnections.get(connectionName);
+                let clientInfo = trackedConnections.clientConnections.get(connectionName);
+                if (serverInfo)
+                    connected = ++serverInfo.connected;
+                else if (clientInfo)
+                    connected = ++clientInfo.connected;
+
+                if (connected) {
+                    this.tracker.sendStatus(
+                        connection.tracker,
+                        connectionName,
+                        connected
+                    );
+                }
+            }
         }
     }
 
