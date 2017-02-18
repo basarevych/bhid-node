@@ -309,22 +309,22 @@ class Peer extends EventEmitter {
         if (!connection || connection.server || connection.internal.connecting || connection.external.connecting)
             return;
 
+        connection[type].address = address;
+        connection[type].port = port;
+
+        if (type == 'external' && connection[type].punchingTimer) {
+            clearTimeout(connection[type].punchingTimer);
+            connection[type].punchingTimer = null;
+        }
+
+        connection.verified = false;
+        connection.accepted = false;
+
+        connection[type].connecting = true;
+        connection[type].connected = false;
+        connection[type].rejected = false;
+
         let doConnect = () => {
-            connection[type].address = address;
-            connection[type].port = port;
-
-            if (type == 'external' && connection[type].punchingTimer) {
-                clearTimeout(connection[type].punchingTimer);
-                connection[type].punchingTimer = null;
-            }
-
-            connection.verified = false;
-            connection.accepted = false;
-
-            connection[type].connecting = true;
-            connection[type].connected = false;
-            connection[type].rejected = false;
-
             try {
                 this._logger.info(`Initiating ${type} connection to ${name} (${address}:${port})`);
                 connection.sessionId = this._crypter.create(name);
@@ -411,6 +411,7 @@ class Peer extends EventEmitter {
                     return doConnect();
 
                 this._logger.info(`Could not open NAT of ${name}`);
+                connection[type].connecting = false;
                 connection.utp.close();
                 connection.utp = null;
             });
