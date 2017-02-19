@@ -55,10 +55,10 @@ class Tracker {
 
         let connection = this._app.get('modules.tracker.events.connection');
         server.on('connection', connection.handle.bind(connection));
+        server.on('token', connection.handle.bind(connection));
 
         let registration = this._app.get('modules.tracker.events.registration');
         server.on('registration', registration.handle.bind(registration));
-        server.on('token', registration.handle.bind(registration));
 
         let serverAvailable = this._app.get('modules.tracker.events.serverAvailable');
         server.on('server_available', serverAvailable.handle.bind(serverAvailable));
