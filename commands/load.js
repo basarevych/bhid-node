@@ -80,48 +80,44 @@ class Load {
                         switch (message.connectionsListResponse.response) {
                             case this.ConnectionsListResponse.Result.ACCEPTED:
                                 this.printTable(message.connectionsListResponse.list);
-                                if (message.connectionsListResponse.list.serverConnections.length ||
-                                    message.connectionsListResponse.list.clientConnections.length)
-                                {
-                                    read({ prompt: '\nAccept this list? (yes/no): ' }, (error, answer) => {
-                                        if (error)
-                                            return this.error(error.message);
+                                read({ prompt: '\nAccept? (yes/no): ' }, (error, answer) => {
+                                    if (error)
+                                        return this.error(error.message);
 
-                                        if (answer.toLowerCase() == 'yes' || answer.toLowerCase() == 'y') {
-                                            request = this.SetConnectionsRequest.create({
-                                                trackerName: trackerName,
-                                                list: message.connectionsListResponse.list,
-                                            });
-                                            message = this.ClientMessage.create({
-                                                type: this.ClientMessage.Type.SET_CONNECTIONS_REQUEST,
-                                                setConnectionsRequest: request,
-                                            });
-                                            buffer = this.ClientMessage.encode(message).finish();
-                                            this.send(buffer)
-                                                .then(data => {
-                                                    let message = this.ServerMessage.decode(data);
-                                                    if (message.type !== this.ServerMessage.Type.SET_CONNECTIONS_RESPONSE)
-                                                        throw new Error('Invalid reply from daemon');
+                                    if (answer.toLowerCase() == 'yes' || answer.toLowerCase() == 'y') {
+                                        request = this.SetConnectionsRequest.create({
+                                            trackerName: trackerName,
+                                            list: message.connectionsListResponse.list,
+                                        });
+                                        message = this.ClientMessage.create({
+                                            type: this.ClientMessage.Type.SET_CONNECTIONS_REQUEST,
+                                            setConnectionsRequest: request,
+                                        });
+                                        buffer = this.ClientMessage.encode(message).finish();
+                                        this.send(buffer)
+                                            .then(data => {
+                                                let message = this.ServerMessage.decode(data);
+                                                if (message.type !== this.ServerMessage.Type.SET_CONNECTIONS_RESPONSE)
+                                                    throw new Error('Invalid reply from daemon');
 
-                                                    switch (message.setConnectionsResponse.response) {
-                                                        case this.SetConnectionsResponse.Result.ACCEPTED:
-                                                            console.log('List saved');
-                                                            process.exit(0);
-                                                            break;
-                                                        case this.SetConnectionsResponse.Result.REJECTED:
-                                                            console.log('Request rejected');
-                                                            process.exit(1);
-                                                            break;
-                                                        default:
-                                                            throw new Error('Unsupported response from daemon');
-                                                    }
-                                                })
-                                                .catch(error => {
-                                                    this.error(error.message);
-                                                });
-                                        }
-                                    });
-                                }
+                                                switch (message.setConnectionsResponse.response) {
+                                                    case this.SetConnectionsResponse.Result.ACCEPTED:
+                                                        console.log('List saved');
+                                                        process.exit(0);
+                                                        break;
+                                                    case this.SetConnectionsResponse.Result.REJECTED:
+                                                        console.log('Request rejected');
+                                                        process.exit(1);
+                                                        break;
+                                                    default:
+                                                        throw new Error('Unsupported response from daemon');
+                                                }
+                                            })
+                                            .catch(error => {
+                                                this.error(error.message);
+                                            });
+                                    }
+                                });
                                 break;
                             case this.ConnectionsListResponse.Result.REJECTED:
                                 console.log('Request rejected');
