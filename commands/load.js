@@ -47,6 +47,7 @@ class Load {
      */
     run(argv) {
         let trackerName = argv['t'] || '';
+        let quiet = argv['q'] || false;
 
         debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
@@ -79,44 +80,20 @@ class Load {
 
                         switch (message.connectionsListResponse.response) {
                             case this.ConnectionsListResponse.Result.ACCEPTED:
-                                this.printTable(message.connectionsListResponse.list);
-                                read({ prompt: '\nAccept? (yes/no): ' }, (error, answer) => {
-                                    if (error)
-                                        return this.error(error.message);
+                                if (quiet) {
+                                    this.load(trackerName, message.connectionsListResponse.list);
+                                } else {
+                                    this.printTable(message.connectionsListResponse.list);
+                                    read({prompt: '\nAccept? (yes/no): '}, (error, answer) => {
+                                        if (error)
+                                            return this.error(error.message);
 
-                                    if (answer.toLowerCase() == 'yes' || answer.toLowerCase() == 'y') {
-                                        request = this.SetConnectionsRequest.create({
-                                            trackerName: trackerName,
-                                            list: message.connectionsListResponse.list,
-                                        });
-                                        message = this.ClientMessage.create({
-                                            type: this.ClientMessage.Type.SET_CONNECTIONS_REQUEST,
-                                            setConnectionsRequest: request,
-                                        });
-                                        buffer = this.ClientMessage.encode(message).finish();
-                                        this.send(buffer)
-                                            .then(data => {
-                                                let message = this.ServerMessage.decode(data);
-                                                if (message.type !== this.ServerMessage.Type.SET_CONNECTIONS_RESPONSE)
-                                                    throw new Error('Invalid reply from daemon');
-
-                                                switch (message.setConnectionsResponse.response) {
-                                                    case this.SetConnectionsResponse.Result.ACCEPTED:
-                                                        process.exit(0);
-                                                        break;
-                                                    case this.SetConnectionsResponse.Result.REJECTED:
-                                                        console.log('Request rejected');
-                                                        process.exit(1);
-                                                        break;
-                                                    default:
-                                                        throw new Error('Unsupported response from daemon');
-                                                }
-                                            })
-                                            .catch(error => {
-                                                this.error(error.message);
-                                            });
-                                    }
-                                });
+                                        if (answer.toLowerCase() == 'yes' || answer.toLowerCase() == 'y')
+                                            this.load(trackerName, message.connectionsListResponse.list);
+                                        else
+                                            process.exit(0);
+                                    });
+                                }
                                 break;
                             case this.ConnectionsListResponse.Result.REJECTED:
                                 console.log('Request rejected');
@@ -171,6 +148,44 @@ class Load {
             table.newRow();
         });
         console.log(table.toString().trim() + '\n');
+    }
+
+    /**
+     * Load the list
+     * @param {string} trackerName                      Name of the tracker
+     * @param {object} list                             List as in the protocol
+     */
+    load(trackerName, list) {
+        let request = this.SetConnectionsRequest.create({
+            trackerName: trackerName,
+            list: list,
+        });
+        let message = this.ClientMessage.create({
+            type: this.ClientMessage.Type.SET_CONNECTIONS_REQUEST,
+            setConnectionsRequest: request,
+        });
+        let buffer = this.ClientMessage.encode(message).finish();
+        this.send(buffer)
+            .then(data => {
+                let message = this.ServerMessage.decode(data);
+                if (message.type !== this.ServerMessage.Type.SET_CONNECTIONS_RESPONSE)
+                    throw new Error('Invalid reply from daemon');
+
+                switch (message.setConnectionsResponse.response) {
+                    case this.SetConnectionsResponse.Result.ACCEPTED:
+                        process.exit(0);
+                        break;
+                    case this.SetConnectionsResponse.Result.REJECTED:
+                        console.log('Request rejected');
+                        process.exit(1);
+                        break;
+                    default:
+                        throw new Error('Unsupported response from daemon');
+                }
+            })
+            .catch(error => {
+                this.error(error.message);
+            });
     }
 
     /**

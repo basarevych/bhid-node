@@ -132,8 +132,8 @@ switch (argv['_'][0]) {
                 console.log('\tPrint connections of this account');
                 break;
             case 'load':
-                console.log('Usage: bhid load [-t <tracker>]\n');
-                console.log('\tLoad and save locally connection configuration');
+                console.log('Usage: bhid load [-q] [-t <tracker>]\n');
+                console.log('\tRetrieve and save locally connection configuration. If -q is set no confirmation is asked');
                 break;
             case 'run':
                 console.log('Usage: bhid run\n');
