@@ -671,7 +671,6 @@ class Peer extends EventEmitter {
      * @param {string} sessionId                Session ID
      */
     onClose(name, sessionId) {
-        debug(`Socket for ${name} disconnected`);
         this._timeouts.delete(sessionId);
         this._front.close(name, sessionId);
         this._crypter.destroy(sessionId);
@@ -680,6 +679,7 @@ class Peer extends EventEmitter {
         if (!connection)
             return;
 
+        debug(`Socket for ${name} disconnected`);
         let trackedConnections = this._connectionsList.list.get(connection.tracker);
         if (trackedConnections) {
             let info = connection.server ? connection.clients.get(sessionId) : connection;
@@ -739,10 +739,12 @@ class Peer extends EventEmitter {
             connection.external.connected = false;
             connection.external.rejected = false;
 
-            if (connection.closing)
-                return;
-
             let parts = connection.name.split('#');
+            if (connection.closing) {
+                this._tracker.sendStatus(parts[0], parts[1]);
+                return;
+            }
+
             if (reconnect === 'external') {
                 connection.external.punchingTimer = setTimeout(
                     () => {
