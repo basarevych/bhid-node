@@ -51,7 +51,7 @@ try {
     process.exit(0);
 }
 
-let pidBuffer = Buffer(process.pid.toString());
+let pidBuffer = Buffer(process.pid.toString() + '\n');
 fs.ftruncateSync(fd);
 fs.writeSync(fd, pidBuffer, 0, pidBuffer.length, null);
 
