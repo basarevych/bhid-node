@@ -1,12 +1,15 @@
 {
   "name": "bhid",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Daemon for Breedhub Interconnect (connect server and client both behind NAT)",
   "license": "MIT",
   "author": "Ross Basarevych <basarevych@gmail.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/breedhub/bhid-node.git"
+  },
+  "bin": {
+    "bhid": "bhid.js"
   },
   "dependencies": {
     "archy": "~1.0.0",
