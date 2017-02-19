@@ -208,7 +208,7 @@ class Peer extends EventEmitter {
                     debug(`Network server for ${name} started`);
                     this._tracker.sendStatus(
                         tracker,
-                        name.split('#')[0],
+                        name.split('#')[1],
                         0,
                         connection.utp.getUdpSocket().address().address,
                         connection.utp.getUdpSocket().address().port
@@ -271,7 +271,7 @@ class Peer extends EventEmitter {
             accepted: false,
         };
         this.connections.set(name, connection);
-        this._tracker.sendStatus(tracker, name.split('#')[0], 0);
+        this._tracker.sendStatus(tracker, name.split('#')[1], 0);
     }
 
     /**
@@ -284,6 +284,7 @@ class Peer extends EventEmitter {
             return;
 
         debug(`Closing ${name}`);
+        connection.closing = true;
         if (connection.server) {
             for (let id of connection.clients.keys())
                 this.onClose(name, id);
@@ -291,10 +292,9 @@ class Peer extends EventEmitter {
             this.onClose(name, connection.sessionId);
         }
 
+        this.connections.delete(name);
         if (connection.utp)
             connection.utp.close();
-
-        this.connections.delete(name);
     }
 
     /**
@@ -738,6 +738,9 @@ class Peer extends EventEmitter {
             connection.external.connecting = false;
             connection.external.connected = false;
             connection.external.rejected = false;
+
+            if (connection.closing)
+                return;
 
             let parts = connection.name.split('#');
             if (reconnect === 'external') {

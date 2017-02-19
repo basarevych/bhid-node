@@ -180,7 +180,6 @@ class ConnectionsList {
                 throw new Error('Could not read bhid.conf');
 
             let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
-            let openedConnections = new Set();
             let output = {};
             for (let section of Object.keys(bhidConfig)) {
                 if (!section.endsWith(this.constructor.serverSection) &&
@@ -201,19 +200,6 @@ class ConnectionsList {
                     clients: connection.clients,
                 };
 
-                this._peer.openServer(
-                    trackerName,
-                    connection.name,
-                    {
-                        connectAddress: connection.connectAddress,
-                        connectPort: connection.connectPort,
-                        encrypted: connection.encrypted,
-                        fixed: connection.fixed,
-                        peers: connection.clients,
-                    }
-                );
-                openedConnections.add(trackerName + '#' + connection.name);
-
                 connection.connected = 0;
                 conf.serverConnections.set(connection.name, connection);
             }
@@ -227,6 +213,34 @@ class ConnectionsList {
                     server: connection.server,
                 };
 
+                connection.connected = 0;
+                conf.clientConnections.set(connection.name, connection);
+            }
+
+            fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(output));
+
+            for (let connection of this._peer.connections.keys()) {
+                if (connection.startsWith(trackerName + '#'))
+                    this._peer.close(connection);
+            }
+
+            this.list.set(trackerName, conf);
+
+            for (let [ name, connection ] of conf.serverConnections) {
+                this._peer.openServer(
+                    trackerName,
+                    connection.name,
+                    {
+                        connectAddress: connection.connectAddress,
+                        connectPort: connection.connectPort,
+                        encrypted: connection.encrypted,
+                        fixed: connection.fixed,
+                        peers: connection.clients,
+                    }
+                );
+
+            }
+            for (let [ name, connection ] of conf.clientConnections) {
                 this._peer.openClient(
                     trackerName,
                     connection.name,
@@ -237,24 +251,12 @@ class ConnectionsList {
                         peers: connection.server,
                     }
                 );
-                openedConnections.add(trackerName + '#' + connection.name);
-
-                connection.connected = 0;
-                conf.clientConnections.set(connection.name, connection);
-            }
-
-            fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(output));
-
-            for (let connection of this._peer.connections.keys()) {
-                if (!openedConnections.has(connection))
-                    this._peer.close(connection);
             }
         } catch (error) {
             this._logger.error(new WError(error, 'ConnectionsList.set()'));
             return false;
         }
 
-        this.list.set(trackerName, conf);
         return true;
     }
 
