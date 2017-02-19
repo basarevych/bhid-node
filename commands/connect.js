@@ -82,7 +82,6 @@ class Connect {
 
                         switch (message.connectResponse.response) {
                             case this.ConnectResponse.Result.ACCEPTED:
-                                console.log('Connected');
                                 process.exit(0);
                                 break;
                             case this.ConnectResponse.Result.REJECTED:

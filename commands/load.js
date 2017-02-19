@@ -102,7 +102,6 @@ class Load {
 
                                                 switch (message.setConnectionsResponse.response) {
                                                     case this.SetConnectionsResponse.Result.ACCEPTED:
-                                                        console.log('List saved');
                                                         process.exit(0);
                                                         break;
                                                     case this.SetConnectionsResponse.Result.REJECTED:

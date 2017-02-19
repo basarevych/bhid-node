@@ -80,7 +80,6 @@ class Delete {
 
                         switch (message.deleteResponse.response) {
                             case this.DeleteResponse.Result.ACCEPTED:
-                                console.log('Path deleted');
                                 process.exit(0);
                                 break;
                             case this.DeleteResponse.Result.REJECTED:

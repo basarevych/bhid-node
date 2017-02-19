@@ -82,7 +82,6 @@ class Disconnect {
 
                         switch (message.disconnectResponse.response) {
                             case this.DisconnectResponse.Result.ACCEPTED:
-                                console.log('Disconnected');
                                 process.exit(0);
                                 break;
                             case this.DisconnectResponse.Result.REJECTED:

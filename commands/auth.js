@@ -80,7 +80,6 @@ class Auth {
 
                         switch (message.setTokenResponse.response) {
                             case this.SetTokenResponse.Result.ACCEPTED:
-                                console.log('Token saved');
                                 process.exit(0);
                                 break;
                             case this.SetTokenResponse.Result.REJECTED:
