@@ -49,10 +49,10 @@ class SetTokenRequest {
             return;
 
         debug(`Got SET TOKEN REQUEST`);
-        try {
-            let reply = value => {
+        return this.tracker.setToken(message.setTokenRequest.trackerName, message.setTokenRequest.token)
+            .then(success => {
                 let reply = this.daemon.SetTokenResponse.create({
-                    response: value,
+                    response: success ? this.daemon.SetTokenResponse.Result.ACCEPTED : this.daemon.SetTokenResponse.Result.REJECTED,
                 });
                 let result = this.daemon.ServerMessage.create({
                     type: this.daemon.ServerMessage.Type.SET_TOKEN_RESPONSE,
@@ -61,15 +61,10 @@ class SetTokenRequest {
                 let data = this.daemon.ServerMessage.encode(result).finish();
                 debug(`Sending SET TOKEN RESPONSE`);
                 this.daemon.send(id, data);
-            };
-
-            if (this.tracker.setToken(message.setTokenRequest.trackerName, message.setTokenRequest.token))
-                reply(this.daemon.SetTokenResponse.Result.ACCEPTED);
-            else
-                reply(this.daemon.SetTokenResponse.Result.REJECTED);
-        } catch (error) {
-            this._logger.error(new WError(error, 'SetTokenRequest.handle()'));
-        }
+            })
+            .catch (error => {
+                this._logger.error(new WError(error, 'SetTokenRequest.handle()'));
+            });
     }
 
     /**

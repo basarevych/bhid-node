@@ -22,9 +22,11 @@ class Tracker extends EventEmitter {
      * @param {App} app                             Application
      * @param {object} config                       Configuration
      * @param {Logger} logger                       Logger service
+     * @param {Runner} runner                       Runner service
+     * @param {Crypter} crypter                     Crypter service
      * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger, connectionsList) {
+    constructor(app, config, logger, runner, crypter, connectionsList) {
         super();
 
         this.servers = new Map();
@@ -35,6 +37,8 @@ class Tracker extends EventEmitter {
         this._config = config;
         this._connectionsList = connectionsList;
         this._logger = logger;
+        this._runner = runner;
+        this._crypter = crypter;
         this._timeouts = new Map();
     }
 
@@ -51,7 +55,7 @@ class Tracker extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'runner', 'modules.peer.crypter', 'modules.peer.connectionsList' ];
     }
 
     /**
@@ -235,59 +239,116 @@ class Tracker extends EventEmitter {
      * Set daemon token for the tracker
      * @param {string} name         Name of the tracker
      * @param {string} token        The token
+     * @return {Promise}            Resolves to success
      */
     setToken(name, token) {
         if (!name)
             name = this.default;
         let server = this.servers.get(name);
         if (!server)
-            return false;
+            return Promise.resolve(false);
 
-        let oldToken = server.token;
-        server.token = token;
-        try {
-            let configPath;
-            for (let candidate of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
-                try {
-                    fs.accessSync(path.join(candidate, 'bhid.conf'), fs.constants.F_OK);
-                    configPath = candidate;
-                    break;
-                } catch (error) {
-                    // do nothing
+        let configPath, newIdentity = false;
+        return Promise.resolve()
+            .then(() => {
+                for (let candidate of ['/etc/bhid', '/usr/local/etc/bhid']) {
+                    try {
+                        fs.accessSync(path.join(candidate, 'bhid.conf'), fs.constants.F_OK);
+                        configPath = candidate;
+                        break;
+                    } catch (error) {
+                        // do nothing
+                    }
                 }
-            }
 
-            if (!configPath)
-                throw new Error('Could not read bhid.conf');
+                if (!configPath)
+                    throw new Error('Could not read bhid.conf');
 
-            let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
-            for (let section of Object.keys(bhidConfig)) {
-                if (!section.endsWith(this.constructor.trackerSection))
-                    continue;
+                debug('Creating RSA keys');
+                return this._runner.exec(
+                        'openssl',
+                        [
+                            'genrsa',
+                            '-out', path.join(configPath, 'id', 'private.rsa'),
+                            '2048'
+                        ]
+                    )
+                    .then(result => {
+                        if (result.code !== 0)
+                            throw new Error('Could not create private key');
 
-                let tracker = section.substr(0, section.length - this.constructor.trackerSection.length);
-                if (tracker == name) {
-                    bhidConfig[section]['token'] = server.token;
-                    debug(`Tracker ${name} token updated`);
-                    break;
+                        return this._runner.exec(
+                                'openssl',
+                                [
+                                    'rsa',
+                                    '-in', path.join(configPath, 'id', 'private.rsa'),
+                                    '-outform', 'PEM',
+                                    '-pubout',
+                                    '-out', path.join(configPath, 'id', 'public.rsa')
+                                ]
+                            )
+                            .then(result => {
+                                if (result.code !== 0)
+                                    return result;
+
+                                return this._runner.exec('chmod', ['600', path.join(configPath, 'id', 'private.rsa')])
+                                    .then(() => {
+                                        return result;
+                                    });
+                            });
+                    })
+                    .then(result => {
+                        if (result.code !== 0)
+                            throw new Error('Could not create public key');
+
+                        this._peer.publicKey = fs.readFileSync(path.join(configPath, 'id', 'public.rsa'), 'utf8');
+                        this._peer.privateKey = fs.readFileSync(path.join(configPath, 'id', 'private.rsa'), 'utf8');
+                        this._crypter.init(this._peer.publicKey, this._peer.privateKey);
+
+                        newIdentity = true;
+                    });
+            })
+            .then(() => {
+                let result = this._connectionsList.set(
+                    name,
+                    {
+                        serverConnections: [],
+                        clientConnections: [],
+                    }
+                );
+                if (!result)
+                    throw new Error('Could not clear connections');
+
+                let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
+                for (let section of Object.keys(bhidConfig)) {
+                    if (!section.endsWith(this.constructor.trackerSection))
+                        continue;
+
+                    let tracker = section.substr(0, section.length - this.constructor.trackerSection.length);
+                    if (tracker == name) {
+                        bhidConfig[section]['token'] = token;
+                        debug(`Tracker ${name} token updated`);
+                        break;
+                    }
                 }
-            }
 
-            fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(bhidConfig));
+                fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(bhidConfig));
+                server.token = token;
 
-            if (oldToken) {
                 server.socket.end();
                 server.wrapper.detach();
-            } else {
                 this.emit('token', name);
-            }
-        } catch (error) {
-            server.token = oldToken;
-            this._logger.error(new WError(error, 'Tracker.setToken()'));
-            return false;
-        }
 
-        return true;
+                return true;
+            })
+            .catch(error => {
+                this._logger.error(new WError(error, 'Tracker.setToken()'));
+                if (newIdentity) {
+                    server.socket.end();
+                    server.wrapper.detach();
+                }
+                return false;
+            });
     }
 
     /**
@@ -635,6 +696,17 @@ class Tracker extends EventEmitter {
                 this.send(name, null);
             }
         }
+    }
+
+    /**
+     * Retrieve peer server
+     * @return {Peer}
+     */
+    get _peer() {
+        if (this._peer_instance)
+            return this._peer_instance;
+        this._peer_instance = this._app.get('servers').get('peer');
+        return this._peer_instance;
     }
 }
 
