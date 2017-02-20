@@ -431,11 +431,17 @@ class Tracker extends EventEmitter {
         if (!data || !data.length)
             return true;
 
+        let message;
         try {
-            let message = this.ServerMessage.decode(data);
+            message = this.ServerMessage.decode(data);
             if (message.type === this.ServerMessage.Type.ALIVE)
                 return true;
+        } catch (error) {
+            this._logger.error(`Tracker protocol error: ${error.message}`);
+            return false;
+        }
 
+        try {
             debug(`Tracker message ${message.type} from ${name}`);
             switch(message.type) {
                 case this.ServerMessage.Type.INIT_RESPONSE:
@@ -479,7 +485,7 @@ class Tracker extends EventEmitter {
                     break;
             }
         } catch (error) {
-            this._logger.error(`Tracker protocol error: ${error.message}`);
+            this._logger.error(new WError(error, 'Tracker.onMessage()'));
         }
 
         return true;

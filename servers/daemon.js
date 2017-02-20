@@ -239,8 +239,15 @@ class Daemon extends EventEmitter {
         if (!data || !data.length)
             return true;
 
+        let message;
         try {
-            let message = this.ClientMessage.decode(data);
+            message = this.ClientMessage.decode(data);
+        } catch (error) {
+            this._logger.error(`Daemon protocol error: ${error.message}`);
+            return false;
+        }
+
+        try {
             debug(`Client message ${message.type}`);
             switch(message.type) {
                 case this.ClientMessage.Type.INIT_REQUEST:
@@ -275,7 +282,7 @@ class Daemon extends EventEmitter {
                     break;
             }
         } catch (error) {
-            this._logger.error(`Daemon protocol error: ${error.message}`);
+            this._logger.error(new WError(error, 'Daemon.onMessage()'));
         }
 
         return true;

@@ -606,16 +606,29 @@ class Peer extends EventEmitter {
         if (!data || !data.length)
             return true;
 
+        let message;
         try {
-            let message = this.OuterMessage.decode(data);
+            message = this.OuterMessage.decode(data);
             if (message.type === this.OuterMessage.Type.ALIVE)
                 return true;
+        } catch (error) {
+            this._logger.error(`Peer ${name} protocol error: ${error.message}`);
 
+            if (!info.verified && !connection.server) {
+                if (info.internal.connected)
+                    info.internal.rejected = true;
+                if (info.external.connected)
+                    info.external.rejected = true;
+            }
+
+            return false;
+        }
+
+        try {
             debug(`Incoming message for ${name}: ${message.type}`);
             if (message.type === this.OuterMessage.Type.BYE) {
                 debug(`Received BYE from ${name}`);
-                info.socket.end();
-                info.wrapper.detach();
+                return false;
             } else {
                 if (!info.verified || !info.accepted) {
                     switch (message.type) {
@@ -635,21 +648,7 @@ class Peer extends EventEmitter {
                 }
             }
         } catch (error) {
-            let killed = false;
-            if (!info.verified) {
-                info.socket.end();
-                info.wrapper.detach();
-                if (!connection.server) {
-                    if (info.internal.connected)
-                        info.internal.rejected = true;
-                    if (info.external.connected)
-                        info.external.rejected = true;
-                }
-                killed = true;
-            }
-
-            if (!killed)
-                this._logger.error(`Peer ${name} protocol error: ${error.message}`);
+            this._logger.error(new WError(error, 'Peer.onMessage()'));
         }
 
         return true;
