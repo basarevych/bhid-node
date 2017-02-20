@@ -59,6 +59,9 @@ class Daemon {
         let confirmRequest = this._app.get('modules.daemon.events.confirmRequest');
         server.on('confirm_request', confirmRequest.handle.bind(confirmRequest));
 
+        let createDaemonRequest = this._app.get('modules.daemon.events.createDaemonRequest');
+        server.on('create_daemon_request', createDaemonRequest.handle.bind(createDaemonRequest));
+
         let setTokenRequest = this._app.get('modules.daemon.events.setTokenRequest');
         server.on('set_token_request', setTokenRequest.handle.bind(setTokenRequest));
 

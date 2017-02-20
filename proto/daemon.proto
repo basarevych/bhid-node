@@ -24,8 +24,8 @@ message EncryptedData {
 message InnerMessage {
     enum Type {
         OPEN = 0;
-        DATA = 1;
-        CLOSE = 2;
+        CLOSE = 1;
+        DATA = 10;
     }
     required Type type = 1;
     required string id = 2;
@@ -34,15 +34,15 @@ message InnerMessage {
 
 message OuterMessage {
     enum Type {
-        BYE = 0;
-        CONNECT_REQUEST = 1;
-        CONNECT_RESPONSE = 2;
-        DATA = 3;
-        ALIVE = 99;
+        ALIVE = 0;
+        DATA = 10;
+        BYE = 20;
+        CONNECT_REQUEST = 30;
+        CONNECT_RESPONSE = 31;
     }
     required Type type = 1;
-    optional ConnectRequest connect_request = 2;
-    optional ConnectResponse connect_response = 3;
-    optional bytes message = 5;
-    optional EncryptedData encrypted_message = 6;
+    optional bytes message = 2;
+    optional EncryptedData encrypted_message = 3;
+    optional ConnectRequest connect_request = 100;
+    optional ConnectResponse connect_response = 110;
 }

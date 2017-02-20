@@ -65,7 +65,7 @@ class Registration {
                     tracker,
                     connection.name,
                     connection.connected,
-                    server.socket.remoteAddress,
+                    server.socket.localAddress,
                     address.port
                 );
             }

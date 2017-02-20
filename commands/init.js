@@ -44,12 +44,11 @@ class Init {
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 3)
+        if (argv['_'].length < 2)
             return this.error('Invalid parameters');
 
         let trackerName = argv['t'] || '';
         let email = argv['_'][1];
-        let daemonName = argv['_'][2];
 
         debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
@@ -67,7 +66,6 @@ class Init {
                 let request = this.InitRequest.create({
                     trackerName: trackerName,
                     email: email,
-                    daemonName: daemonName,
                 });
                 let message = this.ClientMessage.create({
                     type: this.ClientMessage.Type.INIT_REQUEST,
@@ -87,6 +85,10 @@ class Init {
                                 break;
                             case this.InitResponse.Result.REJECTED:
                                 console.log('Request rejected');
+                                process.exit(1);
+                                break;
+                            case this.InitResponse.Result.EMAIL_EXISTS:
+                                console.log('Account for this email already exists');
                                 process.exit(1);
                                 break;
                             case this.InitResponse.Result.TIMEOUT:

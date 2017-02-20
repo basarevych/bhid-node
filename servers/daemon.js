@@ -78,6 +78,8 @@ class Daemon extends EventEmitter {
                         this.InitResponse = this.proto.lookup('local.InitResponse');
                         this.ConfirmRequest = this.proto.lookup('local.ConfirmRequest');
                         this.ConfirmResponse = this.proto.lookup('local.ConfirmResponse');
+                        this.CreateDaemonRequest = this.proto.lookup('local.CreateDaemonRequest');
+                        this.CreateDaemonResponse = this.proto.lookup('local.CreateDaemonResponse');
                         this.SetTokenRequest = this.proto.lookup('local.SetTokenRequest');
                         this.SetTokenResponse = this.proto.lookup('local.SetTokenResponse');
                         this.CreateRequest = this.proto.lookup('local.CreateRequest');
@@ -255,6 +257,9 @@ class Daemon extends EventEmitter {
                     break;
                 case this.ClientMessage.Type.CONFIRM_REQUEST:
                     this.emit('confirm_request', id, message);
+                    break;
+                case this.ClientMessage.Type.CREATE_DAEMON_REQUEST:
+                    this.emit('create_daemon_request', id, message);
                     break;
                 case this.ClientMessage.Type.SET_TOKEN_REQUEST:
                     this.emit('set_token_request', id, message);

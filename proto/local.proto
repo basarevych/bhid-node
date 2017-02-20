@@ -4,14 +4,14 @@ package local;
 message InitRequest {
     optional string tracker_name = 1;
     required string email = 2;
-    required string daemon_name = 3;
 }
 
 message InitResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        TIMEOUT = 99;
+        EMAIL_EXISTS = 10;
+        TIMEOUT = 9000;
     }
     required Result response = 1;
 }
@@ -25,10 +25,28 @@ message ConfirmResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        TIMEOUT = 99;
+        TIMEOUT = 9000;
     }
     required Result response = 1;
     optional string token = 2;
+}
+
+message CreateDaemonRequest {
+    required string token = 1;
+    optional string daemon_name = 2;
+    optional bool randomize = 3;
+}
+
+message CreateDaemonResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        NAME_EXISTS = 10;
+        TIMEOUT = 9000;
+    }
+    required Result response = 1;
+    optional string daemon_name = 2;
+    optional string token = 3;
 }
 
 message SetTokenRequest {
@@ -66,9 +84,9 @@ message CreateResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        INVALID_PATH = 2;
-        PATH_EXISTS = 3;
-        TIMEOUT = 99;
+        INVALID_PATH = 10;
+        PATH_EXISTS = 11;
+        TIMEOUT = 9000;
     }
     required Result response = 1;
     optional string server_token = 2;
@@ -84,9 +102,9 @@ message DeleteResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        INVALID_PATH = 2;
-        PATH_NOT_FOUND = 3;
-        TIMEOUT = 99;
+        INVALID_PATH = 10;
+        PATH_NOT_FOUND = 11;
+        TIMEOUT = 9000;
     }
     required Result response = 1;
 }
@@ -101,8 +119,8 @@ message ConnectResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        ALREADY_CONNECTED = 2;
-        TIMEOUT = 99;
+        ALREADY_CONNECTED = 10;
+        TIMEOUT = 9000;
     }
     required Result response = 1;
 }
@@ -117,10 +135,10 @@ message DisconnectResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        INVALID_PATH = 2;
-        PATH_NOT_FOUND = 3;
-        NOT_CONNECTED = 4;
-        TIMEOUT = 99;
+        INVALID_PATH = 10;
+        PATH_NOT_FOUND = 11;
+        NOT_CONNECTED = 20;
+        TIMEOUT = 9000;
     }
     required Result response = 1;
 }
@@ -152,9 +170,9 @@ message TreeResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        INVALID_PATH = 2;
-        PATH_NOT_FOUND = 3;
-        TIMEOUT = 99;
+        INVALID_PATH = 10;
+        PATH_NOT_FOUND = 11;
+        TIMEOUT = 9000;
     }
     required Result response = 1;
     optional Tree tree = 2;
@@ -190,7 +208,7 @@ message ConnectionsListResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        TIMEOUT = 99;
+        TIMEOUT = 9000;
     }
     required Result response = 1;
     optional ConnectionsList list = 2;
@@ -213,50 +231,54 @@ message ClientMessage {
     enum Type {
         INIT_REQUEST = 0;
         CONFIRM_REQUEST = 1;
-        SET_TOKEN_REQUEST = 2;
-        CREATE_REQUEST = 3;
-        DELETE_REQUEST = 4;
-        CONNECT_REQUEST = 5;
-        DISCONNECT_REQUEST = 6;
-        TREE_REQUEST = 7;
-        CONNECTIONS_LIST_REQUEST = 8;
-        SET_CONNECTIONS_REQUEST = 9;
+        CREATE_DAEMON_REQUEST = 10;
+        SET_TOKEN_REQUEST = 20;
+        CREATE_REQUEST = 30;
+        DELETE_REQUEST = 40;
+        CONNECT_REQUEST = 50;
+        DISCONNECT_REQUEST = 60;
+        TREE_REQUEST = 70;
+        CONNECTIONS_LIST_REQUEST = 80;
+        SET_CONNECTIONS_REQUEST = 90;
     }
     required Type type = 1;
-    optional InitRequest init_request = 2;
-    optional ConfirmRequest confirm_request = 3;
-    optional SetTokenRequest set_token_request = 4;
-    optional CreateRequest create_request = 5;
-    optional DeleteRequest delete_request = 6;
-    optional ConnectRequest connect_request = 7;
-    optional DisconnectRequest disconnect_request = 8;
-    optional TreeRequest tree_request = 9;
-    optional ConnectionsListRequest connections_list_request = 10;
-    optional SetConnectionsRequest set_connections_request = 11;
+    optional InitRequest init_request = 100;
+    optional ConfirmRequest confirm_request = 110;
+    optional CreateDaemonRequest create_daemon_request = 200;
+    optional SetTokenRequest set_token_request = 300;
+    optional CreateRequest create_request = 400;
+    optional DeleteRequest delete_request = 500;
+    optional ConnectRequest connect_request = 600;
+    optional DisconnectRequest disconnect_request = 700;
+    optional TreeRequest tree_request = 800;
+    optional ConnectionsListRequest connections_list_request = 900;
+    optional SetConnectionsRequest set_connections_request = 1000;
 }
 
 message ServerMessage {
     enum Type {
         INIT_RESPONSE = 0;
         CONFIRM_RESPONSE = 1;
-        SET_TOKEN_RESPONSE = 2;
-        CREATE_RESPONSE = 3;
-        DELETE_RESPONSE = 4;
-        CONNECT_RESPONSE = 5;
-        DISCONNECT_RESPONSE = 6;
-        TREE_RESPONSE = 7;
-        CONNECTIONS_LIST_RESPONSE = 8;
-        SET_CONNECTIONS_RESPONSE = 9;
+        CREATE_DAEMON_RESPONSE = 10;
+        SET_TOKEN_RESPONSE = 20;
+        CREATE_RESPONSE = 30;
+        DELETE_RESPONSE = 40;
+        CONNECT_RESPONSE = 50;
+        DISCONNECT_RESPONSE = 60;
+        TREE_RESPONSE = 70;
+        CONNECTIONS_LIST_RESPONSE = 80;
+        SET_CONNECTIONS_RESPONSE = 90;
     }
     required Type type = 1;
-    optional InitResponse init_response = 2;
-    optional ConfirmResponse confirm_response = 3;
-    optional SetTokenResponse set_token_response = 4;
-    optional CreateResponse create_response = 5;
-    optional DeleteResponse delete_response = 6;
-    optional ConnectResponse connect_response = 7;
-    optional DisconnectResponse disconnect_response = 8;
-    optional TreeResponse tree_response = 9;
-    optional ConnectionsListResponse connections_list_response = 10;
-    optional SetConnectionsResponse set_connections_response = 11;
+    optional InitResponse init_response = 100;
+    optional ConfirmResponse confirm_response = 110;
+    optional CreateDaemonResponse create_daemon_response = 200;
+    optional SetTokenResponse set_token_response = 300;
+    optional CreateResponse create_response = 400;
+    optional DeleteResponse delete_response = 500;
+    optional ConnectResponse connect_response = 600;
+    optional DisconnectResponse disconnect_response = 700;
+    optional TreeResponse tree_response = 800;
+    optional ConnectionsListResponse connections_list_response = 900;
+    optional SetConnectionsResponse set_connections_response = 1000;
 }

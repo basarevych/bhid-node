@@ -1,15 +1,15 @@
 /**
- * Init Request event
- * @module daemon/events/init-request
+ * Create Daemon Request event
+ * @module daemon/events/create-daemon-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Init Request event class
+ * Create Daemon Request event class
  */
-class InitRequest {
+class CreateDaemonRequest {
     /**
      * Create service
      * @param {App} app                         The application
@@ -23,11 +23,11 @@ class InitRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.events.initRequest'
+     * Service name is 'modules.daemon.events.createDaemonRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.events.initRequest';
+        return 'modules.daemon.events.createDaemonRequest';
     }
 
     /**
@@ -48,29 +48,31 @@ class InitRequest {
         if (!client)
             return;
 
-        debug(`Got INIT REQUEST`);
+        debug(`Got CREATE DAEMON REQUEST`);
         try {
             let relayId = uuid.v1();
 
             let timer, onResponse;
-            let reply = value => {
+            let reply = (value, name, token) => {
                 if (timer) {
                     clearTimeout(timer);
                     timer = null;
                 }
 
                 if (onResponse)
-                    this.tracker.removeListener('init_response', onResponse);
+                    this.tracker.removeListener('create_daemon_response', onResponse);
 
-                let reply = this.daemon.InitResponse.create({
+                let reply = this.daemon.CreateDaemonResponse.create({
                     response: value,
+                    daemonName: name || '',
+                    token: token || '',
                 });
                 let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.INIT_RESPONSE,
-                    initResponse: reply,
+                    type: this.daemon.ServerMessage.Type.CREATE_DAEMON_RESPONSE,
+                    createDaemonResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending INIT RESPONSE`);
+                debug(`Sending CREATE DAEMON RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -78,30 +80,36 @@ class InitRequest {
                 if (response.messageId != relayId)
                     return;
 
-                debug(`Got INIT RESPONSE from tracker`);
-                reply(response.initResponse.response);
+                debug(`Got CREATE DAEMON RESPONSE from tracker`);
+                reply(
+                    response.createDaemonResponse.response,
+                    response.createDaemonResponse.daemonName,
+                    response.createDaemonResponse.token
+                );
             };
-            this.tracker.on('init_response', onResponse);
+            this.tracker.on('create_daemon_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.InitResponse.Result.TIMEOUT);
+                    reply(this.daemon.CreateDaemonResponse.Result.TIMEOUT);
                 },
                 this.daemon.constructor.requestTimeout
             );
 
-            let request = this.tracker.InitRequest.create({
-                email: message.initRequest.email,
+            let request = this.tracker.CreateDaemonRequest.create({
+                token: message.createDaemonRequest.token,
+                daemonName: message.createDaemonRequest.daemonName,
+                randomize: message.createDaemonRequest.randomize,
             });
             let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.INIT_REQUEST,
+                type: this.tracker.ClientMessage.Type.CREATE_DAEMON_REQUEST,
                 messageId: relayId,
-                initRequest: request,
+                createDaemonRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.initRequest.trackerName, data);
+            this.tracker.send(message.createDaemonRequest.trackerName, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'InitRequest.handle()'));
+            this._logger.error(new WError(error, 'CreateDaemonRequest.handle()'));
         }
     }
 
@@ -128,4 +136,4 @@ class InitRequest {
     }
 }
 
-module.exports = InitRequest;
+module.exports = CreateDaemonRequest;

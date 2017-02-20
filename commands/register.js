@@ -1,6 +1,6 @@
 /**
- * Confirm command
- * @module commands/confirm
+ * Register command
+ * @module commands/register
  */
 const debug = require('debug')('bhid:command');
 const path = require('path');
@@ -11,7 +11,7 @@ const SocketWrapper = require('socket-wrapper');
 /**
  * Command class
  */
-class Confirm {
+class Register {
     /**
      * Create the service
      * @param {App} app                 The application
@@ -23,11 +23,11 @@ class Confirm {
     }
 
     /**
-     * Service name is 'commands.confirm'
+     * Service name is 'commands.register'
      * @type {string}
      */
     static get provides() {
-        return 'commands.confirm';
+        return 'commands.register';
     }
 
     /**
@@ -48,6 +48,8 @@ class Confirm {
             return this.error('Invalid parameters');
 
         let token = argv['_'][1];
+        let daemonName = argv['_'][2] || '';
+        let randomize = !!argv['r'];
         let trackerName = argv['t'] || '';
 
         debug('Loading protocol');
@@ -57,37 +59,79 @@ class Confirm {
 
             try {
                 this.proto = root;
-                this.ConfirmRequest = this.proto.lookup('local.ConfirmRequest');
-                this.ConfirmResponse = this.proto.lookup('local.ConfirmResponse');
+                this.CreateDaemonRequest = this.proto.lookup('local.CreateDaemonRequest');
+                this.CreateDaemonResponse = this.proto.lookup('local.CreateDaemonResponse');
+                this.SetTokenRequest = this.proto.lookup('local.SetTokenRequest');
+                this.SetTokenResponse = this.proto.lookup('local.SetTokenResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                debug(`Sending CONFIRM REQUEST`);
-                let request = this.ConfirmRequest.create({
+                debug(`Sending CREATE DAEMON REQUEST`);
+                let request = this.CreateDaemonRequest.create({
                     trackerName: trackerName,
                     token: token,
+                    daemonName: daemonName,
+                    randomize: randomize,
                 });
                 let message = this.ClientMessage.create({
-                    type: this.ClientMessage.Type.CONFIRM_REQUEST,
-                    confirmRequest: request,
+                    type: this.ClientMessage.Type.CREATE_DAEMON_REQUEST,
+                    createDaemonRequest: request,
                 });
                 let buffer = this.ClientMessage.encode(message).finish();
                 this.send(buffer)
                     .then(data => {
                         let message = this.ServerMessage.decode(data);
-                        if (message.type !== this.ServerMessage.Type.CONFIRM_RESPONSE)
+                        if (message.type !== this.ServerMessage.Type.CREATE_DAEMON_RESPONSE)
                             throw new Error('Invalid reply from daemon');
 
-                        switch (message.confirmResponse.response) {
-                            case this.ConfirmResponse.Result.ACCEPTED:
-                                console.log('Your master token is ' + message.confirmResponse.token);
-                                process.exit(0);
+                        switch (message.createDaemonResponse.response) {
+                            case this.CreateDaemonResponse.Result.ACCEPTED:
+                                console.log(
+                                    'Your daemon name is ' + message.createDaemonResponse.daemonName +
+                                    ', token: ' + message.createDaemonResponse.token
+                                );
+                                debug(`Sending SET TOKEN REQUEST`);
+                                request = this.SetTokenRequest.create({
+                                    trackerName: trackerName,
+                                    token: message.createDaemonResponse.token,
+                                });
+                                message = this.ClientMessage.create({
+                                    type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
+                                    setTokenRequest: request,
+                                });
+                                buffer = this.ClientMessage.encode(message).finish();
+                                this.send(buffer)
+                                    .then(data => {
+                                        message = this.ServerMessage.decode(data);
+                                        if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
+                                            throw new Error('Invalid reply from daemon');
+
+                                        switch (message.setTokenResponse.response) {
+                                            case this.SetTokenResponse.Result.ACCEPTED:
+                                                console.log('It has been saved in the configuration and will be used automatically with this tracker');
+                                                process.exit(0);
+                                                break;
+                                            case this.SetTokenResponse.Result.REJECTED:
+                                                console.log('Save request rejected');
+                                                process.exit(1);
+                                                break;
+                                            default:
+                                                throw new Error('Unsupported response from daemon');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        this.error(error.message);
+                                    });
                                 break;
-                            case this.ConfirmResponse.Result.REJECTED:
+                            case this.CreateDaemonResponse.Result.REJECTED:
                                 console.log('Request rejected');
                                 process.exit(1);
                                 break;
-                            case this.ConfirmResponse.Result.TIMEOUT:
+                            case this.CreateDaemonResponse.Result.NAME_EXISTS:
+                                console.log('Bot with this name already exists');
+                                process.exit(1);
+                                break;
+                            case this.CreateDaemonResponse.Result.TIMEOUT:
                                 console.log('No response from tracker');
                                 process.exit(1);
                                 break;
@@ -154,4 +198,4 @@ class Confirm {
     }
 }
 
-module.exports = Confirm;
+module.exports = Register;

@@ -17,7 +17,8 @@ function usage() {
     console.log('\tinstall\t\tRegister the program in the system');
     console.log('\tinit\t\tInitialize the account');
     console.log('\tconfirm\t\tConfirm email');
-    console.log('\tauth\t\tSet and save a token for tracker');
+    console.log('\tregister\t\tRegister new daemon');
+    console.log('\tauth\t\tSet and save token for the daemon');
     console.log('\tcreate\t\tCreate new connection');
     console.log('\tdelete\t\tDelete a connection');
     console.log('\tconnect\t\tMake the daemon server or client of a connection');
@@ -96,13 +97,21 @@ switch (argv['_'][0]) {
                 console.log('\tand will create configuration in /etc/bhid by default');
                 break;
             case 'init':
-                console.log('Usage: bhid init <email> <daemon-name> [-t <tracker>]\n');
-                console.log('\tInitialize your and daemon accounts on the tracker');
+                console.log('Usage: bhid init <email> [-t <tracker>]\n');
+                console.log('\tInitialize your account on the tracker');
                 console.log('\tYou will receive a confirmation email');
                 break;
             case 'confirm':
                 console.log('Usage: bhid confirm <token> [-t <tracker>]\n');
-                console.log('\tConfirm account creation or generation of a new token');
+                console.log('\tConfirm account creation');
+                break;
+            case 'register':
+                console.log('Usage: bhid register <master-token> [<daemon-name>] [-r] [-t <tracker>]\n');
+                console.log('\tCreate new daemon. If name and -r flag are set then the name will be randomized');
+                break;
+            case 'auth':
+                console.log('Usage: bhid auth <token> [-t <tracker>]\n');
+                console.log('\tSet and save the token of this daemon');
                 break;
             case 'create':
                 console.log('Usage: bhid create <path> <connect-addr> <listen-addr>');
@@ -167,6 +176,7 @@ switch (argv['_'][0]) {
         break;
     case 'init':
     case 'confirm':
+    case 'register':
     case 'auth':
     case 'create':
     case 'delete':
