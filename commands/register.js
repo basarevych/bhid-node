@@ -87,8 +87,8 @@ class Register {
                         switch (message.createDaemonResponse.response) {
                             case this.CreateDaemonResponse.Result.ACCEPTED:
                                 console.log(
-                                    'Your daemon name is ' + message.createDaemonResponse.daemonName +
-                                    ', token: ' + message.createDaemonResponse.token
+                                    'Name: ' + message.createDaemonResponse.daemonName + '\n' +
+                                    'Token: ' + message.createDaemonResponse.token
                                 );
                                 debug(`Sending SET TOKEN REQUEST`);
                                 request = this.SetTokenRequest.create({
