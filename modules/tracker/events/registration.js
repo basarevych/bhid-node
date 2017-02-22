@@ -53,23 +53,8 @@ class Registration {
             if (tracker != name)
                 continue;
 
-            for (let [ connectionName, connection ] of connections.serverConnections) {
-                let info = this.peer.connections.get(tracker + '#' + connection.name);
-                if (!info)
-                    continue;
-                let address = info.utp.getUdpSocket().address();
-                if (!address)
-                    continue;
-
-                this.tracker.sendStatus(
-                    tracker,
-                    connection.name,
-                    connection.connected,
-                    server.socket.localAddress,
-                    address.port
-                );
-            }
-            for (let [ connectionName, connection ] of connections.clientConnections) {
+            let merged = new Map([ ...connections.serverConnections, ...connections.clientConnections ]);
+            for (let [ connectionName, connection ] of merged) {
                 let info = this.peer.connections.get(tracker + '#' + connection.name);
                 if (!info)
                     continue;

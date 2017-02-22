@@ -12,16 +12,14 @@ const WError = require('verror').WError;
 class ConnectResponse {
     /**
      * Create service
-     * @param {App} app                         The application
-     * @param {object} config                   Configuration
-     * @param {Logger} logger                   Logger service
-     * @param {ConnectionsList} connectionsList     Connections List service
+     * @param {App} app                             The application
+     * @param {object} config                       Configuration
+     * @param {Logger} logger                       Logger service
      */
-    constructor(app, config, logger, connectionsList) {
+    constructor(app, config, logger) {
         this._app = app;
         this._config = config;
         this._logger = logger;
-        this._connectionsList = connectionsList;
     }
 
     /**
@@ -37,7 +35,7 @@ class ConnectResponse {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger' ];
     }
 
     /**
@@ -51,47 +49,22 @@ class ConnectResponse {
         if (!connection)
             return;
 
-        let info = connection.server ? connection.clients.get(sessionId) : connection;
-        if (!info)
+        let session = this.peer.sessions.get(sessionId);
+        if (!session)
             return;
 
-        info.accepted = (message.connectResponse.response == this.peer.ConnectResponse.Result.ACCEPTED);
-        if (!info.accepted) {
-            this._logger.info(`Peer of ${name} rejected our connection request`);
-            if (!connection.server) {
-                if (connection.internal.connected)
-                    connection.internal.rejected = true;
-                else if (connection.external.connected)
-                    connection.external.rejected = true;
-            }
+        session.accepted = (message.connectResponse.response == this.peer.ConnectResponse.Result.ACCEPTED);
+        if (!session.accepted) {
+            this._logger.info(`Peer of ${name} rejected our connection request: ${session.socket.remoteAddress}:${session.socket.remotePort}`);
+            let reply = this.peer.OuterMessage.create({
+                type: this.peer.OuterMessage.Type.BYE,
+            });
+            let buffer = this.peer.OuterMessage.encode(reply).finish();
+            this.peer.send(name, sessionId, buffer, true);
         }
 
-        if (info.verified && info.accepted) {
-            if (connection.server)
-                this.front.openServer(name, sessionId, connection.connectAddress, connection.connectPort);
-            else
-                this.front.openClient(name, sessionId, connection.listenAddress, connection.listenPort);
-
-            let connectionName = connection.name.split('#')[1];
-            let trackedConnections = this._connectionsList.list.get(connection.tracker);
-            if (trackedConnections) {
-                let connected;
-                let serverInfo = trackedConnections.serverConnections.get(connectionName);
-                let clientInfo = trackedConnections.clientConnections.get(connectionName);
-                if (serverInfo)
-                    connected = ++serverInfo.connected;
-                else if (clientInfo)
-                    connected = ++clientInfo.connected;
-
-                if (connected) {
-                    this.tracker.sendStatus(
-                        connection.tracker,
-                        connectionName,
-                        connected
-                    );
-                }
-            }
-        }
+        if (session.verified && session.accepted)
+            this.peer.emit('established', name, sessionId);
     }
 
     /**

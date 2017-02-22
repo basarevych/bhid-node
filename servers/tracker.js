@@ -8,6 +8,7 @@ const fs = require('fs');
 const ini = require('ini');
 const tls = require('tls');
 const uuid = require('uuid');
+const os = require('os');
 const protobuf = require('protobufjs');
 const EventEmitter = require('events');
 const WError = require('verror').WError;
@@ -129,6 +130,7 @@ class Tracker extends EventEmitter {
                         this.ConnectionsList = this.proto.lookup('tracker.ConnectionsList');
                         this.ConnectionsListRequest = this.proto.lookup('tracker.ConnectionsListRequest');
                         this.ConnectionsListResponse = this.proto.lookup('tracker.ConnectionsListResponse');
+                        this.InternalAddress = this.proto.lookup('tracker.InternalAddress');
                         this.Status = this.proto.lookup('tracker.Status');
                         this.ServerAvailable = this.proto.lookup('tracker.ServerAvailable');
                         this.LookupIdentityRequest = this.proto.lookup('tracker.LookupIdentityRequest');
@@ -382,35 +384,50 @@ class Tracker extends EventEmitter {
      * Send status message
      * @param {string} trackerName          Tracker name
      * @param {string} connectionName       Connection name
-     * @param {number} [connected]          Number of peers
-     * @param {string} [internalAddress]    Internal address
-     * @param {string} [internalPort]       Internal port
      */
-    sendStatus(trackerName, connectionName, connected, internalAddress, internalPort) {
+    sendStatus(trackerName, connectionName) {
         let server = this.servers.get(trackerName);
         if (!server || !server.registered)
             return;
 
-        if (typeof connected == 'undefined') {
-            connected = 0;
-            let trackedConnections = this._connectionsList.list.get(trackerName);
-            if (trackedConnections) {
-                let serverInfo = trackedConnections.serverConnections.get(connectionName);
-                let clientInfo = trackedConnections.clientConnections.get(connectionName);
-                if (serverInfo)
-                    connected = serverInfo.connected;
-                else if (clientInfo)
-                    connected = clientInfo.connected;
-            }
+        let connection = this._peer.connections.get(trackerName + '#' + connectionName);
+        if (!connection)
+            return;
+
+        let connected = 0;
+        let trackedConnections = this._connectionsList.list.get(trackerName);
+        if (trackedConnections) {
+            let serverInfo = trackedConnections.serverConnections.get(connectionName);
+            let clientInfo = trackedConnections.clientConnections.get(connectionName);
+            if (serverInfo)
+                connected = serverInfo.connected;
+            else if (clientInfo)
+                connected = clientInfo.connected;
         }
 
         try {
             debug(`Sending STATUS of ${connectionName} to ${trackerName}`);
+            let addresses = [];
+            if (connection.server && connection.utp) {
+                let utpAddress = connection.utp.address();
+                let interfaces = os.networkInterfaces();
+                for (let iface of Object.keys(interfaces)) {
+                    for (let alias of interfaces[iface]) {
+                        if (alias.internal || [ 'IPv4', 'IPv6' ].indexOf(alias.family) == -1)
+                            continue;
+
+                        addresses.push(this.InternalAddress.create({
+                            family: alias.family,
+                            address: alias.address,
+                            port: utpAddress.port.toString(),
+                        }));
+                    }
+                }
+            }
             let status = this.Status.create({
                 connectionName: connectionName,
                 connected: connected,
-                internalAddress: internalAddress ? internalAddress.toString() : undefined,
-                internalPort: internalPort ? internalPort.toString() : undefined,
+                internalAddresses: addresses,
             });
             let message = this.ClientMessage.create({
                 type: this.ClientMessage.Type.STATUS,

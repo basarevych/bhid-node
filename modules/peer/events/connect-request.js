@@ -16,14 +16,12 @@ class ConnectRequest {
      * @param {object} config                       Configuration
      * @param {Logger} logger                       Logger service
      * @param {Crypter} crypter                     Crypter service
-     * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger, crypter, connectionsList) {
+    constructor(app, config, logger, crypter) {
         this._app = app;
         this._config = config;
         this._logger = logger;
         this._crypter = crypter;
-        this._connectionsList = connectionsList;
     }
 
     /**
@@ -39,7 +37,7 @@ class ConnectRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.crypter', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.crypter' ];
     }
 
     /**
@@ -53,11 +51,7 @@ class ConnectRequest {
         if (!connection)
             return;
 
-        let info = connection.server ? connection.clients.get(sessionId) : connection;
-        if (!info)
-            return;
-
-        let session = this._crypter.sessions.get(sessionId);
+        let session = this.peer.sessions.get(sessionId);
         if (!session)
             return;
 
@@ -69,23 +63,18 @@ class ConnectRequest {
                 message.connectRequest.signature
             )
             .then(result => {
-                info.verified = result.verified;
+                session.verified = result.verified;
 
-                if (info.verified) {
-                    session.peerKey = new Uint8Array(Buffer.from(message.connectRequest.publicKey, 'base64'));
-                    session.peerName = result.name;
+                if (session.verified) {
+                    let cryptSession = this._crypter.sessions.get(sessionId);
+                    cryptSession.peerKey = new Uint8Array(Buffer.from(message.connectRequest.publicKey, 'base64'));
+                    cryptSession.peerName = result.name;
                 } else {
-                    this._logger.info(`Peer for ${name} rejected`);
-                    if (!connection.server) {
-                        if (connection.internal.connected)
-                            connection.internal.rejected = true;
-                        else if (connection.external.connected)
-                            connection.external.rejected = true;
-                    }
+                    this._logger.info(`Peer for ${name} rejected: ${session.socket.remoteAddress}:${session.socket.remotePort}`);
                 }
 
                 let response = this.peer.ConnectResponse.create({
-                    response: info.verified ? this.peer.ConnectResponse.Result.ACCEPTED : this.peer.ConnectResponse.Result.REJECTED,
+                    response: session.verified ? this.peer.ConnectResponse.Result.ACCEPTED : this.peer.ConnectResponse.Result.REJECTED,
                 });
                 let reply = this.peer.OuterMessage.create({
                     type: this.peer.OuterMessage.Type.CONNECT_RESPONSE,
@@ -93,43 +82,11 @@ class ConnectRequest {
                 });
                 let buffer = this.peer.OuterMessage.encode(reply).finish();
 
-                debug(info.verified ? 'Sending ACCEPT' : 'Sending REJECT');
+                debug(session.verified ? 'Sending ACCEPT' : 'Sending REJECT');
                 this.peer.send(name, sessionId, buffer);
 
-                if (!info.verified) {
-                    reply = this.peer.OuterMessage.create({
-                        type: this.peer.OuterMessage.Type.BYE,
-                    });
-                    buffer = this.peer.OuterMessage.encode(reply).finish();
-                    this.peer.send(name, sessionId, buffer, true);
-                }
-
-                if (info.verified && info.accepted) {
-                    if (connection.server)
-                        this.front.openServer(name, sessionId, connection.connectAddress, connection.connectPort);
-                    else
-                        this.front.openClient(name, sessionId, connection.listenAddress, connection.listenPort);
-
-                    let connectionName = connection.name.split('#')[1];
-                    let trackedConnections = this._connectionsList.list.get(connection.tracker);
-                    if (trackedConnections) {
-                        let connected;
-                        let serverInfo = trackedConnections.serverConnections.get(connectionName);
-                        let clientInfo = trackedConnections.clientConnections.get(connectionName);
-                        if (serverInfo)
-                            connected = ++serverInfo.connected;
-                        else if (clientInfo)
-                            connected = ++clientInfo.connected;
-
-                        if (connected) {
-                            this.tracker.sendStatus(
-                                connection.tracker,
-                                connectionName,
-                                connected
-                            );
-                        }
-                    }
-                }
+                if (session.verified && session.accepted)
+                    this.peer.emit('established', name, sessionId);
             })
             .catch(error => {
                 this._logger.error(new WError(error, `ConnectRequest.handle()`));

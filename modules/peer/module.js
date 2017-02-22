@@ -62,6 +62,9 @@ class Peer {
         let connectResponse = this._app.get('modules.peer.events.connectResponse');
         server.on('connect_response', connectResponse.handle.bind(connectResponse));
 
+        let established = this._app.get('modules.peer.events.established');
+        server.on('established', established.handle.bind(established));
+
         let data = this._app.get('modules.peer.events.data');
         server.on('data', data.handle.bind(data));
 

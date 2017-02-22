@@ -143,26 +143,34 @@ class Front extends EventEmitter {
         this.connections.set(name, connection);
 
         connection.tcp = net.createServer(socket => { this.onConnection(name, tunnelId, socket); });
-        connection.tcp.once('error', error => { this.onServerError(name, error); });
+        let bind;
+        let onError = error => {
+            if (error.syscall !== 'listen')
+                return this._logger.error(new WError(error, 'Front.openClient()'));
 
-        let bind = () => {
+            switch (error.code) {
+                case 'EACCES':
+                    this._logger.error(`${name}: port ${address}:${port} requires elevated privileges`);
+                    setTimeout(() => { bind(); }, this.constructor.bindPause);
+                    break;
+                case 'EADDRINUSE':
+                    this._logger.error(`${name}: port ${address}:${port} is already in use`);
+                    setTimeout(() => { bind(); }, this.constructor.bindPause);
+                    break;
+                default:
+                    this._logger.error(new WError(error, 'Front.openClient()'));
+            }
+        };
+        bind = () => {
             let newCon = this.connections.get(name);
             if (!newCon || newCon !== connection)
                 return;
 
-            try {
-                connection.tcp.listen(port, address, () => {
-                    this._logger.info(`Ready for connections for ${name} on ${address}:${port}`)
-                });
-            } catch (error) {
-                if (error.code === 'EADDRINUSE') {
-                    debug(`Socket busy (${address}:${port}), retrying...`)
-                    setTimeout(() => { bind(); }, this.constructor.bindPause);
-                } else {
-                    this._logger.error(new WError(error, `Front.openClient(): ${name}`));
-                    this.connections.delete(name);
-                }
-            }
+            connection.tcp.once('error', onError);
+            connection.tcp.listen(port, address, () => {
+                this._logger.info(`Ready for connections for ${name} on ${address}:${port}`)
+                connection.tcp.removeListener('error', onError);
+            });
         };
         bind();
     }
@@ -337,29 +345,8 @@ class Front extends EventEmitter {
             connection.tcp.close();
             connection.tcp = null;
             this._logger.info(`No more connections for ${name} on ${connection.address}:${connection.port}`)
-            this.connections.delete(name);
         }
-    }
-
-    /**
-     * Server error handler
-     * @param {string} name                     Connection name
-     * @param {object} error                    The error
-     */
-    onServerError(name, error) {
-        if (error.syscall !== 'listen')
-            return this._logger.error(new WError(error, 'Front.onServerError()'));
-
-        switch (error.code) {
-            case 'EACCES':
-                this._logger.error(`${name}: port requires elevated privileges`);
-                break;
-            case 'EADDRINUSE':
-                this._logger.error(`${name}: port is already in use`);
-                break;
-            default:
-                this._logger.error(new WError(error, 'Front.onServerError()'));
-        }
+        this.connections.delete(name);
     }
 
     /**

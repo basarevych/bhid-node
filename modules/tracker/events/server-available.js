@@ -47,16 +47,7 @@ class ServerAvailable {
         let connectionName = name + '#' + message.serverAvailable.connectionName;
         debug(`Got SERVER AVAILABLE for ${connectionName}`);
 
-        let connection = this.peer.connections.get(connectionName);
-        if (!connection || connection.server)
-            return;
-
-        this.peer.connect(
-            connectionName,
-            'internal',
-            message.serverAvailable.internalAddress,
-            message.serverAvailable.internalPort
-        );
+        this.peer.connect(connectionName, 'internal', message.serverAvailable.internalAddresses);
     }
 
     /**

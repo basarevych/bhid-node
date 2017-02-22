@@ -50,15 +50,15 @@ class Connection {
         if (!connection)
             return;
 
-        let session = this._crypter.sessions.get(sessionId);
-        if (!session)
+        let cryptSession = this._crypter.sessions.get(sessionId);
+        if (!cryptSession)
             return;
 
         try {
             let request = this.peer.ConnectRequest.create({
                 identity: this._crypter.identity,
-                publicKey: session.publicKey,
-                signature: this._crypter.sign(session.publicKey),
+                publicKey: cryptSession.publicKey,
+                signature: this._crypter.sign(cryptSession.publicKey),
                 encrypted: connection.encrypted,
             });
             let msg = this.peer.OuterMessage.create({

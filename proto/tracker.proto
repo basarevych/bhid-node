@@ -198,17 +198,21 @@ message ConnectionsListResponse {
     optional ConnectionsList list = 2;
 }
 
+message InternalAddress {
+    required string family = 1;
+    required string address = 2;
+    required string port = 3;
+}
+
 message Status {
     required string connection_name = 1;
     required uint32 connected = 2;
-    optional string internal_address = 3;
-    optional string internal_port = 4;
+    repeated InternalAddress internal_addresses = 3;
 }
 
 message ServerAvailable {
     required string connection_name = 1;
-    required string internal_address = 2;
-    required string internal_port = 3;
+    repeated InternalAddress internal_addresses = 2;
 }
 
 message LookupIdentityRequest {

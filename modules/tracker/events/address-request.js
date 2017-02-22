@@ -65,16 +65,18 @@ class AddressRequest {
                 addressResponse: response,
             });
             let data = this.tracker.ClientMessage.encode(msg).finish();
-            debug(`Sending ADDRESS RESPONSE to ${connection.tracker}`);
-            if (connection.server) {
+            if (connection.server && connection.utp) {
+                debug(`Sending ADDRESS RESPONSE to ${connection.tracker}`);
                 connection.utp.getUdpSocket().send(
                     data,
                     tracker.socket.remotePort,
                     tracker.socket.remoteAddress
                 );
-            } else {
-                this.bind(connection, () => {
-                    connection.utp.getUdpSocket().send(
+            } else if (!connection.internal && !connection.external) {
+                this.peer.createSession(connectionName, sessionId => {
+                    debug(`Sending ADDRESS RESPONSE to ${connection.tracker}`);
+                    let session = this.peer.sessions.get(sessionId);
+                    session.utp.getUdpSocket().send(
                         data,
                         tracker.socket.remotePort,
                         tracker.socket.remoteAddress
@@ -84,32 +86,6 @@ class AddressRequest {
         } catch (error) {
             this._logger.error(new WError(error, 'AddressRequest.handle()'));
         }
-    }
-
-    /**
-     * Bind UTP socket and run callback
-     * @param {object} connection               Connection object
-     * @param {function} cb                     Callback
-     */
-    bind(connection, cb) {
-        if (connection._binding)
-            return;
-
-        connection._binding = true;
-        connection.utp = utp.createClient();
-        connection.utp.once('error', error => {
-            connection.utp = null;
-            delete connection._binding;
-            setTimeout(() => {
-                this.bind(connection, cb);
-            }, 1000);
-        });
-        connection.utp.once('bound', () => {
-            delete connection._binding;
-            cb();
-        });
-
-        connection.utp.bind();
     }
 
     /**

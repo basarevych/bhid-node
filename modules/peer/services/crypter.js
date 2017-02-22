@@ -21,6 +21,8 @@ class Crypter {
     constructor(app, config, logger) {
         this.publicKey = null;
         this.privateKey = null;
+        this.identity = null;
+
         this.sessions = new Map();
 
         this._app = app;

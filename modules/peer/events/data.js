@@ -51,8 +51,8 @@ class Data {
         if (!connection)
             return;
 
-        let info = connection.server ? connection.clients.get(sessionId) : connection;
-        if (!info)
+        let session = this.peer.sessions.get(sessionId);
+        if (!session)
             return;
 
         let data;
@@ -64,13 +64,20 @@ class Data {
         if (!data) {
             if (connection.encrypted)
                 this._logger.error(`Could not decrypt message for ${name}`);
-            info.socket.end();
-            info.wrapper.detach();
+            session.socket.end();
+            session.wrapper.detach();
+            return;
+        }
+
+        let innerMessage;
+        try {
+            innerMessage = this.peer.InnerMessage.decode(data);
+        } catch (error) {
+            this._logger.error(`Peer of ${name} inner protocol error: ${error.message}`);
             return;
         }
 
         try {
-            let innerMessage = this.peer.InnerMessage.decode(data);
             switch (innerMessage.type) {
                 case this.peer.InnerMessage.Type.OPEN:
                     this.front.connect(name, sessionId, innerMessage.id);
@@ -83,7 +90,7 @@ class Data {
                     break;
             }
         } catch (error) {
-            this._logger.error(`Peer of ${name} inner protocol error: ${error.message}`);
+            this._logger.error(new WError(error, 'Data.handle()'));
         }
     }
 

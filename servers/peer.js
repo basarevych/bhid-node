@@ -28,6 +28,7 @@ class Peer extends EventEmitter {
         super();
 
         this.connections = new Map();
+        this.sessions = new Map();
 
         this._name = null;
         this._app = app;
@@ -52,6 +53,14 @@ class Peer extends EventEmitter {
      */
     static get requires() {
         return [ 'app', 'config', 'logger', 'modules.peer.crypter', 'modules.peer.connectionsList' ];
+    }
+
+    /**
+     * Tracker address response timeout
+     * @type {number}
+     */
+    static get addressTimeout() {
+        return 10 * 1000; // ms
     }
 
     /**
@@ -181,10 +190,10 @@ class Peer extends EventEmitter {
         debug(`Starting ${name}`);
         try {
             let connection = {
+                server: true,
                 name: name,
                 tracker: tracker,
                 peerId: null,
-                server: true,
                 registering: false,
                 registered: false,
                 connectAddress: connectAddress,
@@ -193,26 +202,21 @@ class Peer extends EventEmitter {
                 fixed: fixed,
                 peers: peers,
                 utp: null,
-                clients: new Map(),
+                sessions: new Set(),
             };
             this.connections.set(name, connection);
 
+            let server = utp.createServer(socket => { this.onConnection(name, socket); });
             new Promise((resolveBind, rejectBind) => {
                     debug('Initiating server socket');
-                    connection.utp = utp.createServer(socket => { this.onConnection(name, socket); });
-                    connection.utp.once('error', error => { rejectBind(error); });
-                    connection.utp.bind();
-                    connection.utp.listen(() => { resolveBind(); })
+                    server.bind();
+                    server.once('error', error => { rejectBind(error); });
+                    server.listen(() => { resolveBind(); })
                 })
                 .then(() => {
                     debug(`Network server for ${name} started`);
-                    this._tracker.sendStatus(
-                        tracker,
-                        name.split('#')[1],
-                        0,
-                        connection.utp.getUdpSocket().address().address,
-                        connection.utp.getUdpSocket().address().port
-                    );
+                    connection.utp = server;
+                    this._tracker.sendStatus(tracker, name.split('#')[1], 0);
                 })
                 .catch(error => {
                     this.connections.delete(name);
@@ -237,10 +241,10 @@ class Peer extends EventEmitter {
         name = tracker + '#' + name;
         debug(`Starting ${name}`);
         let connection = {
+            server: false,
             name: name,
             tracker: tracker,
             peerId: null,
-            server: false,
             registering: false,
             registered: false,
             listenAddress: listenAddress,
@@ -248,27 +252,10 @@ class Peer extends EventEmitter {
             encrypted: encrypted,
             fixed: true,
             peers: peers,
-            utp: null,
+            sessions: new Set(),
             sessionId: null,
-            socket: null,
-            wrapper: new SocketWrapper(),
-            internal: {
-                address: null,
-                port: null,
-                connecting: false,
-                connected: false,
-                rejected: false,
-            },
-            external: {
-                address: null,
-                port: null,
-                punchingTimer: null,
-                connecting: false,
-                connected: false,
-                rejected: false,
-            },
-            verified: false,
-            accepted: false,
+            internal: false,
+            external: false,
         };
         this.connections.set(name, connection);
         this._tracker.sendStatus(tracker, name.split('#')[1], 0);
@@ -285,14 +272,12 @@ class Peer extends EventEmitter {
 
         debug(`Closing ${name}`);
         connection.closing = true;
-        if (connection.server) {
-            for (let id of connection.clients.keys())
-                this.onClose(name, id);
-        } else {
-            this.onClose(name, connection.sessionId);
-        }
+
+        for (let id of connection.sessions)
+            this.onClose(name, id);
 
         this.connections.delete(name);
+
         if (connection.utp)
             connection.utp.close();
     }
@@ -301,68 +286,58 @@ class Peer extends EventEmitter {
      * Connect to server
      * @param {string} name             Connection name
      * @param {string} type             'internal' or 'external'
-     * @param {string} address          Server address
-     * @param {string} port             Server port
+     * @param {object[]} addresses      Server addresses: { address, port }
      */
-    connect(name, type, address, port) {
+    connect(name, type, addresses) {
         let connection = this.connections.get(name);
-        if (!connection || connection.server || connection.internal.connecting || connection.external.connecting)
+        if (!connection || connection.server || connection.internal || connection.external)
             return;
 
-        connection[type].address = address;
-        connection[type].port = port;
+        connection[type] = true;
 
-        if (type == 'external' && connection[type].punchingTimer) {
-            clearTimeout(connection[type].punchingTimer);
-            connection[type].punchingTimer = null;
-        }
-
-        connection.verified = false;
-        connection.accepted = false;
-
-        connection[type].connecting = true;
-        connection[type].connected = false;
-        connection[type].rejected = false;
-
-        let doConnect = () => {
+        let doConnect = (sessionId, address, port) => {
             try {
                 this._logger.info(`Initiating ${type} connection to ${name} (${address}:${port})`);
-                connection.sessionId = this._crypter.create(name);
+                let session = this.sessions.get(sessionId);
+                if (!session)
+                    return;
 
-                connection.socket = connection.utp.connect(
+                session.address = address;
+                session.port = port;
+                session.socket = session.utp.connect(
                     port,
                     address,
                     () => {
-                        let newCon = this.connections.get(name);
-                        if (!newCon || newCon.sessionId !== connection.sessionId) {
-                            connection.socket.end();
+                        if (!this.sessions.has(sessionId)) {
+                            session.socket.end();
+                            session.wrapper.detach();
                             return;
                         }
 
-                        connection.wrapper.removeAllListeners();
-                        connection.wrapper.attach(connection.socket);
+                        session.wrapper.removeAllListeners();
+                        session.wrapper.attach(session.socket);
 
-                        connection.wrapper.on(
+                        session.wrapper.on(
                             'receive',
                             data => {
-                                if (!this.onMessage(name, connection.sessionId, data)) {
-                                    connection.socket.end();
-                                    connection.wrapper.detach();
+                                if (!this.onMessage(name, sessionId, data)) {
+                                    session.socket.end();
+                                    session.wrapper.detach();
                                 }
                             }
                         );
-                        connection.wrapper.on(
+                        session.wrapper.on(
                             'read',
                             data => {
-                                let timeout = this._timeouts.get(connection.sessionId);
+                                let timeout = this._timeouts.get(sessionId);
                                 if (timeout)
                                     timeout.receive = Date.now() + this.constructor.pongTimeout;
                             }
                         );
-                        connection.wrapper.on(
+                        session.wrapper.on(
                             'flush',
                             data => {
-                                let timeout = this._timeouts.get(connection.sessionId);
+                                let timeout = this._timeouts.get(sessionId);
                                 if (timeout)
                                     timeout.send = Date.now() + this.constructor.pingTimeout;
                             }
@@ -370,20 +345,24 @@ class Peer extends EventEmitter {
 
                         this._logger.info(`Connected to ${type} address of ${name}`);
                         this._timeouts.set(
-                            connection.sessionId,
+                            sessionId,
                             {
                                 send: Date.now() + this.constructor.pingTimeout,
                                 receive: Date.now() + this.constructor.pongTimeout,
                                 name: name,
                             }
                         );
-                        connection[type].connected = true;
 
-                        this.emit('connection', name, connection.sessionId);
+                        session.establishedTimer = setTimeout(() => {
+                            session.establishedTimer = null;
+                            this._checkSession(name, sessionId);
+                        }, this.constructor.connectTimeout);
+
+                        this.emit('connection', name, sessionId);
                     }
                 );
                 this._timeouts.set(
-                    connection.sessionId,
+                    sessionId,
                     {
                         send: 0,
                         receive: Date.now() + this.constructor.connectTimeout,
@@ -391,30 +370,96 @@ class Peer extends EventEmitter {
                     }
                 );
 
-                connection.socket.on('error', error => {
-                    this.onError(name, connection.sessionId, error);
+                session.socket.on('error', error => {
+                    this.onError(name, sessionId, error);
                 });
-                connection.socket.on('close', () => {
-                    this.onClose(name, connection.sessionId);
+                session.socket.on('close', () => {
+                    this.onClose(name, sessionId);
                 });
             } catch (error) {
                 this._logger.error(new WError(error, `Peer.connect(): ${name}`));
             }
         };
 
-        if (type === 'internal' && !connection.utp) {
-            this._bind(name, () => { doConnect(); });
-        } else if (type === 'external' && connection.utp) {
-            debug(`Punching ${name}: ${address}:${port}`);
-            connection.utp.punch(this.constructor.punchingAttempts, port, address, success => {
-                if (success)
-                    return doConnect();
+        if (type === 'internal') {
+            for (let host of addresses)
+                this.createSession(name, sessionId => { doConnect(sessionId, host.address, host.port); });
+        } else if (type === 'external') {
+            this.createSession(name, sessionId => {
+                let address = addresses[0].address;
+                let port = addresses[0].port;
+                let session = this.sessions.get(sessionId);
+                debug(`Punching ${name}: ${address}:${port}`);
+                session.utp.punch(this.constructor.punchingAttempts, port, address, success => {
+                    if (success)
+                        return doConnect(sessionId, address, port);
 
-                this._logger.info(`Could not open NAT of ${name}`);
-                connection[type].connecting = false;
-                connection.utp.close();
-                connection.utp = null;
+                    this._logger.info(`Could not open NAT of ${name}`);
+                    this.onClose(name, sessionId);
+                });
             });
+        }
+    }
+
+    /**
+     * Create UTP session and run callback
+     * @param {string} name                     Connection name
+     * @param {function} cb                     Callback
+     */
+    createSession(name, cb) {
+        let connection = this.connections.get(name);
+        if (!connection || connection.server)
+            return;
+
+        if (!connection.internal && connection.sessions.size) {
+            let sessionId = connection.sessions.values().next().value;
+            return cb(sessionId);
+        }
+
+        let sessionId = this._crypter.create(name);
+        let session = {
+            sessionId: sessionId,
+            name: name,
+            utp: utp.createClient(),
+            socket: null,
+            wrapper: new SocketWrapper(),
+            verified: false,
+            accepted: false,
+        };
+        this.sessions.set(sessionId, session);
+        connection.sessions.add(sessionId);
+
+        let onError = error => {
+            session.utp = null;
+            connection.sessions.delete(sessionId);
+            this.sessions.delete(sessionId);
+            this._crypter.destroy(sessionId);
+            setTimeout(() => {
+                this.createSession(name, cb);
+            }, 1000);
+        };
+
+        session.utp.once('error', onError);
+        session.utp.once('bound', () => {
+            session.utp.removeListener('error', onError);
+            cb(sessionId);
+        });
+
+        session.utp.bind();
+    }
+
+    /**
+     * Drop extra sessions
+     * @param {string} name             Connection name
+     */
+    dropExtra(name) {
+        let connection = this.connections.get(name);
+        if (!connection || connection.server)
+            return;
+
+        for (let id of connection.sessions) {
+            if (id !== connection.sessionId)
+                this.onClose(name, id);
         }
     }
 
@@ -430,20 +475,13 @@ class Peer extends EventEmitter {
         if (!connection)
             return;
 
-        let wrapper, socket;
-        if (connection.server) {
-            let client = connection.clients.get(sessionId);
-            if (client) {
-                wrapper = client.wrapper;
-                socket = client.socket;
-            }
-        } else {
-            wrapper = connection.wrapper;
-            socket = connection.socket;
-        }
-        if (!wrapper) {
-            if (end === true && socket)
-                socket.end();
+        let session = this.sessions.get(sessionId);
+        if (!session)
+            return;
+
+        if (!session.wrapper) {
+            if (end === true && session.socket)
+                session.socket.end();
             return;
         }
 
@@ -459,14 +497,14 @@ class Peer extends EventEmitter {
             }
         }
 
-        if (end === true && socket) {
-            wrapper.once('flush', () => {
-                wrapper.detach();
-                socket.end();
+        if (end === true && session.socket) {
+            session.wrapper.once('flush', () => {
+                session.wrapper.detach();
+                session.socket.end();
             });
         }
 
-        wrapper.send(data);
+        session.wrapper.send(data);
     }
 
     /**
@@ -477,15 +515,10 @@ class Peer extends EventEmitter {
      */
     sendInnerMessage(name, sessionId, data) {
         let connection = this.connections.get(name);
-        if (!connection || !data.length)
+        if (!connection)
             return;
 
-        let info;
-        if (connection.server)
-            info = connection.clients.get(sessionId);
-        else
-            info = connection;
-        if (!info)
+        if (!data.length)
             return;
 
         try {
@@ -522,20 +555,16 @@ class Peer extends EventEmitter {
      * @param {object} socket                   Client socket
      */
     onConnection(name, socket) {
-        let sessionId = this._crypter.create(name);
-        if (!sessionId) {
-            socket.end();
-            return;
-        }
-
         let connection = this.connections.get(name);
         if (!connection) {
             socket.end();
             return;
         }
 
-        let client = {
+        let sessionId = this._crypter.create(name);
+        let session = {
             sessionId: sessionId,
+            name: name,
             socket: socket,
             wrapper: new SocketWrapper(socket),
             verified: false,
@@ -549,18 +578,19 @@ class Peer extends EventEmitter {
                 name: name,
             }
         );
-        connection.clients.set(sessionId, client);
+        this.sessions.set(sessionId, session);
+        connection.sessions.add(sessionId);
 
-        client.wrapper.on(
+        session.wrapper.on(
             'receive',
             data => {
                 if (!this.onMessage(name, sessionId, data)) {
-                    socket.end();
-                    client.wrapper.detach();
+                    session.socket.end();
+                    session.wrapper.detach();
                 }
             }
         );
-        client.wrapper.on(
+        session.wrapper.on(
             'read',
             data => {
                 let timeout = this._timeouts.get(sessionId);
@@ -568,7 +598,7 @@ class Peer extends EventEmitter {
                     timeout.receive = Date.now() + this.constructor.pongTimeout;
             }
         );
-        client.wrapper.on(
+        session.wrapper.on(
             'flush',
             data => {
                 let timeout = this._timeouts.get(sessionId);
@@ -577,8 +607,8 @@ class Peer extends EventEmitter {
             }
         );
 
-        socket.on('error', error => { this.onError(name, sessionId, error); });
-        socket.on('close', () => { this.onClose(name, sessionId); });
+        session.socket.on('error', error => { this.onError(name, sessionId, error); });
+        session.socket.on('close', () => { this.onClose(name, sessionId); });
 
         this._logger.info(`New connection for ${name} from ${socket.address().address}:${socket.address().port}`);
         this.emit('connection', name, sessionId);
@@ -595,12 +625,8 @@ class Peer extends EventEmitter {
         if (!connection)
             return false;
 
-        let session = this._crypter.sessions.get(sessionId);
+        let session = this.sessions.get(sessionId);
         if (!session)
-            return false;
-
-        let info = connection.server ? connection.clients.get(sessionId) : connection;
-        if (!info)
             return false;
 
         if (!data || !data.length)
@@ -613,14 +639,6 @@ class Peer extends EventEmitter {
                 return true;
         } catch (error) {
             this._logger.error(`Peer ${name} protocol error: ${error.message}`);
-
-            if (!info.verified && !connection.server) {
-                if (info.internal.connected)
-                    info.internal.rejected = true;
-                if (info.external.connected)
-                    info.external.rejected = true;
-            }
-
             return false;
         }
 
@@ -630,7 +648,7 @@ class Peer extends EventEmitter {
                 debug(`Received BYE from ${name}`);
                 return false;
             } else {
-                if (!info.verified || !info.accepted) {
+                if (!session.verified || !session.accepted) {
                     switch (message.type) {
                         case this.OuterMessage.Type.CONNECT_REQUEST:
                             this.emit('connect_request', name, sessionId, message);
@@ -670,96 +688,111 @@ class Peer extends EventEmitter {
      * @param {string} sessionId                Session ID
      */
     onClose(name, sessionId) {
-        this._timeouts.delete(sessionId);
         this._front.close(name, sessionId);
+        this._timeouts.delete(sessionId);
         this._crypter.destroy(sessionId);
 
-        let connection = this.connections.get(name);
-        if (!connection)
-            return;
+        let established = false, reconnect;
 
-        debug(`Socket for ${name} disconnected`);
-        let trackedConnections = this._connectionsList.list.get(connection.tracker);
-        if (trackedConnections) {
-            let info = connection.server ? connection.clients.get(sessionId) : connection;
-            let serverInfo = trackedConnections.serverConnections.get(connection.name.split('#')[1]);
-            let clientInfo = trackedConnections.clientConnections.get(connection.name.split('#')[1]);
-            if (serverInfo && serverInfo.connected > 0 && info.verified && info.accepted) {
-                serverInfo.connected--;
-            } else if (clientInfo && clientInfo.connected > 0 && info.verified && info.accepted) {
-                clientInfo.connected--;
+        let connection = this.connections.get(name);
+        let session = this.sessions.get(sessionId);
+        if (connection) {
+            if (connection.server)
+                established = session && session.verified && session.accepted;
+            else
+                established = (connection.sessionId == sessionId);
+
+            connection.sessions.delete(sessionId);
+
+            if (established) {
+                if (!connection.server)
+                    connection.sessionId = null;
+                if (connection.external)
+                    reconnect = 'external';
+                else if (connection.internal)
+                    reconnect = 'internal';
+            } else {
+                if (connection.internal && connection.sessions.size === 0)
+                    reconnect = 'external';
             }
         }
 
-        if (connection.server) {
-            let client = connection.clients.get(sessionId);
-            if (client) {
-                if (client.socket) {
-                    if (!client.socket.destroyed)
-                        client.socket.destroy();
-                    client.socket = null;
-                    client.wrapper.detach();
-                }
-                connection.clients.delete(sessionId);
+        if (!session)
+            return;
+
+        this.sessions.delete(sessionId);
+
+        if (session.establishedTimer)
+            clearTimeout(session.establishedTimer);
+        if (session.punchingTimer)
+            clearTimeout(session.punchingTimer);
+
+        if (session.socket) {
+            if (!session.socket.destroyed)
+                session.socket.destroy();
+            session.socket = null;
+            session.wrapper.detach();
+        }
+        if (session.utp) {
+            session.utp.close();
+            session.utp = null;
+        }
+
+        let parts = name.split('#');
+        if (parts.length != 2)
+            return;
+
+        let tracker = parts[0];
+        let connectionName = parts[1];
+
+        debug(`Socket for ${name} disconnected`);
+        if (established) {
+            let trackedConnections = this._connectionsList.list.get(tracker);
+            if (trackedConnections) {
+                let serverInfo = trackedConnections.serverConnections.get(connectionName);
+                if (serverInfo && serverInfo.connected > 0)
+                    serverInfo.connected--;
+                let clientInfo = trackedConnections.clientConnections.get(connectionName);
+                if (clientInfo && clientInfo.connected > 0)
+                    clientInfo.connected--;
             }
-            let parts = name.split('#');
-            this._tracker.sendStatus(parts[0], parts[1]);
+        }
+
+        if (connection.closing || connection.server) {
+            if (connection.sessions.size === 0) {
+                connection.internal = false;
+                connection.external = false;
+            }
+            this._tracker.sendStatus(tracker, connectionName);
         } else {
-            if (connection.socket) {
-                if (!connection.socket.destroyed)
-                    connection.socket.destroy();
-                connection.socket = null;
-                connection.wrapper.detach();
-            }
-            connection.utp = null;
-            connection.sessionId = null;
-            if (connection.internal.rejected && connection.external.rejected) {
-                this.connections.delete(name);
-                return;
-            }
-
-            let reconnect;
-            if (connection.internal.connecting) {
-                if (connection.internal.connected) {
-                    reconnect = connection.internal.rejected ? 'external' : 'internal';
-                } else {
-                    reconnect = 'external';
-                }
-            }
-
-            connection.verified = false;
-            connection.accepted = false;
-
-            connection.internal.connecting = false;
-            connection.internal.connected = false;
-            connection.internal.rejected = false;
-
-            connection.external.connecting = false;
-            connection.external.connected = false;
-            connection.external.rejected = false;
-
-            let parts = connection.name.split('#');
-            if (connection.closing) {
-                this._tracker.sendStatus(parts[0], parts[1]);
-                return;
-            }
-
             if (reconnect === 'external') {
-                connection.external.punchingTimer = setTimeout(
+                if (connection.sessions.size === 0) {
+                    connection.internal = false;
+                    connection.external = false;
+                }
+                session.punchingTimer = setTimeout(
                     () => {
-                        connection.external.punchingTimer = null;
-                        let parts = name.split('#');
-                        this._tracker.sendStatus(parts[0], parts[1]);
+                        session.punchingTimer = null;
+                        if (!connection.internal && !connection.external)
+                            this._tracker.sendStatus(tracker, connectionName);
                     },
-                    this.constructor.connectTimeout
+                    this.constructor.addressTimeout
                 );
-                this._tracker.sendPunchRequest(parts[0], parts[1]);
+                this._tracker.sendPunchRequest(tracker, connectionName);
             } else if (reconnect === 'internal') {
-                this.connect(connection.name, 'internal', connection.internal.address, connection.internal.port);
+                if (connection.sessions.size === 0) {
+                    connection.internal = false;
+                    connection.external = false;
+                }
+                this.connect(name, 'internal', [ { address: session.address, port: session.port } ]);
             } else {
                 this._logger.info(`Connection to ${name} failed`);
                 setTimeout(() => {
-                    this._tracker.sendStatus(parts[0], parts[1]);
+                    if (connection.sessions.size === 0) {
+                        connection.internal = false;
+                        connection.external = false;
+                    }
+                    this._tracker.sendStatus(tracker, connectionName);
                 }, 1000);
             }
         }
@@ -772,46 +805,21 @@ class Peer extends EventEmitter {
      */
     onTimeout(name, sessionId) {
         debug(`Socket timeout for ${name}`);
-        let connection = this.connections.get(name);
-        if (!connection)
-            return;
-
-        if (connection.server) {
-            let client = connection.clients.get(sessionId);
-            if (client && client.socket) {
-                client.socket.destroy();
-                client.wrapper.detach();
-            }
-        } else {
-            if (connection.socket) {
-                connection.socket.destroy();
-                connection.wrapper.detach();
-            }
-        }
+        this.onClose(name, sessionId);
     }
 
     /**
-     * Bind UTP socket and run callback
+     * Check if session is verified and accepted
      * @param {string} name                     Connection name
-     * @param {function} cb                     Callback
+     * @param {string} sessionId                Session ID
      */
-    _bind(name, cb) {
-        let connection = this.connections.get(name);
-        if (!connection || connection.utp)
+    _checkSession(name, sessionId) {
+        let session = this.sessions.get(sessionId);
+        if (!session)
             return;
 
-        connection.utp = utp.createClient();
-        connection.utp.once('error', error => {
-            connection.utp = null;
-            setTimeout(() => {
-                this._bind(name, cb);
-            }, 1000);
-        });
-        connection.utp.once('bound', () => {
-            cb();
-        });
-
-        connection.utp.bind();
+        if (!session.verified || !session.accepted)
+            this.onTimeout(name, sessionId);
     }
 
     /**
