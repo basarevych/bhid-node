@@ -54,6 +54,9 @@ class Established {
         if (!session)
             return;
 
+        if (!connection.server && connection.sessionId)
+            return;
+
         let parts = name.split('#');
         if (parts.length != 2)
             return;
