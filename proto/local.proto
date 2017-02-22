@@ -41,7 +41,8 @@ message CreateDaemonResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        NAME_EXISTS = 10;
+        INVALID_NAME = 10;
+        NAME_EXISTS = 11;
         TIMEOUT = 9000;
     }
     required Result response = 1;

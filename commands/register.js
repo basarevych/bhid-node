@@ -127,6 +127,10 @@ class Register {
                                 console.log('Request rejected');
                                 process.exit(1);
                                 break;
+                            case this.CreateDaemonResponse.Result.INVALID_NAME:
+                                console.log('Invalid name');
+                                process.exit(1);
+                                break;
                             case this.CreateDaemonResponse.Result.NAME_EXISTS:
                                 console.log('Bot with this name already exists');
                                 process.exit(1);

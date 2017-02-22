@@ -37,7 +37,8 @@ message CreateDaemonResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        NAME_EXISTS = 10;
+        INVALID_NAME = 10;
+        NAME_EXISTS = 11;
     }
     required Result response = 1;
     optional string daemon_name = 2;
