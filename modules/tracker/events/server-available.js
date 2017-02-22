@@ -12,14 +12,16 @@ const WError = require('verror').WError;
 class ServerAvailable {
     /**
      * Create service
-     * @param {App} app                         The application
-     * @param {object} config                   Configuration
-     * @param {Logger} logger                   Logger service
+     * @param {App} app                             The application
+     * @param {object} config                       Configuration
+     * @param {Logger} logger                       Logger service
+     * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger) {
+    constructor(app, config, logger, connectionsList) {
         this._app = app;
         this._config = config;
         this._logger = logger;
+        this._connectionsList = connectionsList;
     }
 
     /**
@@ -35,7 +37,7 @@ class ServerAvailable {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
     }
 
     /**
@@ -45,8 +47,21 @@ class ServerAvailable {
      */
     handle(name, message) {
         let connectionName = name + '#' + message.serverAvailable.connectionName;
-        debug(`Got SERVER AVAILABLE for ${connectionName}`);
+        let connection = this.peer.connections.get(connectionName);
+        if (!connection || connection.server)
+            return;
 
+        debug(`Got SERVER AVAILABLE for ${connectionName}`);
+        if (connection.peers.length === 0) {
+            connection.peers.push(message.serverAvailable.daemonName);
+            this._connectionsList.updatePeers(
+                name,
+                message.serverAvailable.connectionName,
+                [
+                    message.serverAvailable.daemonName
+                ]
+            );
+        }
         this.peer.connect(connectionName, 'internal', message.serverAvailable.internalAddresses);
     }
 

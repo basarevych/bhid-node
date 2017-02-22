@@ -237,7 +237,7 @@ class Peer extends EventEmitter {
      * @param {string} options.encrypted        Is encryption is required
      * @param {string[]} options.peers          List of clients
      */
-    openClient(tracker, name, { listenAddress, listenPort, encrypted, peers }) {
+    openClient(tracker, name, { listenAddress, listenPort, encrypted, fixed, peers }) {
         name = tracker + '#' + name;
         debug(`Starting ${name}`);
         let connection = {
@@ -250,7 +250,7 @@ class Peer extends EventEmitter {
             listenAddress: listenAddress,
             listenPort: listenPort,
             encrypted: encrypted,
-            fixed: true,
+            fixed: fixed,
             peers: peers,
             sessions: new Set(),
             sessionId: null,

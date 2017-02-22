@@ -178,7 +178,8 @@ message ClientConnection {
     required string listen_address = 2;
     required string listen_port = 3;
     required bool encrypted = 4;
-    required string server = 5;
+    required bool fixed = 5;
+    optional string server = 6;
 }
 
 message ConnectionsList {
@@ -212,7 +213,8 @@ message Status {
 
 message ServerAvailable {
     required string connection_name = 1;
-    repeated InternalAddress internal_addresses = 2;
+    required string daemon_name = 2;
+    repeated InternalAddress internal_addresses = 3;
 }
 
 message LookupIdentityRequest {

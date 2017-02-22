@@ -129,7 +129,8 @@ class ConnectionsList {
                         listenAddress: bhidConfig[section]['listen_address'],
                         listenPort: bhidConfig[section]['listen_port'],
                         encrypted: bhidConfig[section]['encrypted'] == 'yes',
-                        server: bhidConfig[section]['server'],
+                        fixed: bhidConfig[section]['fixed'] == 'yes',
+                        server: bhidConfig[section]['server'] || null,
                         connected: 0,
                     };
                     conf.clientConnections.set(connection.name, connection);
@@ -141,7 +142,8 @@ class ConnectionsList {
                             listenAddress: connection.listenAddress,
                             listenPort: connection.listenPort,
                             encrypted: connection.encrypted,
-                            peers: connection.server,
+                            fixed: connection.fixed,
+                            peers: connection.server ? [ connection.server ] : [],
                         }
                     );
                     openedConnections.add(section.substring(0, section.length - this.constructor.clientSection.length));
@@ -210,6 +212,7 @@ class ConnectionsList {
                     listen_address: connection.listenAddress,
                     listen_port: connection.listenPort,
                     encrypted: connection.encrypted ? 'yes' : 'no',
+                    fixed: connection.fixed ? 'yes' : 'no',
                     server: connection.server,
                 };
 
@@ -248,7 +251,8 @@ class ConnectionsList {
                         listenAddress: connection.listenAddress,
                         listenPort: connection.listenPort,
                         encrypted: connection.encrypted,
-                        peers: connection.server,
+                        fixed: connection.fixed,
+                        peers: connection.server ? [ connection.server ] : [],
                     }
                 );
             }
@@ -258,6 +262,70 @@ class ConnectionsList {
         }
 
         return true;
+    }
+
+    /**
+     * Update peers list of a connection
+     * @param {string} trackerName          Tracker name
+     * @param {object} connectionName       Connection name
+     * @param {string[]} peers              Peers list
+     */
+    updatePeers(trackerName, connectionName, peers) {
+        let conf = this.list.get(trackerName);
+        if (!conf)
+            return;
+
+        try {
+            let found = false;
+            for (let [ name, connection ] of conf.serverConnections) {
+                if (name == connectionName) {
+                    found = true;
+                    connection.peers = peers;
+                    break;
+                }
+            }
+            if (!found) {
+                for (let [ name, connection ] of conf.clientConnections) {
+                    if (name == connectionName) {
+                        found = true;
+                        connection.peers = peers;
+                        break;
+                    }
+                }
+            }
+            if (!found)
+                return;
+
+            let configPath;
+            for (let candidate of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
+                try {
+                    fs.accessSync(path.join(candidate, 'bhid.conf'), fs.constants.F_OK);
+                    configPath = candidate;
+                    break;
+                } catch (error) {
+                    // do nothing
+                }
+            }
+
+            if (!configPath)
+                throw new Error('Could not read bhid.conf');
+
+            let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
+            for (let section of Object.keys(bhidConfig)) {
+                let thisName;
+                if (section.endsWith(this.constructor.serverSection))
+                    thisName = section.substring(0, section.length - this.constructor.serverSection.length);
+                else if (section.endsWith(this.constructor.clientSection))
+                    thisName = section.substring(0, section.length - this.constructor.clientSection.length);
+                if (thisName == trackerName + '#' + connectionName) {
+                    bhidConfig[section]['peers'] = peers;
+                    break;
+                }
+            }
+            fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(bhidConfig));
+        } catch (error) {
+            this._logger.error(new WError(error, 'ConnectionsList.updatePeers()'));
+        }
     }
 
     /**
