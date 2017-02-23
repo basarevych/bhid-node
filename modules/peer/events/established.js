@@ -72,7 +72,7 @@ class Established {
 
             let tracker = parts[0];
             let connectionName = parts[1];
-            let trackedConnections = this._connectionsList.list.get(tracker);
+            let trackedConnections = this._connectionsList.get(tracker);
             if (trackedConnections) {
                 let connected;
                 let serverInfo = trackedConnections.serverConnections.get(connectionName);
@@ -82,12 +82,8 @@ class Established {
                 else if (clientInfo)
                     connected = ++clientInfo.connected;
 
-                if (connected) {
-                    this.tracker.sendStatus(
-                        tracker,
-                        connectionName
-                    );
-                }
+                if (connected)
+                    this.tracker.sendStatus(tracker, connectionName);
             }
         } catch (error) {
             this._logger.error(new WError(error, `ConnectRequest.handle()`));

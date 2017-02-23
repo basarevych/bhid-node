@@ -70,6 +70,14 @@ class ConnectionsList {
     }
 
     /**
+     * Get the list
+     * @return {Map}
+     */
+    getAll() {
+        return this._list;
+    }
+
+    /**
      * Load connections list
      * @return {boolean}
      */

@@ -49,7 +49,7 @@ class Registration {
         if (!server)
             return;
 
-        for (let [ tracker, connections ] of this._connectionsList.list) {
+        for (let [ tracker, connections ] of this._connectionsList.getAll()) {
             if (tracker != name)
                 continue;
 
@@ -59,11 +59,7 @@ class Registration {
                 if (!info)
                     continue;
 
-                this.tracker.sendStatus(
-                    tracker,
-                    connection.name,
-                    connection.connected
-                );
+                this.tracker.sendStatus(tracker, connection.name);
             }
         }
     }

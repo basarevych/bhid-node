@@ -753,7 +753,7 @@ class Peer extends EventEmitter {
 
         debug(`Socket for ${name} disconnected`);
         if (established) {
-            let trackedConnections = this._connectionsList.list.get(tracker);
+            let trackedConnections = this._connectionsList.get(tracker);
             if (trackedConnections) {
                 let serverInfo = trackedConnections.serverConnections.get(connectionName);
                 if (serverInfo && serverInfo.connected > 0)
