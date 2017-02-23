@@ -149,7 +149,7 @@ class ConnectionsList {
                         listenPort: bhidConfig[section]['listen_port'],
                         encrypted: bhidConfig[section]['encrypted'] == 'yes',
                         fixed: bhidConfig[section]['fixed'] == 'yes',
-                        server: bhidConfig[section]['server'] || null,
+                        server: bhidConfig[section]['server'] || '',
                         connected: 0,
                     };
                     conf.clientConnections.set(connection.name, connection);
