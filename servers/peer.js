@@ -282,6 +282,8 @@ class Peer extends EventEmitter {
         for (let id of connection.sessions)
             this.onClose(name, id);
 
+        this._tracker.sendStatus(connection.tracker, name, false);
+
         this.connections.delete(name);
 
         if (connection.utp)
@@ -764,11 +766,10 @@ class Peer extends EventEmitter {
             }
         }
 
-        if (connection.closing || connection.server) {
-            if (connection.sessions.size === 0) {
-                connection.internal = false;
-                connection.external = false;
-            }
+        if (connection.closing)
+            return;
+
+        if (connection.server) {
             this._tracker.sendStatus(tracker, connectionName);
         } else {
             if (reconnect === 'external') {

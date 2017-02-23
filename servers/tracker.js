@@ -384,8 +384,9 @@ class Tracker extends EventEmitter {
      * Send status message
      * @param {string} trackerName          Tracker name
      * @param {string} connectionName       Connection name
+     * @param {boolean} [active=true]       Is active
      */
-    sendStatus(trackerName, connectionName) {
+    sendStatus(trackerName, connectionName, active = true) {
         let server = this.servers.get(trackerName);
         if (!server || !server.registered)
             return;
@@ -427,6 +428,7 @@ class Tracker extends EventEmitter {
             let status = this.Status.create({
                 connectionName: connectionName,
                 connected: connected,
+                active: active,
                 internalAddresses: addresses,
             });
             let message = this.ClientMessage.create({

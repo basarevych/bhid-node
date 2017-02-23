@@ -209,7 +209,8 @@ message InternalAddress {
 message Status {
     required string connection_name = 1;
     required uint32 connected = 2;
-    repeated InternalAddress internal_addresses = 3;
+    required bool active = 3;
+    repeated InternalAddress internal_addresses = 4;
 }
 
 message ServerAvailable {
