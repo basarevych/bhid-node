@@ -186,12 +186,15 @@ class Peer extends EventEmitter {
      * @param {string[]} options.peers          List of clients
      */
     openServer(tracker, name, { connectAddress, connectPort, encrypted, fixed, peers }) {
-        name = tracker + '#' + name;
-        debug(`Starting ${name}`);
+        let fullName = tracker + '#' + name;
+        if (this.connections.has(fullName))
+            return;
+
+        debug(`Starting ${fullName}`);
         try {
             let connection = {
                 server: true,
-                name: name,
+                name: fullName,
                 tracker: tracker,
                 peerId: null,
                 registering: false,
@@ -204,9 +207,9 @@ class Peer extends EventEmitter {
                 utp: null,
                 sessions: new Set(),
             };
-            this.connections.set(name, connection);
+            this.connections.set(fullName, connection);
 
-            let server = utp.createServer(socket => { this.onConnection(name, socket); });
+            let server = utp.createServer(socket => { this.onConnection(fullName, socket); });
             new Promise((resolveBind, rejectBind) => {
                     debug('Initiating server socket');
                     server.bind();
@@ -214,12 +217,12 @@ class Peer extends EventEmitter {
                     server.listen(() => { resolveBind(); })
                 })
                 .then(() => {
-                    debug(`Network server for ${name} started`);
+                    debug(`Network server for ${fullName} started`);
                     connection.utp = server;
-                    this._tracker.sendStatus(tracker, name.split('#')[1], 0);
+                    this._tracker.sendStatus(tracker, name);
                 })
                 .catch(error => {
-                    this.connections.delete(name);
+                    this.connections.delete(fullName);
                     this._logger.error(new WError(error, 'Peer.openServer()'));
                 });
         } catch (error) {
@@ -238,11 +241,14 @@ class Peer extends EventEmitter {
      * @param {string[]} options.peers          List of clients
      */
     openClient(tracker, name, { listenAddress, listenPort, encrypted, fixed, peers }) {
-        name = tracker + '#' + name;
-        debug(`Starting ${name}`);
+        let fullName = tracker + '#' + name;
+        if (this.connections.has(fullName))
+            return;
+
+        debug(`Starting ${fullName}`);
         let connection = {
             server: false,
-            name: name,
+            name: fullName,
             tracker: tracker,
             peerId: null,
             registering: false,
@@ -257,8 +263,8 @@ class Peer extends EventEmitter {
             internal: false,
             external: false,
         };
-        this.connections.set(name, connection);
-        this._tracker.sendStatus(tracker, name.split('#')[1], 0);
+        this.connections.set(fullName, connection);
+        this._tracker.sendStatus(tracker, name);
     }
 
     /**

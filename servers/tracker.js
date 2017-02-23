@@ -395,7 +395,7 @@ class Tracker extends EventEmitter {
             return;
 
         let connected = 0;
-        let trackedConnections = this._connectionsList.list.get(trackerName);
+        let trackedConnections = this._connectionsList.get(trackerName);
         if (trackedConnections) {
             let serverInfo = trackedConnections.serverConnections.get(connectionName);
             let clientInfo = trackedConnections.clientConnections.get(connectionName);

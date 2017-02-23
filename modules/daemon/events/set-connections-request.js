@@ -65,12 +65,12 @@ class SetConnectionsRequest {
                 this.daemon.send(id, data);
             };
 
-            let result = this._connectionsList.set(
+            this._connectionsList.set(
                 message.setConnectionsRequest.trackerName || this.tracker.default,
                 message.setConnectionsRequest.list
             );
 
-            if (result)
+            if (this._connectionsList.save())
                 reply(this.daemon.SetConnectionsResponse.Result.ACCEPTED);
             else
                 reply(this.daemon.SetConnectionsResponse.Result.REJECTED);

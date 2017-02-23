@@ -52,17 +52,23 @@ class ServerAvailable {
             return;
 
         debug(`Got SERVER AVAILABLE for ${connectionName}`);
+
+        let success = true;
         if (connection.peers.length === 0) {
-            connection.peers.push(message.serverAvailable.daemonName);
-            this._connectionsList.updatePeers(
-                name,
-                message.serverAvailable.connectionName,
-                [
-                    message.serverAvailable.daemonName
-                ]
-            );
+            success = false;
+            let trackedConnections = this._connectionsList.get(name);
+            if (trackedConnections) {
+                let clientConnection = trackedConnections.get(message.serverAvailable.connectionName);
+                if (clientConnection) {
+                    clientConnection.server = message.serverAvailable.daemonName;
+                    this._connectionsList.update(name, message.serverAvailable.connectionName, false, clientConnection, false);
+                    success = true;
+                }
+            }
         }
-        this.peer.connect(connectionName, 'internal', message.serverAvailable.internalAddresses);
+
+        if (success)
+            this.peer.connect(connectionName, 'internal', message.serverAvailable.internalAddresses);
     }
 
     /**
