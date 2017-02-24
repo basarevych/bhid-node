@@ -1,6 +1,6 @@
 {
   "name": "bhid",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Daemon for Breedhub Interconnect (connect server and client both behind NAT)",
   "license": "MIT",
   "author": "Ross Basarevych <basarevych@gmail.com>",
