@@ -53,7 +53,7 @@ class ConnectRequest {
             let relayId = uuid.v1();
 
             let timer, onResponse;
-            let reply = value => {
+            let reply = (value, updates) => {
                 if (timer) {
                     clearTimeout(timer);
                     timer = null;
@@ -64,6 +64,7 @@ class ConnectRequest {
 
                 let reply = this.daemon.ConnectResponse.create({
                     response: value,
+                    updates: updates,
                 });
                 let relay = this.daemon.ServerMessage.create({
                     type: this.daemon.ServerMessage.Type.CONNECT_RESPONSE,
@@ -82,7 +83,10 @@ class ConnectRequest {
                     return;
 
                 debug(`Got CONNECT RESPONSE from tracker`);
-                reply(response.connectResponse.response);
+                reply(
+                    response.connectResponse.response,
+                    response.connectResponse.updates
+                );
             };
             this.tracker.on('connect_response', onResponse);
 

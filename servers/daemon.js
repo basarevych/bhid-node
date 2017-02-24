@@ -100,6 +100,8 @@ class Daemon extends EventEmitter {
                         this.ConnectionsListResponse = this.proto.lookup('local.ConnectionsListResponse');
                         this.SetConnectionsRequest = this.proto.lookup('local.SetConnectionsRequest');
                         this.SetConnectionsResponse = this.proto.lookup('local.SetConnectionsResponse');
+                        this.UpdateConnectionsRequest = this.proto.lookup('local.UpdateConnectionsRequest');
+                        this.UpdateConnectionsResponse = this.proto.lookup('local.UpdateConnectionsResponse');
                         this.ClientMessage = this.proto.lookup('local.ClientMessage');
                         this.ServerMessage = this.proto.lookup('local.ServerMessage');
                         resolve();
@@ -284,6 +286,9 @@ class Daemon extends EventEmitter {
                     break;
                 case this.ClientMessage.Type.SET_CONNECTIONS_REQUEST:
                     this.emit('set_connections_request', id, message);
+                    break;
+                case this.ClientMessage.Type.UPDATE_CONNECTIONS_REQUEST:
+                    this.emit('update_connections_request', id, message);
                     break;
             }
         } catch (error) {

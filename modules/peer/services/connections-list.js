@@ -197,9 +197,12 @@ class ConnectionsList {
             connection.connected = 0;
         for (let connection of list.clientConnections)
             connection.connected = 0;
-        this._list.set(trackerName, list);
+
+        let conf = { serverConnections: new Map(), clientConnections: new Map() };
+        this._list.set(trackerName, conf);
 
         for (let connection of list.serverConnections) {
+            conf.serverConnections.set(connection.name, connection);
             this._peer.openServer(
                 trackerName,
                 connection.name,
@@ -213,6 +216,7 @@ class ConnectionsList {
             );
         }
         for (let connection of list.clientConnections) {
+            conf.clientConnections.set(connection.name, connection);
             this._peer.openClient(
                 trackerName,
                 connection.name,
@@ -237,8 +241,10 @@ class ConnectionsList {
      */
     update(trackerName, connectionName, server, connection, restart = true) {
         let conf = this._list.get(trackerName);
-        if (!conf)
-            return;
+        if (!conf) {
+            conf = { serverConnections: new Map(), clientConnections: new Map() };
+            this._list.set(trackerName, conf);
+        }
 
         let connected = 0, found;
         for (let [ thisName, thisConnection ] of server ? conf.serverConnections : conf.clientConnections) {
@@ -288,6 +294,30 @@ class ConnectionsList {
     }
 
     /**
+     * Delete connection
+     * @param {string} trackerName          Tracker name
+     * @param {object} connectionName       Connection name
+     * @param {boolean} server              Is server connection
+     */
+    delete(trackerName, connectionName, server) {
+        let conf = this._list.get(trackerName);
+        if (!conf)
+            return;
+
+        if (server) {
+            if (conf.serverConnections.has(connectionName)) {
+                this._peer.close(trackerName + '#' + connectionName);
+                conf.serverConnections.delete(connectionName);
+            }
+        } else {
+            if (conf.clientConnections.has(connectionName)) {
+                this._peer.close(trackerName + '#' + connectionName);
+                conf.clientConnections.delete(connectionName);
+            }
+        }
+    }
+
+    /**
      * Save connections list
      * @return {boolean}
      */
@@ -318,7 +348,7 @@ class ConnectionsList {
             }
 
             for (let [ trackerName, list ] of this._list) {
-                for (let connection of list.serverConnections) {
+                for (let [ name, connection ] of list.serverConnections) {
                     output[trackerName + '#' + connection.name + this.constructor.serverSection] = {
                         connect_address: connection.connectAddress,
                         connect_port: connection.connectPort,
@@ -327,7 +357,7 @@ class ConnectionsList {
                         clients: connection.fixed ? connection.clients : [],
                     };
                 }
-                for (let connection of list.clientConnections) {
+                for (let [ name, connection ] of list.clientConnections) {
                     output[trackerName + '#' + connection.name + this.constructor.clientSection] = {
                         listen_address: connection.listenAddress,
                         listen_port: connection.listenPort,

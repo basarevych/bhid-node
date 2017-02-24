@@ -53,7 +53,7 @@ class CreateRequest {
             let relayId = uuid.v1();
 
             let timer, onResponse;
-            let reply = (value, serverToken, clientToken) => {
+            let reply = (value, serverToken, clientToken, updates) => {
                 if (timer) {
                     clearTimeout(timer);
                     timer = null;
@@ -66,6 +66,7 @@ class CreateRequest {
                     response: value,
                     serverToken: serverToken || '',
                     clientToken: clientToken || '',
+                    updates: updates,
                 });
                 let relay = this.daemon.ServerMessage.create({
                     type: this.daemon.ServerMessage.Type.CREATE_RESPONSE,
@@ -87,7 +88,8 @@ class CreateRequest {
                 reply(
                     response.createResponse.response,
                     response.createResponse.serverToken,
-                    response.createResponse.clientToken
+                    response.createResponse.clientToken,
+                    response.createResponse.updates
                 );
             };
             this.tracker.on('create_response', onResponse);

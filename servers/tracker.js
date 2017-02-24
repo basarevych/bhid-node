@@ -311,14 +311,14 @@ class Tracker extends EventEmitter {
                     });
             })
             .then(() => {
-                let result = this._connectionsList.set(
+                this._connectionsList.set(
                     name,
                     {
                         serverConnections: [],
                         clientConnections: [],
                     }
                 );
-                if (!result)
+                if (!this._connectionsList.save())
                     throw new Error('Could not clear connections');
 
                 let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
@@ -555,6 +555,9 @@ class Tracker extends EventEmitter {
                     break;
                 case this.ServerMessage.Type.CONNECTIONS_LIST_RESPONSE:
                     this.emit('connections_list_response', name, message);
+                    break;
+                case this.ServerMessage.Type.CONNECTIONS_LIST:
+                    this.emit('connections_list', name, message);
                     break;
                 case this.ServerMessage.Type.SERVER_AVAILABLE:
                     this.emit('server_available', name, message);

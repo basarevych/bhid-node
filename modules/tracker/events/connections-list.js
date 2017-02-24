@@ -1,15 +1,15 @@
 /**
- * Server Available event
- * @module tracker/events/server-available
+ * Connections List event
+ * @module tracker/events/connections-list
  */
 const debug = require('debug')('bhid:tracker');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Server Available event class
+ * Connections List event class
  */
-class ServerAvailable {
+class ConnectionsList {
     /**
      * Create service
      * @param {App} app                             The application
@@ -25,11 +25,11 @@ class ServerAvailable {
     }
 
     /**
-     * Service name is 'modules.tracker.events.serverAvailable'
+     * Service name is 'modules.tracker.events.connectionsList'
      * @type {string}
      */
     static get provides() {
-        return 'modules.tracker.events.serverAvailable';
+        return 'modules.tracker.events.connectionsList';
     }
 
     /**
@@ -46,30 +46,41 @@ class ServerAvailable {
      * @param {object} message                  The message
      */
     handle(name, message) {
-        let connectionName = name + '#' + message.serverAvailable.connectionName;
-        let connection = this.peer.connections.get(connectionName);
-        if (!connection || connection.server)
-            return;
+        debug(`Got CONNECTIONS LIST from ${name}`);
+        let list = message.connectionsList;
 
-        debug(`Got SERVER AVAILABLE for ${connectionName}`);
-
-        let success = true;
-        if (connection.peers.length === 0) {
-            success = false;
-            let trackedConnections = this._connectionsList.get(name);
-            if (trackedConnections) {
-                let clientConnection = trackedConnections.clientConnections.get(message.serverAvailable.connectionName);
-                if (clientConnection) {
-                    clientConnection.server = message.serverAvailable.daemonName;
-                    this._connectionsList.update(name, message.serverAvailable.connectionName, false, clientConnection, false);
-                    this._connectionsList.save();
-                    success = true;
+        let trackedConnections = this._connectionsList.get(name);
+        if (trackedConnections) {
+            let updated = false;
+            for (let connectionName of trackedConnections.serverConnections.keys()) {
+                let found = false;
+                for (let connection of list.serverConnections || []) {
+                    if (connectionName == connection.name) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    updated = true;
+                    this._connectionsList.delete(name, connectionName, true);
                 }
             }
+            for (let connectionName of trackedConnections.clientConnections.keys()) {
+                let found = false;
+                for (let connection of list.clientConnections || []) {
+                    if (connectionName == connection.name) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    updated = true;
+                    this._connectionsList.delete(name, connectionName, false);
+                }
+            }
+            if (updated)
+                this._connectionsList.save();
         }
-
-        if (success)
-            this.peer.connect(connectionName, 'internal', message.serverAvailable.internalAddresses);
     }
 
     /**
@@ -95,4 +106,4 @@ class ServerAvailable {
     }
 }
 
-module.exports = ServerAvailable;
+module.exports = ConnectionsList;

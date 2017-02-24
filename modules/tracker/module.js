@@ -69,6 +69,9 @@ class Tracker {
         let peerAvailable = this._app.get('modules.tracker.events.peerAvailable');
         server.on('peer_available', peerAvailable.handle.bind(peerAvailable));
 
+        let connectionsList = this._app.get('modules.tracker.events.connectionsList');
+        server.on('connections_list', connectionsList.handle.bind(connectionsList));
+
         return Promise.resolve();
     }
 }

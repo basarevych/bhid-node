@@ -93,6 +93,9 @@ class Create {
                 this.proto = root;
                 this.CreateRequest = this.proto.lookup('local.CreateRequest');
                 this.CreateResponse = this.proto.lookup('local.CreateResponse');
+                this.ConnectionsList = this.proto.lookup('local.ConnectionsList');
+                this.UpdateConnectionsRequest = this.proto.lookup('local.UpdateConnectionsRequest');
+                this.UpdateConnectionsResponse = this.proto.lookup('local.UpdateConnectionsResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
@@ -131,12 +134,16 @@ class Create {
                                 console.log(
                                     'Server token: ' + message.createResponse.serverToken +
                                     '\n' +
-                                    'Client token: ' + message.createResponse.clientToken +
-                                    '\n' +
-                                    (daemonName ? `Daemon ${daemonName}` : 'This daemon') +
-                                    ' is configured as ' + (client ? 'client' : 'server')
+                                    'Client token: ' + message.createResponse.clientToken
                                 );
-                                process.exit(0);
+                                if (type != this.CreateRequest.Type.NOT_CONNECTED) {
+                                    console.log(daemonName ? `Daemon ${daemonName}` : 'This daemon' +
+                                        ' is configured as ' + (client ? 'client' : 'server')
+                                    );
+                                }
+                                if (daemonName || type == this.CreateRequest.Type.NOT_CONNECTED)
+                                    process.exit(0);
+                                this.update(trackerName, message.createResponse.updates);
                                 break;
                             case this.CreateResponse.Result.REJECTED:
                                 console.log('Request rejected');
@@ -167,6 +174,47 @@ class Create {
         });
 
         return Promise.resolve();
+    }
+
+    /**
+     * Load the connection
+     * @param {string} trackerName                      Name of the tracker
+     * @param {object} [list]                           List of updated connections
+     */
+    update(trackerName, list) {
+        if (!list)
+            process.exit(0);
+
+        let request = this.UpdateConnectionsRequest.create({
+            trackerName: trackerName,
+            list: list,
+        });
+        let message = this.ClientMessage.create({
+            type: this.ClientMessage.Type.UPDATE_CONNECTIONS_REQUEST,
+            updateConnectionsRequest: request,
+        });
+        let buffer = this.ClientMessage.encode(message).finish();
+        this.send(buffer)
+            .then(data => {
+                let message = this.ServerMessage.decode(data);
+                if (message.type !== this.ServerMessage.Type.UPDATE_CONNECTIONS_RESPONSE)
+                    throw new Error('Invalid reply from daemon');
+
+                switch (message.updateConnectionsResponse.response) {
+                    case this.UpdateConnectionsResponse.Result.ACCEPTED:
+                        process.exit(0);
+                        break;
+                    case this.UpdateConnectionsResponse.Result.REJECTED:
+                        console.log('Could not start the connection');
+                        process.exit(1);
+                        break;
+                    default:
+                        throw new Error('Unsupported response from daemon');
+                }
+            })
+            .catch(error => {
+                this.error(error.message);
+            });
     }
 
     /**

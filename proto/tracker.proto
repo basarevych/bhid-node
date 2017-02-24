@@ -1,6 +1,29 @@
 syntax = "proto3";
 package tracker;
 
+message ServerConnection {
+    required string name = 1;
+    required string connect_address = 2;
+    required string connect_port = 3;
+    required bool encrypted = 4;
+    required bool fixed = 5;
+    repeated string clients = 6;
+}
+
+message ClientConnection {
+    required string name = 1;
+    required string listen_address = 2;
+    required string listen_port = 3;
+    required bool encrypted = 4;
+    required bool fixed = 5;
+    optional string server = 6;
+}
+
+message ConnectionsList {
+    repeated ServerConnection server_connections = 1;
+    repeated ClientConnection client_connections = 2;
+}
+
 message InitRequest {
     required string email = 1;
 }
@@ -86,6 +109,7 @@ message CreateResponse {
     required Result response = 1;
     optional string server_token = 2;
     optional string client_token = 3;
+    optional ConnectionsList updates = 4;
 }
 
 message DeleteRequest {
@@ -114,11 +138,13 @@ message ConnectResponse {
         ALREADY_CONNECTED = 10;
     }
     required Result response = 1;
+    optional ConnectionsList updates = 2;
 }
 
 message DisconnectRequest {
     optional string daemon_name = 1;
-    required string path = 2;
+    optional string email = 2;
+    required string path = 3;
 }
 
 message DisconnectResponse {
@@ -163,29 +189,6 @@ message TreeResponse {
     }
     required Result response = 1;
     optional Tree tree = 2;
-}
-
-message ServerConnection {
-    required string name = 1;
-    required string connect_address = 2;
-    required string connect_port = 3;
-    required bool encrypted = 4;
-    required bool fixed = 5;
-    repeated string clients = 6;
-}
-
-message ClientConnection {
-    required string name = 1;
-    required string listen_address = 2;
-    required string listen_port = 3;
-    required bool encrypted = 4;
-    required bool fixed = 5;
-    optional string server = 6;
-}
-
-message ConnectionsList {
-    repeated ServerConnection server_connections = 1;
-    repeated ClientConnection client_connections = 2;
 }
 
 message ConnectionsListRequest {
