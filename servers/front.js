@@ -109,7 +109,7 @@ class Front extends EventEmitter {
         debug(`Opening front for ${name}`);
         let connection = this.connections.get(name);
         if (connection && !connection.server) {
-            this.close(name, tunnelId);
+            this.close(name);
             this.connections.delete(name);
             connection = null;
         }
@@ -137,11 +137,17 @@ class Front extends EventEmitter {
      * @param {string} port                     Listen port
      */
     openClient(name, tunnelId, address, port) {
-        if (this.connections.has(name))
+        let connection = this.connections.get(name);
+        if (connection && connection.server) {
+            this.close(name);
+            this.connections.delete(name);
+            connection = null;
+        }
+        if (connection)
             return;
 
         debug(`Opening front for ${name}`);
-        let connection = {
+        connection = {
             name: name,
             server: false,
             address: address,
@@ -333,7 +339,7 @@ class Front extends EventEmitter {
     /**
      * Close server or client front
      * @param {string} name                     Connection name
-     * @param {string} tunnelId                 Tunnel ID
+     * @param {string} [tunnelId]               Tunnel ID
      */
     close(name, tunnelId) {
         let connection = this.connections.get(name);
