@@ -277,10 +277,13 @@ class Peer extends EventEmitter {
             return;
 
         debug(`Closing ${name}`);
-        connection.closing = true;
-
-        for (let id of connection.sessions)
-            this.onClose(name, id);
+        for (let id of connection.sessions) {
+            let session = this.sessions.get(id);
+            if (session) {
+                session.closing = true;
+                this.onClose(name, id);
+            }
+        }
 
         this._tracker.sendStatus(connection.tracker, name, false);
 
@@ -466,8 +469,13 @@ class Peer extends EventEmitter {
             return;
 
         for (let id of connection.sessions) {
-            if (id !== connection.sessionId)
+            if (id == connection.sessionId)
+                continue;
+            let session = this.sessions.get(id);
+            if (session) {
+                session.closing = true;
                 this.onClose(name, id);
+            }
         }
     }
 
@@ -766,7 +774,7 @@ class Peer extends EventEmitter {
             }
         }
 
-        if (connection.closing)
+        if (session.closing)
             return;
 
         if (connection.server) {
