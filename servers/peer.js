@@ -704,7 +704,6 @@ class Peer extends EventEmitter {
      * @param {string} sessionId                Session ID
      */
     onClose(name, sessionId) {
-        this._front.close(name, sessionId);
         this._timeouts.delete(sessionId);
         this._crypter.destroy(sessionId);
 
@@ -721,6 +720,7 @@ class Peer extends EventEmitter {
             connection.sessions.delete(sessionId);
 
             if (established) {
+                this._front.close(name, sessionId);
                 if (!connection.server)
                     connection.sessionId = null;
                 if (connection.external)

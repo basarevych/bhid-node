@@ -106,18 +106,27 @@ class Front extends EventEmitter {
      * @param {string} port                     Server port
      */
     openServer(name, tunnelId, address, port) {
-        if (this.connections.has(name))
-            return;
-
         debug(`Opening front for ${name}`);
-        let connection = {
-            name: name,
-            server: true,
-            address: address,
-            port: port,
-            targets: new Map(),
-        };
-        this.connections.set(name, connection);
+        let connection = this.connections.get(name);
+        if (connection && !connection.server) {
+            this.close(name, tunnelId);
+            this.connections.delete(name);
+            connection = null;
+        }
+
+        if (!connection) {
+            connection = {
+                name: name,
+                server: true,
+                address: address,
+                port: port,
+                targets: new Map(),
+            };
+            this.connections.set(name, connection);
+        } else {
+            connection.address = address;
+            connection.port = port;
+        }
     }
 
     /**
@@ -334,12 +343,14 @@ class Front extends EventEmitter {
         debug(`Closing front for ${name}`);
         if (connection.server) {
             for (let [ id, info ] of connection.targets) {
-                if (info.tunnelId === tunnelId) {
+                if (!tunnelId || info.tunnelId === tunnelId) {
                     if (info.socket)
                         info.socket.end();
                     info.connected = false;
                 }
             }
+            if (!tunnelId)
+                this.connections.delete(name);
         } else {
             for (let [ id, info ] of connection.clients) {
                 if (info.socket)
@@ -349,8 +360,8 @@ class Front extends EventEmitter {
             connection.tcp.close();
             connection.tcp = null;
             this._logger.info(`No more connections for ${name} on ${connection.address}:${connection.port}`)
+            this.connections.delete(name);
         }
-        this.connections.delete(name);
     }
 
     /**
