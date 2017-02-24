@@ -186,10 +186,14 @@ message Tree {
     required Type type = 3;
     required string name = 4;
     required string path = 5;
-    optional string server_token = 6;
-    optional uint32 servers_number = 7;
-    optional string client_token = 8;
+    optional uint32 servers_number = 6;
+    optional string connect_address = 7;
+    optional string connect_port = 8;
     optional uint32 clients_number = 9;
+    optional string listen_address = 10;
+    optional string listen_port = 11;
+    optional bool encrypted = 12;
+    optional bool fixed = 13;
 }
 
 message TreeResponse {

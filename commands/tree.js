@@ -131,13 +131,16 @@ class Tree {
         };
         if (tree.connection) {
             obj.label += '\n' +
-                '[' + (tree.type == this.Tree.Type.CLIENT ? '*' : ' ') + '] ' +
-                tree.clientsNumber + ' client(s), token: ' + tree.clientToken +
-                '\n' +
-                '[' + (tree.type == this.Tree.Type.SERVER ? '*' : ' ') + '] ' +
-                tree.serversNumber + ' server(s), token: ' + tree.serverToken;
-        } else {
-            obj.label += '\n' + 'Client token: ' + tree.clientToken;
+                (tree.type == this.Tree.Type.CLIENT ? '[' : '') +
+                tree.clientsNumber +
+                (tree.type == this.Tree.Type.CLIENT ? ']' : '') +
+                ' on ' + (tree.listenAddress ? tree.listenAddress + ':' : '') + tree.listenPort + ' ⇒ ' +
+                (tree.type == this.Tree.Type.SERVER ? '[' : '') +
+                tree.serversNumber +
+                (tree.type == this.Tree.Type.SERVER ? ']' : '') +
+                ' on ' + (tree.connectAddress ? tree.connectAddress + ':' : '') + tree.connectPort +
+                (tree.encrypted ? ', encrypted' : '') +
+                (tree.fixed ? ', fixed' : '');
         }
         for (let node of tree.tree)
             obj.nodes.push(this.buildTree(node));
