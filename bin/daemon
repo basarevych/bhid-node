@@ -73,7 +73,7 @@ function restart() {
                 if (result.code === 200)
                     process.exit(200);
 
-                setTimeout(() => { restart(); }, 1000);
+                return setTimeout(() => { restart(); }, 1000);
             }
 
             return emailer.send({
