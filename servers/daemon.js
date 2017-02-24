@@ -297,13 +297,13 @@ class Daemon extends EventEmitter {
                     this.emit('update_connections_request', id, message);
                     break;
                 case this.ClientMessage.Type.REDEEM_MASTER_REQUEST:
-                    this.emit('redeem_master_request', name, message);
+                    this.emit('redeem_master_request', id, message);
                     break;
                 case this.ClientMessage.Type.REDEEM_DAEMON_REQUEST:
-                    this.emit('redeem_daemon_request', name, message);
+                    this.emit('redeem_daemon_request', id, message);
                     break;
                 case this.ClientMessage.Type.REDEEM_PATH_REQUEST:
-                    this.emit('redeem_path_request', name, message);
+                    this.emit('redeem_path_request', id, message);
                     break;
             }
         } catch (error) {

@@ -96,7 +96,7 @@ class Redeem {
                         reqType = this.ClientMessage.Type.REDEEM_MASTER_REQUEST;
                         reqField = 'redeemMasterRequest';
                         resClass = this.RedeemMasterResponse;
-                        resType = this.ClientMessage.Type.REDEEM_MASTER_RESPONSE;
+                        resType = this.ServerMessage.Type.REDEEM_MASTER_RESPONSE;
                         resField = 'redeemMasterResponse';
                         request = reqClass.create({
                             trackerName: trackerName,
@@ -109,7 +109,7 @@ class Redeem {
                         reqType = this.ClientMessage.Type.REDEEM_DAEMON_REQUEST;
                         reqField = 'redeemDaemonRequest';
                         resClass = this.RedeemDaemonResponse;
-                        resType = this.ClientMessage.Type.REDEEM_DAEMON_RESPONSE;
+                        resType = this.ServerMessage.Type.REDEEM_DAEMON_RESPONSE;
                         resField = 'redeemDaemonResponse';
                         request = reqClass.create({
                             trackerName: trackerName,
@@ -123,7 +123,7 @@ class Redeem {
                         reqType = this.ClientMessage.Type.REDEEM_PATH_REQUEST;
                         reqField = 'redeemPathRequest';
                         resClass = this.RedeemPathResponse;
-                        resType = this.ClientMessage.Type.REDEEM_PATH_RESPONSE;
+                        resType = this.ServerMessage.Type.REDEEM_PATH_RESPONSE;
                         resField = 'redeemPathResponse';
                         request = reqClass.create({
                             trackerName: trackerName,
