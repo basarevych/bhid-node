@@ -168,6 +168,10 @@ class Front extends EventEmitter {
 
             connection.tcp.once('error', onError);
             connection.tcp.listen(port, address, () => {
+                let newCon = this.connections.get(name);
+                if (!newCon || newCon !== connection)
+                    return;
+
                 this._logger.info(`Ready for connections for ${name} on ${address}:${port}`)
                 connection.tcp.removeListener('error', onError);
             });
