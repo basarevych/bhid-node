@@ -25,6 +25,7 @@ function usage() {
     console.log('\tdisconnect\tDisconnect the daemon from given path');
     console.log('\ttree\t\tPrint user tree');
     console.log('\tload\t\tLoad current connection configuration from tracker');
+    console.log('\tredeem\t\tRedeem account, daemon or connection token');
     console.log('\trun\t\tRun the daemon');
 }
 
@@ -144,6 +145,13 @@ switch (argv['_'][0]) {
                 console.log('Usage: bhid load [-q] [-t <tracker>]\n');
                 console.log('\tRetrieve and save locally connection configuration. If -q is set no confirmation is asked');
                 break;
+            case 'redeem':
+                console.log('Usage: bhid redeem <email> [-t <tracker>]');
+                console.log('       bhid redeem <master-token> <daemon-name> [-t <tracker>]');
+                console.log('       bhid redeem <master-token> <path> [-s|-c] [-t <tracker>]\n');
+                console.log('\tRedeem account, daemon or connection token. If -c is set the client token will be');
+                console.log('\tregenerated (default), or server token if -s is set.');
+                break;
             case 'run':
                 console.log('Usage: bhid run\n');
                 console.log('\tThis command will start the daemon');
@@ -184,6 +192,7 @@ switch (argv['_'][0]) {
     case 'disconnect':
     case 'tree':
     case 'load':
+    case 'redeem':
         execDaemon()
             .then(result => {
                 if (result.code !== 0)

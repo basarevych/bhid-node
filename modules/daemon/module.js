@@ -89,6 +89,15 @@ class Daemon {
         let updateConnectionsRequest = this._app.get('modules.daemon.events.updateConnectionsRequest');
         server.on('update_connections_request', updateConnectionsRequest.handle.bind(updateConnectionsRequest));
 
+        let redeemMasterRequest = this._app.get('modules.daemon.events.redeemMasterRequest');
+        server.on('redeem_master_request', redeemMasterRequest.handle.bind(redeemMasterRequest));
+
+        let redeemDaemonRequest = this._app.get('modules.daemon.events.redeemDaemonRequest');
+        server.on('redeem_daemon_request', redeemDaemonRequest.handle.bind(redeemDaemonRequest));
+
+        let redeemPathRequest = this._app.get('modules.daemon.events.redeemPathRequest');
+        server.on('redeem_path_request', redeemPathRequest.handle.bind(redeemPathRequest));
+
         return Promise.resolve();
     }
 }

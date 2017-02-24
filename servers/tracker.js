@@ -139,6 +139,12 @@ class Tracker extends EventEmitter {
                         this.AddressRequest = this.proto.lookup('tracker.AddressRequest');
                         this.AddressResponse = this.proto.lookup('tracker.AddressResponse');
                         this.PeerAvailable = this.proto.lookup('tracker.PeerAvailable');
+                        this.RedeemMasterRequest = this.proto.lookup('tracker.RedeemMasterRequest');
+                        this.RedeemMasterResponse = this.proto.lookup('tracker.RedeemMasterResponse');
+                        this.RedeemDaemonRequest = this.proto.lookup('tracker.RedeemDaemonRequest');
+                        this.RedeemDaemonResponse = this.proto.lookup('tracker.RedeemDaemonResponse');
+                        this.RedeemPathRequest = this.proto.lookup('tracker.RedeemPathRequest');
+                        this.RedeemPathResponse = this.proto.lookup('tracker.RedeemPathResponse');
                         this.ClientMessage = this.proto.lookup('tracker.ClientMessage');
                         this.ServerMessage = this.proto.lookup('tracker.ServerMessage');
                         resolve();
@@ -570,6 +576,15 @@ class Tracker extends EventEmitter {
                     break;
                 case this.ServerMessage.Type.PEER_AVAILABLE:
                     this.emit('peer_available', name, message);
+                    break;
+                case this.ServerMessage.Type.REDEEM_MASTER_RESPONSE:
+                    this.emit('redeem_master_response', name, message);
+                    break;
+                case this.ServerMessage.Type.REDEEM_DAEMON_RESPONSE:
+                    this.emit('redeem_daemon_response', name, message);
+                    break;
+                case this.ServerMessage.Type.REDEEM_PATH_RESPONSE:
+                    this.emit('redeem_path_response', name, message);
                     break;
             }
         } catch (error) {

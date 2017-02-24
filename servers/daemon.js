@@ -102,6 +102,12 @@ class Daemon extends EventEmitter {
                         this.SetConnectionsResponse = this.proto.lookup('local.SetConnectionsResponse');
                         this.UpdateConnectionsRequest = this.proto.lookup('local.UpdateConnectionsRequest');
                         this.UpdateConnectionsResponse = this.proto.lookup('local.UpdateConnectionsResponse');
+                        this.RedeemMasterRequest = this.proto.lookup('local.RedeemMasterRequest');
+                        this.RedeemMasterResponse = this.proto.lookup('local.RedeemMasterResponse');
+                        this.RedeemDaemonRequest = this.proto.lookup('local.RedeemDaemonRequest');
+                        this.RedeemDaemonResponse = this.proto.lookup('local.RedeemDaemonResponse');
+                        this.RedeemPathRequest = this.proto.lookup('local.RedeemPathRequest');
+                        this.RedeemPathResponse = this.proto.lookup('local.RedeemPathResponse');
                         this.ClientMessage = this.proto.lookup('local.ClientMessage');
                         this.ServerMessage = this.proto.lookup('local.ServerMessage');
                         resolve();
@@ -289,6 +295,15 @@ class Daemon extends EventEmitter {
                     break;
                 case this.ClientMessage.Type.UPDATE_CONNECTIONS_REQUEST:
                     this.emit('update_connections_request', id, message);
+                    break;
+                case this.ClientMessage.Type.REDEEM_MASTER_REQUEST:
+                    this.emit('redeem_master_request', name, message);
+                    break;
+                case this.ClientMessage.Type.REDEEM_DAEMON_REQUEST:
+                    this.emit('redeem_daemon_request', name, message);
+                    break;
+                case this.ClientMessage.Type.REDEEM_PATH_REQUEST:
+                    this.emit('redeem_path_request', name, message);
                     break;
             }
         } catch (error) {

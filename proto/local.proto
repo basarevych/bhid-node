@@ -231,6 +231,7 @@ message SetConnectionsResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
+        TIMEOUT = 9000;
     }
     required Result response = 1;
 }
@@ -244,8 +245,57 @@ message UpdateConnectionsResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
+        TIMEOUT = 9000;
     }
     required Result response = 1;
+}
+
+message RedeemMasterRequest {
+    required string email = 1;
+}
+
+message RedeemMasterResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        TIMEOUT = 9000;
+    }
+    required Result response = 1;
+}
+
+message RedeemDaemonRequest {
+    required string token = 1;
+    required string daemon_name = 2;
+}
+
+message RedeemDaemonResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        TIMEOUT = 9000;
+    }
+    required Result response = 1;
+    optional string token = 2;
+}
+
+message RedeemPathRequest {
+    enum Type {
+        SERVER = 0;
+        CLIENT = 1;
+    }
+    required string token = 1;
+    required string path = 2;
+    required Type type = 3;
+}
+
+message RedeemPathResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        TIMEOUT = 9000;
+    }
+    required Result response = 1;
+    optional string token = 2;
 }
 
 message ClientMessage {
@@ -262,6 +312,9 @@ message ClientMessage {
         CONNECTIONS_LIST_REQUEST = 80;
         SET_CONNECTIONS_REQUEST = 90;
         UPDATE_CONNECTIONS_REQUEST = 100;
+        REDEEM_MASTER_REQUEST = 110;
+        REDEEM_DAEMON_REQUEST = 111;
+        REDEEM_PATH_REQUEST = 112;
     }
     required Type type = 1;
     optional InitRequest init_request = 100;
@@ -276,6 +329,9 @@ message ClientMessage {
     optional ConnectionsListRequest connections_list_request = 900;
     optional SetConnectionsRequest set_connections_request = 1000;
     optional UpdateConnectionsRequest update_connections_request = 1100;
+    optional RedeemMasterRequest redeem_master_request = 1200;
+    optional RedeemDaemonRequest redeem_daemon_request = 1210;
+    optional RedeemPathRequest redeem_path_request = 1220;
 }
 
 message ServerMessage {
@@ -292,6 +348,9 @@ message ServerMessage {
         CONNECTIONS_LIST_RESPONSE = 80;
         SET_CONNECTIONS_RESPONSE = 90;
         UPDATE_CONNECTIONS_RESPONSE = 100;
+        REDEEM_MASTER_RESPONSE = 110;
+        REDEEM_DAEMON_RESPONSE = 111;
+        REDEEM_PATH_RESPONSE = 112;
     }
     required Type type = 1;
     optional InitResponse init_response = 100;
@@ -306,4 +365,7 @@ message ServerMessage {
     optional ConnectionsListResponse connections_list_response = 900;
     optional SetConnectionsResponse set_connections_response = 1000;
     optional UpdateConnectionsResponse update_connections_response = 1100;
+    optional RedeemMasterResponse redeem_master_response = 1200;
+    optional RedeemDaemonResponse redeem_daemon_response = 1210;
+    optional RedeemPathResponse redeem_path_response = 1220;
 }

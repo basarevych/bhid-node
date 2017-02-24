@@ -259,6 +259,51 @@ message PeerAvailable {
     required string external_port = 3;
 }
 
+message RedeemMasterRequest {
+    required string email = 1;
+}
+
+message RedeemMasterResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+    }
+    required Result response = 1;
+}
+
+message RedeemDaemonRequest {
+    required string token = 1;
+    required string daemon_name = 2;
+}
+
+message RedeemDaemonResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+    }
+    required Result response = 1;
+    optional string token = 2;
+}
+
+message RedeemPathRequest {
+    enum Type {
+        SERVER = 0;
+        CLIENT = 1;
+    }
+    required string token = 1;
+    required string path = 2;
+    required Type type = 3;
+}
+
+message RedeemPathResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+    }
+    required Result response = 1;
+    optional string token = 2;
+}
+
 message ClientMessage {
     enum Type {
         ALIVE = 0;
@@ -276,6 +321,9 @@ message ClientMessage {
         LOOKUP_IDENTITY_REQUEST = 110;
         PUNCH_REQUEST = 120;
         ADDRESS_RESPONSE = 130;
+        REDEEM_MASTER_REQUEST = 140;
+        REDEEM_DAEMON_REQUEST = 141;
+        REDEEM_PATH_REQUEST = 142;
     }
     required Type type = 1;
     optional string message_id = 2;
@@ -293,6 +341,9 @@ message ClientMessage {
     optional LookupIdentityRequest lookup_identity_request = 1000;
     optional PunchRequest punch_request = 1100;
     optional AddressResponse address_response = 1200;
+    optional RedeemMasterRequest redeem_master_request = 1300;
+    optional RedeemDaemonRequest redeem_daemon_request = 1310;
+    optional RedeemPathRequest redeem_path_request = 1320;
 }
 
 message ServerMessage {
@@ -313,6 +364,9 @@ message ServerMessage {
         LOOKUP_IDENTITY_RESPONSE = 120;
         ADDRESS_REQUEST = 130;
         PEER_AVAILABLE = 140;
+        REDEEM_MASTER_RESPONSE = 150;
+        REDEEM_DAEMON_RESPONSE = 151;
+        REDEEM_PATH_RESPONSE = 152;
     }
     required Type type = 1;
     optional string message_id = 2;
@@ -331,4 +385,7 @@ message ServerMessage {
     optional LookupIdentityResponse lookupIdentityResponse = 1200;
     optional AddressRequest address_request = 1300;
     optional PeerAvailable peer_available = 1400;
+    optional RedeemMasterResponse redeem_master_response = 1500;
+    optional RedeemDaemonResponse redeem_daemon_response = 1510;
+    optional RedeemPathResponse redeem_path_response = 1520;
 }
