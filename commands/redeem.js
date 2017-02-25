@@ -149,7 +149,6 @@ class Redeem {
                             case resClass.Result.ACCEPTED:
                                 switch (type) {
                                     case 'master':
-                                        console.log('Please check email');
                                         break;
                                     case 'daemon':
                                         console.log('Token: ' + message[resField].token);

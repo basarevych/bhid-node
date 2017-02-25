@@ -66,7 +66,7 @@ if (!argv['_'].length) {
 }
 if (argv['_'][0] != 'help' && argv['_'][0] != 'install') {
     let etcExists = false;
-    for (let dir of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
+    for (let dir of [ '/etc/bhid', '/usr/local/etc/bhid', path.join(__dirname, 'config', 'local.js') ]) {
         try {
             fs.accessSync(dir, fs.constants.F_OK);
             etcExists = true;

@@ -80,7 +80,6 @@ class Init {
 
                         switch (message.initResponse.response) {
                             case this.InitResponse.Result.ACCEPTED:
-                                console.log('Please check email');
                                 process.exit(0);
                                 break;
                             case this.InitResponse.Result.REJECTED:
