@@ -5,6 +5,7 @@
 const argv = require('minimist')(process.argv.slice(2));
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const execFile = require('child_process').execFile;
 const Runner = require(path.join(__dirname, 'node_modules', 'arpen', 'src', 'services', 'runner.js'));
 
@@ -65,28 +66,14 @@ if (!argv['_'].length) {
     process.exit(0);
 }
 if (argv['_'][0] != 'help' && argv['_'][0] != 'install') {
-    let etcExists = false;
-    for (let dir of [ '/etc/bhid', '/usr/local/etc/bhid', path.join(__dirname, 'config', 'local.js') ]) {
-        try {
-            fs.accessSync(dir, fs.constants.F_OK);
-            etcExists = true;
-            break;
-        } catch (error) {
-            // do nothing
-        }
-    }
-    let workExists = true;
-    for (let dir of [ '/var/run/bhid', '/var/log/bhid' ]) {
+    let etcDir = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+    for (let dir of [ etcDir, '/var/run/bhid', '/var/log/bhid', path.join(__dirname, 'config', 'local.js') ]) {
         try {
             fs.accessSync(dir, fs.constants.F_OK);
         } catch (error) {
-            workExists = false;
-            break;
+            console.log('Run "bhid install" first');
+            process.exit(1);
         }
-    }
-    if (!etcExists || !workExists) {
-        console.log('Run "bhid install" first');
-        process.exit(1);
     }
 }
 
