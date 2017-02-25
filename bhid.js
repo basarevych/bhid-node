@@ -26,7 +26,8 @@ function usage() {
     console.log('\ttree\t\tPrint user tree');
     console.log('\tload\t\tLoad current connection configuration from tracker');
     console.log('\tredeem\t\tRedeem account, daemon or connection token');
-    console.log('\trun\t\tRun the daemon');
+    console.log('\tstart\t\tStart the daemon');
+    console.log('\tstop\t\tStop the daemon');
 }
 
 function execDaemon() {
@@ -36,12 +37,12 @@ function execDaemon() {
     return proc.promise;
 }
 
-function execCmd() {
+function execCommand(command, params) {
     return new Promise((resolve, reject) => {
         try {
             let proc = execFile(
-                path.join(__dirname, 'bin', 'cmd'),
-                process.argv.slice(2),
+                path.join(__dirname, 'bin', command),
+                params,
                 (error, stdout, stderr) => {
                     resolve({
                         code: error ? error.code : 0,
@@ -152,10 +153,15 @@ switch (argv['_'][0]) {
                 console.log('\tRedeem account, daemon or connection token. If -c is set the client token will be');
                 console.log('\tregenerated (default), or server token if -s is set.');
                 break;
-            case 'run':
-                console.log('Usage: bhid run\n');
+            case 'start':
+                console.log('Usage: bhid start\n');
                 console.log('\tThis command will start the daemon');
                 console.log('\tYou might want to run "systemctl bhid start" instead');
+                break;
+            case 'stop':
+                console.log('Usage: bhid stop\n');
+                console.log('\tThis command will stop the daemon');
+                console.log('\tYou might want to run "systemctl bhid stop" instead');
                 break;
             default:
                 console.log('Usage: bhid help <command>');
@@ -163,7 +169,7 @@ switch (argv['_'][0]) {
         }
         break;
     case 'install':
-        execCmd()
+        execCommand('cmd', process.argv.slice(2))
             .then(result => {
                 process.exit(result.code);
             })
@@ -172,8 +178,18 @@ switch (argv['_'][0]) {
                 process.exit(1);
             });
         break;
-    case 'run':
+    case 'start':
         execDaemon()
+            .then(result => {
+                process.exit(result.code);
+            })
+            .catch(error => {
+                console.log(error.message);
+                process.exit(1);
+            });
+        break;
+    case 'stop':
+        execCommand('kill', [ pidPath ])
             .then(result => {
                 process.exit(result.code);
             })
@@ -197,7 +213,7 @@ switch (argv['_'][0]) {
             .then(result => {
                 if (result.code !== 0)
                     process.exit(result.code);
-                return execCmd();
+                return execCommand('cmd', process.argv.slice(2));
             })
             .then(result => {
                 process.exit(result.code);

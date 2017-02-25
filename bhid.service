@@ -3,7 +3,8 @@ Description=Breedhub Interconnect Daemon
 
 [Service]
 Type=forking
-ExecStart=/usr/bin/node /usr/bin/bhid run
+ExecStart=/usr/bin/node /usr/bin/bhid start
+ExecStop=/usr/bin/node /usr/bin/bhid stop
 PIDFile=/var/run/bhid/bhid.pid
 Restart=always
 StandardOutput=syslog

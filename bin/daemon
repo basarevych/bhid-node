@@ -44,7 +44,14 @@ try {
 }
 require('daemon')();
 
-let fd = fs.openSync(pidFile, 'r+');
+let fd;
+try {
+    fd = fs.openSync(pidFile, 'r+');
+} catch (error) {
+    console.error(error.message);
+    process.exit(1);
+}
+
 try {
     fs.flockSync(fd, 'exnb');
 } catch (error) {
