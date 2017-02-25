@@ -75,8 +75,8 @@ class TreeRequest {
                 this.daemon.send(id, data);
             };
 
-            let server = this.tracker.servers.get(message.treeRequest.trackerName || this.tracker.default);
-            if (!server)
+            let server = this.tracker.getServer(message.treeRequest.trackerName);
+            if (!server || !server.connected)
                 return reply(this.daemon.TreeResponse.Result.NO_TRACKER);
             if (!server.registered)
                 return reply(this.daemon.TreeResponse.Result.NOT_REGISTERED);

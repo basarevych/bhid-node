@@ -74,8 +74,8 @@ class DisconnectRequest {
                 this.daemon.send(id, data);
             };
 
-            let server = this.tracker.servers.get(message.disconnectRequest.trackerName || this.tracker.default);
-            if (!server)
+            let server = this.tracker.getServer(message.disconnectRequest.trackerName);
+            if (!server || !server.connected)
                 return reply(this.daemon.DisconnectResponse.Result.NO_TRACKER);
             if (!server.registered)
                 return reply(this.daemon.DisconnectResponse.Result.NOT_REGISTERED);

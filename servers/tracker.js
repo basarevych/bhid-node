@@ -188,6 +188,7 @@ class Tracker extends EventEmitter {
                         port: bhidConfig[section]['port'] || '42042',
                         options: { ca: ca },
                         token: bhidConfig[section]['token'] || null,
+                        connected: false,
                         registered: false,
                     };
 
@@ -230,6 +231,20 @@ class Tracker extends EventEmitter {
     }
 
     /**
+     * Get server
+     * @param {string} name                 Tracker name
+     * @return {string}
+     */
+    getServer(name) {
+        if (!name)
+            name = this.default;
+        if (!name)
+            return null;
+
+        return this.servers.get(name);
+    }
+
+    /**
      * Get daemon token for the tracker
      * @param {string} name                 Tracker name
      * @return {string}
@@ -237,9 +252,13 @@ class Tracker extends EventEmitter {
     getToken(name) {
         if (!name)
             name = this.default;
+        if (!name)
+            return '';
+
         let server = this.servers.get(name);
         if (!server || !server.token || !server.registered)
             return '';
+
         return server.token;
     }
 
@@ -620,6 +639,7 @@ class Tracker extends EventEmitter {
             server.socket.destroy();
         server.socket = null;
         server.wrapper.detach();
+        server.connected = false;
         server.registered = false;
 
         this._timeouts.delete(name);
@@ -654,6 +674,7 @@ class Tracker extends EventEmitter {
                 server.options,
                 () => {
                     this._logger.info(`Connected to tracker ${name}`);
+                    server.connected = true;
 
                     server.wrapper.clear();
                     server.wrapper.attach(server.socket);

@@ -76,8 +76,8 @@ class CreateDaemonRequest {
                 this.daemon.send(id, data);
             };
 
-            let server = this.tracker.servers.get(message.createDaemonRequest.trackerName || this.tracker.default);
-            if (!server)
+            let server = this.tracker.getServer(message.createDaemonRequest.trackerName);
+            if (!server || !server.connected)
                 return reply(this.daemon.CreateDaemonResponse.Result.NO_TRACKER);
 
             onResponse = (name, response) => {

@@ -75,8 +75,8 @@ class ConnectRequest {
                 this.daemon.send(id, data);
             };
 
-            let server = this.tracker.servers.get(message.connectRequest.trackerName || this.tracker.default);
-            if (!server)
+            let server = this.tracker.getServer(message.connectRequest.trackerName);
+            if (!server || !server.connected)
                 return reply(this.daemon.ConnectResponse.Result.NO_TRACKER);
             if (!server.registered)
                 return reply(this.daemon.ConnectResponse.Result.NOT_REGISTERED);

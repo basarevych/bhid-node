@@ -74,8 +74,8 @@ class DeleteRequest {
                 this.daemon.send(id, data);
             };
 
-            let server = this.tracker.servers.get(message.deleteRequest.trackerName || this.tracker.default);
-            if (!server)
+            let server = this.tracker.getServer(message.deleteRequest.trackerName);
+            if (!server || !server.connected)
                 return reply(this.daemon.DeleteResponse.Result.NO_TRACKER);
             if (!server.registered)
                 return reply(this.daemon.DeleteResponse.Result.NOT_REGISTERED);

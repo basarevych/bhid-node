@@ -75,8 +75,8 @@ class RedeemPathRequest {
                 this.daemon.send(id, data);
             };
 
-            let server = this.tracker.servers.get(message.redeemPathRequest.trackerName || this.tracker.default);
-            if (!server)
+            let server = this.tracker.getServer(message.redeemPathRequest.trackerName);
+            if (!server || !server.connected)
                 return reply(this.daemon.RedeemPathResponse.Result.NO_TRACKER);
 
             onResponse = (name, response) => {
