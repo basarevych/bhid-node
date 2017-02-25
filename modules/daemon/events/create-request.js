@@ -77,8 +77,11 @@ class CreateRequest {
                 this.daemon.send(id, data);
             };
 
-            if (!this.tracker.getToken(message.createRequest.trackerName))
-                return reply(this.daemon.CreateResponse.Result.REJECTED);
+            let server = this.tracker.servers.get(message.createRequest.trackerName || this.tracker.default);
+            if (!server)
+                return reply(this.daemon.CreateResponse.Result.NO_TRACKER);
+            if (!server.registered)
+                return reply(this.daemon.CreateResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
                 if (response.messageId != relayId)

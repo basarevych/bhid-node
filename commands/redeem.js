@@ -164,7 +164,11 @@ class Redeem {
                                 process.exit(1);
                                 break;
                             case resClass.Result.TIMEOUT:
-                                console.log('No response from tracker');
+                                console.log('No response from the tracker');
+                                process.exit(1);
+                                break;
+                            case resClass.Result.NO_TRACKER:
+                                console.log('Not connected to the tracker');
                                 process.exit(1);
                                 break;
                             default:

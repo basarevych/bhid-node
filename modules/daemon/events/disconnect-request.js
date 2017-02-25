@@ -74,8 +74,11 @@ class DisconnectRequest {
                 this.daemon.send(id, data);
             };
 
-            if (!this.tracker.getToken(message.disconnectRequest.trackerName))
-                return reply(this.daemon.DisconnectResponse.Result.REJECTED);
+            let server = this.tracker.servers.get(message.disconnectRequest.trackerName || this.tracker.default);
+            if (!server)
+                return reply(this.daemon.DisconnectResponse.Result.NO_TRACKER);
+            if (!server.registered)
+                return reply(this.daemon.DisconnectResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
                 if (response.messageId != relayId)

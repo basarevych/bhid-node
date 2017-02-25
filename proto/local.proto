@@ -35,6 +35,7 @@ message InitResponse {
         REJECTED = 1;
         EMAIL_EXISTS = 10;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
     }
     required Result response = 1;
 }
@@ -49,6 +50,7 @@ message ConfirmResponse {
         ACCEPTED = 0;
         REJECTED = 1;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
     }
     required Result response = 1;
     optional string token = 2;
@@ -67,6 +69,7 @@ message CreateDaemonResponse {
         INVALID_NAME = 10;
         NAME_EXISTS = 11;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
     }
     required Result response = 1;
     optional string daemon_name = 2;
@@ -111,6 +114,8 @@ message CreateResponse {
         INVALID_PATH = 10;
         PATH_EXISTS = 11;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
+        NOT_REGISTERED = 9020;
     }
     required Result response = 1;
     optional string server_token = 2;
@@ -130,6 +135,8 @@ message DeleteResponse {
         INVALID_PATH = 10;
         PATH_NOT_FOUND = 11;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
+        NOT_REGISTERED = 9020;
     }
     required Result response = 1;
 }
@@ -146,6 +153,8 @@ message ConnectResponse {
         REJECTED = 1;
         ALREADY_CONNECTED = 10;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
+        NOT_REGISTERED = 9020;
     }
     required Result response = 1;
     optional ConnectionsList updates = 2;
@@ -165,6 +174,8 @@ message DisconnectResponse {
         PATH_NOT_FOUND = 11;
         NOT_CONNECTED = 20;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
+        NOT_REGISTERED = 9020;
     }
     required Result response = 1;
 }
@@ -203,6 +214,8 @@ message TreeResponse {
         INVALID_PATH = 10;
         PATH_NOT_FOUND = 11;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
+        NOT_REGISTERED = 9020;
     }
     required Result response = 1;
     optional Tree tree = 2;
@@ -217,6 +230,8 @@ message ConnectionsListResponse {
         ACCEPTED = 0;
         REJECTED = 1;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
+        NOT_REGISTERED = 9020;
     }
     required Result response = 1;
     optional ConnectionsList list = 2;
@@ -231,7 +246,6 @@ message SetConnectionsResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        TIMEOUT = 9000;
     }
     required Result response = 1;
 }
@@ -245,7 +259,6 @@ message UpdateConnectionsResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        TIMEOUT = 9000;
     }
     required Result response = 1;
 }
@@ -259,6 +272,7 @@ message RedeemMasterResponse {
         ACCEPTED = 0;
         REJECTED = 1;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
     }
     required Result response = 1;
 }
@@ -273,6 +287,7 @@ message RedeemDaemonResponse {
         ACCEPTED = 0;
         REJECTED = 1;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
     }
     required Result response = 1;
     optional string token = 2;
@@ -293,6 +308,7 @@ message RedeemPathResponse {
         ACCEPTED = 0;
         REJECTED = 1;
         TIMEOUT = 9000;
+        NO_TRACKER = 9010;
     }
     required Result response = 1;
     optional string token = 2;

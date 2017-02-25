@@ -75,6 +75,10 @@ class RedeemDaemonRequest {
                 this.daemon.send(id, data);
             };
 
+            let server = this.tracker.servers.get(message.redeemDaemonRequest.trackerName || this.tracker.default);
+            if (!server)
+                return reply(this.daemon.RedeemDaemonResponse.Result.NO_TRACKER);
+
             onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;

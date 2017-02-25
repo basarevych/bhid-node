@@ -74,6 +74,10 @@ class InitRequest {
                 this.daemon.send(id, data);
             };
 
+            let server = this.tracker.servers.get(message.initRequest.trackerName || this.tracker.default);
+            if (!server)
+                return reply(this.daemon.InitResponse.Result.NO_TRACKER);
+
             onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;

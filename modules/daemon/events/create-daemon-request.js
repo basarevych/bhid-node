@@ -76,6 +76,10 @@ class CreateDaemonRequest {
                 this.daemon.send(id, data);
             };
 
+            let server = this.tracker.servers.get(message.createDaemonRequest.trackerName || this.tracker.default);
+            if (!server)
+                return reply(this.daemon.CreateDaemonResponse.Result.NO_TRACKER);
+
             onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;

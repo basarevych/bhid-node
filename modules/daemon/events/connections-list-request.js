@@ -1,5 +1,5 @@
 /**
- * Connection List Request event
+ * Connections List Request event
  * @module daemon/events/connections-list-request
  */
 const debug = require('debug')('bhid:daemon');
@@ -75,8 +75,11 @@ class ConnectionsListRequest {
                 this.daemon.send(id, data);
             };
 
-            if (!this.tracker.getToken(message.connectionsListRequest.trackerName))
-                return reply(this.daemon.ConnectionsListResponse.Result.REJECTED);
+            let server = this.tracker.servers.get(message.connectionsListRequest.trackerName || this.tracker.default);
+            if (!server)
+                return reply(this.daemon.ConnectionsListResponse.Result.NO_TRACKER);
+            if (!server.registered)
+                return reply(this.daemon.ConnectionsListResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
                 if (response.messageId != relayId)

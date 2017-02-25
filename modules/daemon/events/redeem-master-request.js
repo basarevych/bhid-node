@@ -74,6 +74,10 @@ class RedeemMasterRequest {
                 this.daemon.send(id, data);
             };
 
+            let server = this.tracker.servers.get(message.redeemMasterRequest.trackerName || this.tracker.default);
+            if (!server)
+                return reply(this.daemon.RedeemMasterResponse.Result.NO_TRACKER);
+
             onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;

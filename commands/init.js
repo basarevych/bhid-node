@@ -91,7 +91,11 @@ class Init {
                                 process.exit(1);
                                 break;
                             case this.InitResponse.Result.TIMEOUT:
-                                console.log('No response from tracker');
+                                console.log('No response from the tracker');
+                                process.exit(1);
+                                break;
+                            case this.InitResponse.Result.NO_TRACKER:
+                                console.log('Not connected to the tracker');
                                 process.exit(1);
                                 break;
                             default:

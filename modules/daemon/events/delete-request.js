@@ -74,8 +74,11 @@ class DeleteRequest {
                 this.daemon.send(id, data);
             };
 
-            if (!this.tracker.getToken(message.deleteRequest.trackerName))
-                return reply(this.daemon.DeleteResponse.Result.REJECTED);
+            let server = this.tracker.servers.get(message.deleteRequest.trackerName || this.tracker.default);
+            if (!server)
+                return reply(this.daemon.DeleteResponse.Result.NO_TRACKER);
+            if (!server.registered)
+                return reply(this.daemon.DeleteResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
                 if (response.messageId != relayId)

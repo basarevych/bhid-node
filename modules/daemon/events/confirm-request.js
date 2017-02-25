@@ -75,6 +75,10 @@ class ConfirmRequest {
                 this.daemon.send(id, data);
             };
 
+            let server = this.tracker.servers.get(message.confirmRequest.trackerName || this.tracker.default);
+            if (!server)
+                return reply(this.daemon.ConfirmResponse.Result.NO_TRACKER);
+
             onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;
