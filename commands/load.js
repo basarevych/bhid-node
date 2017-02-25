@@ -47,7 +47,7 @@ class Load {
      */
     run(argv) {
         let trackerName = argv['t'] || '';
-        let quiet = argv['q'] || false;
+        let force = argv['f'] || false;
 
         debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
@@ -80,7 +80,7 @@ class Load {
 
                         switch (message.connectionsListResponse.response) {
                             case this.ConnectionsListResponse.Result.ACCEPTED:
-                                if (quiet) {
+                                if (force) {
                                     this.load(trackerName, message.connectionsListResponse.list);
                                 } else {
                                     this.printTable(message.connectionsListResponse.list);
