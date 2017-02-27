@@ -57,9 +57,10 @@ message ConfirmResponse {
 }
 
 message CreateDaemonRequest {
-    required string token = 1;
-    optional string daemon_name = 2;
-    optional bool randomize = 3;
+    required string tracker_name = 1;
+    required string token = 2;
+    optional string daemon_name = 3;
+    optional bool randomize = 4;
 }
 
 message CreateDaemonResponse {
@@ -264,7 +265,8 @@ message UpdateConnectionsResponse {
 }
 
 message RedeemMasterRequest {
-    required string email = 1;
+    required string tracker_name = 1;
+    required string email = 2;
 }
 
 message RedeemMasterResponse {
@@ -278,8 +280,9 @@ message RedeemMasterResponse {
 }
 
 message RedeemDaemonRequest {
-    required string token = 1;
-    required string daemon_name = 2;
+    required string tracker_name = 1;
+    required string token = 2;
+    required string daemon_name = 3;
 }
 
 message RedeemDaemonResponse {
@@ -298,9 +301,10 @@ message RedeemPathRequest {
         SERVER = 0;
         CLIENT = 1;
     }
-    required string token = 1;
-    required string path = 2;
-    required Type type = 3;
+    required string tracker_name = 1;
+    required string token = 2;
+    required string path = 3;
+    required Type type = 4;
 }
 
 message RedeemPathResponse {
