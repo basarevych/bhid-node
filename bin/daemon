@@ -50,7 +50,6 @@ try {
 try {
     fs.flockSync(fd, 'exnb');
 } catch (error) {
-    console.log('Daemon already running');
     process.exit(0);
 }
 

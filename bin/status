@@ -2,15 +2,11 @@
 
 const fs = require('fs-ext');
 
-let args = process.argv.slice(2);
-let pidFile = args.shift();
-let signal = args.shift();
+let pidFile = process.argv.length > 2 && process.argv[2];
 if (!pidFile) {
-    console.error('Usage:\tkill <pidfile> [<signal>]');
+    console.error('Usage:\tstatus <pidfile>');
     process.exit(1);
 }
-if (!signal)
-    signal = 'SIGTERM';
 
 try {
     fs.accessSync(pidFile, fs.constants.F_OK);
@@ -21,7 +17,8 @@ try {
         process.exit(1);
     }
 } catch (error) {
-    process.exit(0);
+    console.log('Daemon is not running');
+    process.exit(100);
 }
 
 let fd;
@@ -34,7 +31,8 @@ try {
 
 try {
     fs.flockSync(fd, 'exnb');
-    process.exit(0);
+    console.log('Daemon is not running');
+    process.exit(100);
 } catch (error) {
     fs.fstat(fd, (err, stats) => {
         if (err) {
@@ -70,7 +68,7 @@ try {
                         console.error('PID file does not contain a pid');
                         process.exit(1);
                     }
-                    process.kill(pid, signal);
+                    console.log(`Daemon is running at PID ${pid}`);
                     process.exit(0);
                 } catch (error) {
                     console.error(error.message);

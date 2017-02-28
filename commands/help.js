@@ -73,6 +73,8 @@ class Help {
         console.log('\tredeem\t\tRedeem account, daemon or connection token');
         console.log('\tstart\t\tStart the daemon');
         console.log('\tstop\t\tStop the daemon');
+        console.log('\trestart\t\tRestart the daemon');
+        console.log('\tstatus\t\tQuery running status of the daemon');
         process.exit(0);
     }
 
@@ -211,7 +213,6 @@ class Help {
     helpStart(argv) {
         console.log('Usage:\tbhidctl start\n');
         console.log('\tThis command will start the daemon');
-        console.log('\tYou might want to run "systemctl bhid start" instead');
         process.exit(0);
     }
 
@@ -221,7 +222,6 @@ class Help {
     helpStop(argv) {
         console.log('Usage:\tbhidctl stop\n');
         console.log('\tThis command will stop the daemon');
-        console.log('\tYou might want to run "systemctl bhid stop" instead');
         process.exit(0);
     }
 
@@ -231,7 +231,15 @@ class Help {
     helpRestart(argv) {
         console.log('Usage:\tbhidctl restart\n');
         console.log('\tThis command will stop and start the daemon');
-        console.log('\tYou might want to run "systemctl bhid restart" instead');
+        process.exit(0);
+    }
+
+    /**
+     * Status command
+     */
+    helpStatus(argv) {
+        console.log('Usage:\tbhidctl status\n');
+        console.log('\tThis command will print daemon status');
         process.exit(0);
     }
 
