@@ -58,8 +58,9 @@ let pidBuffer = Buffer(process.pid.toString() + '\n');
 fs.ftruncateSync(fd);
 fs.writeSync(fd, pidBuffer, 0, pidBuffer.length, null);
 
+let restartPause = 1000, maxBufferLength = 10000;
 function restart() {
-    let maxBufferLength = 10000, buffer = '';
+    let buffer = '';
     let proc = runner.spawn('node', [ path.join(__dirname, 'server'), 'daemon', 'tracker', 'peer', 'front' ]);
     proc.cmd.on('data', data => {
         process.stdout.write(data);
@@ -70,14 +71,10 @@ function restart() {
     proc.promise
         .then(result => {
             if (result.code === 0)
-                process.exit(0);
+                process.exit(result.code);
 
-            if (!config.email.daemon.enabled) {
-                if (result.code === 200)
-                    process.exit(200);
-
-                return setTimeout(() => { restart(); }, 1000);
-            }
+            if (!config.email.daemon.enabled)
+                return setTimeout(() => { restart(); }, restartPause);
 
             return emailer.send({
                     from: config.email.from,
@@ -86,10 +83,7 @@ function restart() {
                     text: stripAnsi(buffer),
                 })
                 .then(function () {
-                    if (result.code === 200)
-                        process.exit(200);
-
-                    setTimeout(() => { restart(); }, 1000);
+                    setTimeout(() => { restart(); }, restartPause);
                 });
         })
         .catch(error => {
