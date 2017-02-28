@@ -10,7 +10,7 @@ if (!pidFile) {
     process.exit(1);
 }
 if (!signal)
-    signal = 'SIGHUP';
+    signal = 'SIGTERM';
 
 try {
     fs.accessSync(pidFile, fs.constants.F_OK);

@@ -7,13 +7,6 @@ const stripAnsi = require('strip-ansi');
 const Runner = require(path.join(__dirname, '..', 'node_modules', 'arpen', 'src', 'services', 'runner.js'));
 const Emailer = require(path.join(__dirname, '..', 'node_modules', 'arpen', 'src', 'services', 'emailer.js'));
 
-let args = process.argv.slice(2);
-let pidFile = args.shift();
-if (!pidFile || !args.length) {
-    console.error('Usage: daemon <pidfile> <server-name> [... <server-name>]');
-    process.exit(1);
-}
-
 let config, runner, emailer;
 try {
     let globalConf = require(path.join(__dirname, '..', 'config', 'global.js'));
@@ -26,22 +19,24 @@ try {
     process.exit(1);
 }
 
+let pidFile = '/var/run/bhid/bhid.pid';
 try {
     fs.accessSync(pidFile, fs.constants.F_OK);
     try {
         fs.accessSync(pidFile, fs.constants.R_OK | fs.constants.W_OK);
     } catch (error) {
-        console.error(error.message);
+        console.error(`No read-write access to ${pidFile}`);
         process.exit(1);
     }
 } catch (error) {
     try {
         fs.closeSync(fs.openSync(pidFile, 'w'));
     } catch (error) {
-        console.error(error.message);
+        console.error(`Could not create ${pidFile}`);
         process.exit(1);
     }
 }
+
 require('daemon')();
 
 let fd;
@@ -55,6 +50,7 @@ try {
 try {
     fs.flockSync(fd, 'exnb');
 } catch (error) {
+    console.log('Daemon already running');
     process.exit(0);
 }
 
@@ -64,7 +60,7 @@ fs.writeSync(fd, pidBuffer, 0, pidBuffer.length, null);
 
 function restart() {
     let maxBufferLength = 10000, buffer = '';
-    let proc = runner.spawn('node', [ path.join(__dirname, 'server'), ...args ]);
+    let proc = runner.spawn('node', [ path.join(__dirname, 'server'), 'daemon', 'tracker', 'peer', 'front' ]);
     proc.cmd.on('data', data => {
         process.stdout.write(data);
         buffer += data.toString();
@@ -86,7 +82,7 @@ function restart() {
             return emailer.send({
                     from: config.email.from,
                     to: config.email.daemon.to,
-                    subject: '[' + config.project + '] Exit code ' + result.code + ' of ' + args.join(' '),
+                    subject: 'Exit code ' + result.code + ' of Breedhub Interconnect daemon',
                     text: stripAnsi(buffer),
                 })
                 .then(function () {
@@ -103,7 +99,7 @@ function restart() {
             return emailer.send({
                     from: config.email.from,
                     to: config.email.daemon.to,
-                    subject: '[' + config.project + '] Failed to start ' + args.join(' '),
+                    subject: 'Failed to start Breedhub Interconnect daemon',
                     text: error.message,
                 })
                 .then(function () {
