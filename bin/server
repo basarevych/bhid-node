@@ -4,5 +4,5 @@ const argv = require('minimist')(process.argv.slice(2));
 const path = require('path');
 const Server = require('arpen').Server;
 
-const console = new Server(path.join(__dirname, '..'), argv);
-console.run(...argv['_']);
+const server = new Server(path.join(__dirname, '..'), argv);
+server.run(...argv['_']);
