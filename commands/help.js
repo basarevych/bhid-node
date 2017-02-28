@@ -56,7 +56,7 @@ class Help {
      * General help
      */
     usage() {
-        console.log('Usage:\tbhidctl <command>');
+        console.log('Usage:\tbhidctl <command> [<parameters]');
         console.log('Commands:');
         console.log('\thelp\t\tPrint help about any other command');
         console.log('\tinstall\t\tRegister the program in the system');
