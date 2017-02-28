@@ -9,7 +9,8 @@
     "url": "git+https://github.com/breedhub/bhid-node.git"
   },
   "bin": {
-    "bhid": "bhid.js"
+    "bhidd": "bin/daemon",
+    "bhidctl": "bin/cmd"
   },
   "dependencies": {
     "archy": "~1.0.0",
