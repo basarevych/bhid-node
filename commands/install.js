@@ -57,48 +57,99 @@ class Install {
                 }
 
                 try {
-                    fs.symlinkSync(path.join(configDir, 'config.js'), path.join(__dirname, '..', 'config', 'local.js'));
-                } catch (error) {
-                    // do nothing
-                }
-
-                try {
                     fs.accessSync(configDir, fs.constants.F_OK);
-                    return;
                 } catch (error) {
-                    // do nothing
-                }
-
-                debug('Creating config dir');
-                fs.mkdirSync(configDir, 0o750);
-                fs.mkdirSync(path.join(configDir, 'id'), 0o750);
-                fs.mkdirSync(path.join(configDir, 'peers'), 0o755);
-                fs.mkdirSync(path.join(configDir, 'certs'), 0o755);
-                try {
-                    fs.mkdirSync('/var/run/bhid', 0o750);
-                } catch (error) {
-                    // do nothing
+                    try {
+                        fs.mkdirSync(configDir, 0o750);
+                    } catch (error) {
+                        this.error(`Could not create ${configDir}`);
+                    }
                 }
                 try {
-                    fs.mkdirSync('/var/log/bhid', 0o750);
+                    fs.accessSync(path.join(configDir, 'id'), fs.constants.F_OK);
                 } catch (error) {
-                    // do nothing
+                    try {
+                        fs.mkdirSync(path.join(configDir, 'id'), 0o750);
+                    } catch (error) {
+                        this.error(`Could not create ${path.join(configDir, 'id')}`);
+                    }
+                }
+                try {
+                    fs.accessSync(path.join(configDir, 'peers'), fs.constants.F_OK);
+                } catch (error) {
+                    try {
+                        fs.mkdirSync(path.join(configDir, 'peers'), 0o755);
+                    } catch (error) {
+                        this.error(`Could not create ${path.join(configDir, 'peers')}`);
+                    }
+                }
+                try {
+                    fs.accessSync(path.join(configDir, 'certs'), fs.constants.F_OK);
+                } catch (error) {
+                    try {
+                        fs.mkdirSync(path.join(configDir, 'certs'), 0o755);
+                    } catch (error) {
+                        this.error(`Could not create ${path.join(configDir, 'certs')}`);
+                    }
+                }
+                try {
+                    fs.accessSync('/var/run/bhid', fs.constants.F_OK);
+                } catch (error) {
+                    try {
+                        fs.mkdirSync('/var/run/bhid', 0o755);
+                    } catch (error) {
+                        this.error(`Could not create /var/run/bhid`);
+                    }
+                }
+                try {
+                    fs.accessSync('/var/log/bhid', fs.constants.F_OK);
+                } catch (error) {
+                    try {
+                        fs.mkdirSync('/var/log/bhid', 0o755);
+                    } catch (error) {
+                        this.error(`Could not create /var/log/bhid`);
+                    }
                 }
 
-                debug('Creating default config');
-                let config = fs.readFileSync(path.join(__dirname, '..', 'bhid.conf'), { encoding: 'utf8'});
-                fs.writeFileSync(path.join(configDir, 'bhid.conf'), config, { mode: 0o640 });
-                config = fs.readFileSync(path.join(__dirname, '..', 'config', 'local.js.example'), { encoding: 'utf8'});
-                fs.writeFileSync(path.join(configDir, 'config.js'), config, { mode: 0o640 });
-
+                try {
+                    debug('Creating default config');
+                    fs.accessSync(path.join(configDir, 'bhid.conf'), fs.constants.F_OK);
+                } catch (error) {
+                    try {
+                        let config = fs.readFileSync(path.join(__dirname, '..', 'bhid.conf'), { encoding: 'utf8'});
+                        fs.writeFileSync(path.join(configDir, 'bhid.conf'), config, { mode: 0o640 });
+                    } catch (error) {
+                        this.error(`Could not create bhid.conf`);
+                    }
+                }
                 try {
                     fs.accessSync('/etc/systemd/system', fs.constants.F_OK);
-                    debug('Creating service');
-                    let service = fs.readFileSync(path.join(__dirname, '..', 'bhid.service'), {encoding: 'utf8'});
+                    debug('Creating systemd service');
+                    let service = fs.readFileSync(path.join(__dirname, '..', 'systemd.service'), {encoding: 'utf8'});
                     fs.writeFileSync('/etc/systemd/system/bhid.service', service, {mode: 0o644});
                 } catch (error) {
-                    console.log('Could not create systemd service - skipping...');
+                    // do nothing
                 }
+                try {
+                    fs.accessSync('/etc/init.d', fs.constants.F_OK);
+                    debug('Creating sysvinit service');
+                    let service = fs.readFileSync(path.join(__dirname, '..', 'sysvinit.service'), {encoding: 'utf8'});
+                    fs.writeFileSync('/etc/init.d/bhid', service, {mode: 0o644});
+                } catch (error) {
+                    // do nothing
+                }
+
+                let keysExist = false;
+                try {
+                    fs.accessSync(path.join(configDir, 'id', 'private.rsa'), fs.constants.F_OK);
+                    fs.accessSync(path.join(configDir, 'id', 'public.rsa'), fs.constants.F_OK);
+                    keysExist = true;
+                } catch (error) {
+                    // do nothing
+                }
+
+                if (keysExist)
+                    return;
 
                 debug('Creating RSA keys');
                 return this._runner.exec(

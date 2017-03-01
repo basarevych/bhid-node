@@ -19,7 +19,7 @@ try {
     process.exit(1);
 }
 
-let pidFile = '/var/run/bhid/bhid.pid';
+let pidFile = '/var/run/bhid/daemon.pid';
 try {
     fs.accessSync(pidFile, fs.constants.F_OK);
     try {

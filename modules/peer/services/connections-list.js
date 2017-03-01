@@ -5,6 +5,7 @@
 const debug = require('debug')('bhid:connections-list');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const ini = require('ini');
 const WError = require('verror').WError;
 
@@ -83,19 +84,12 @@ class ConnectionsList {
      */
     load() {
         try {
-            let configPath;
-            for (let candidate of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
-                try {
-                    fs.accessSync(path.join(candidate, 'bhid.conf'), fs.constants.F_OK);
-                    configPath = candidate;
-                    break;
-                } catch (error) {
-                    // do nothing
-                }
-            }
-
-            if (!configPath)
+            let configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+            try {
+                fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.R_OK);
+            } catch (error) {
                 throw new Error('Could not read bhid.conf');
+            }
 
             this._list.clear();
             let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
@@ -323,19 +317,12 @@ class ConnectionsList {
      */
     save() {
         try {
-            let configPath;
-            for (let candidate of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
-                try {
-                    fs.accessSync(path.join(candidate, 'bhid.conf'), fs.constants.F_OK);
-                    configPath = candidate;
-                    break;
-                } catch (error) {
-                    // do nothing
-                }
-            }
-
-            if (!configPath)
+            let configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+            try {
+                fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.R_OK);
+            } catch (error) {
                 throw new Error('Could not read bhid.conf');
+            }
 
             let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
             let output = {};

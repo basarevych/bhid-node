@@ -1,0 +1,47 @@
+#!/bin/sh
+# Start/stop the cron daemon.
+#
+### BEGIN INIT INFO
+# Provides:          cron
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Breedhub Interconnect Daemon
+# Description:       bhid is proxying daemon part of Breedhub Interconnect
+### END INIT INFO
+
+PATH=/bin:/sbin:/usr/bin:/usr/sbin
+DESC="bhid daemon"
+NAME=bhid
+DAEMON=/usr/bin/bhid
+PIDFILE=/var/run/bhid/daemon.pid
+SCRIPTNAME=/etc/init.d/"$NAME"
+
+test -f $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+case "$1" in
+start)	log_daemon_msg "Starting bhid daemon" "bhid"
+        start_daemon -p $PIDFILE $DAEMON $EXTRA_OPTS
+        log_end_msg $?
+	;;
+stop)	log_daemon_msg "Stopping bhid daemon" "bhid"
+        killproc -p $PIDFILE $DAEMON
+        RETVAL=$?
+        [ $RETVAL -eq 0 ] && [ -e "$PIDFILE" ] && rm -f $PIDFILE
+        log_end_msg $RETVAL
+        ;;
+restart) log_daemon_msg "Restarting bhid daemon" "bhid"
+        $0 stop
+        $0 start
+        ;;
+status)
+        status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+        ;;
+*)	log_action_msg "Usage: /etc/init.d/bhid {start|stop|restart|status}"
+        exit 2
+        ;;
+esac
+exit 0

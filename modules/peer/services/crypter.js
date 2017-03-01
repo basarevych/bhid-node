@@ -5,6 +5,7 @@
 const debug = require('debug')('bhid:crypter');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const uuid = require('uuid');
 const crypto = require('crypto');
 const NodeRSA = require('node-rsa');
@@ -286,19 +287,13 @@ class Crypter {
      */
     _loadPeer(identity) {
         if (!this._peersPath) {
-            for (let candidate of ['/etc/bhid', '/usr/local/etc/bhid']) {
-                try {
-                    fs.accessSync(path.join(candidate, 'peers'), fs.constants.F_OK);
-                    this._peersPath = path.join(candidate, 'peers');
-                    break;
-                } catch (error) {
-                    // do nothing
-                }
+            this._peersPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid/peers' : '/etc/bhid/peers');
+            try {
+                fs.accessSync(this._peersPath, fs.constants.F_OK);
+            } catch (error) {
+                return Promise.resolve(null);
             }
         }
-
-        if (!this._peersPath)
-            return Promise.resolve(null);
 
         return new Promise((resolve, reject) => {
             try {

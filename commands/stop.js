@@ -58,15 +58,15 @@ class Stop {
      * Kill the daemon and wait for exit
      */
     terminate() {
-        return this._runner.exec(path.join(__dirname, '..', 'bin', 'status'), [ '/var/run/bhid/bhid.pid' ])
+        return this._runner.exec(path.join(__dirname, '..', 'bin', 'status'), [ '/var/run/bhid/daemon.pid' ])
             .then(result => {
                 if (result.code === 0)
-                    return this._start.exec('kill', [ '/var/run/bhid/bhid.pid', 'SIGTERM' ]);
+                    return this._start.exec('kill', [ '/var/run/bhid/daemon.pid', 'SIGTERM' ]);
 
                 return new Promise((resolve, reject) => {
                     let tries = 0;
                     let waitExit = () => {
-                        this._runner.exec(path.join(__dirname, '..', 'bin', 'status'), [ '/var/run/bhid/bhid.pid' ])
+                        this._runner.exec(path.join(__dirname, '..', 'bin', 'status'), [ '/var/run/bhid/daemon.pid' ])
                             .then(result => {
                                 if (result.code === 100)
                                     return resolve();
