@@ -182,12 +182,23 @@ class Front extends EventEmitter {
                 return;
 
             connection.tcp.once('error', onError);
-            connection.tcp.listen(port, address, () => {
+            connection.tcp.listen(port || undefined, address || undefined, () => {
                 let newCon = this.connections.get(name);
                 if (!newCon || newCon !== connection)
                     return;
 
-                this._logger.info(`Ready for connections for ${name} on ${address}:${port}`)
+                connection.address = connection.tcp.localAddress;
+                connection.port = connection.tcp.localPort;
+
+                let info = this._peer.connections.get(name);
+                if (info) {
+                    if (info.listenAddress != connection.address)
+                        info.listenAddress = connection.address;
+                    if (info.listenPort != connection.port)
+                        info.listenPort = connection.port;
+                }
+
+                this._logger.info(`Ready for connections for ${name} on ${connection.address}:${connection.port}`)
                 connection.tcp.removeListener('error', onError);
             });
         };

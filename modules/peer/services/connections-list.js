@@ -139,8 +139,8 @@ class ConnectionsList {
                     }
                     let connection = {
                         name: section.substring(tracker.length + 1, section.length - this.constructor.clientSection.length),
-                        listenAddress: bhidConfig[section]['listen_address'],
-                        listenPort: bhidConfig[section]['listen_port'],
+                        listenAddress: bhidConfig[section]['listen_address'] == '*' ? '' : bhidConfig[section]['listen_address'],
+                        listenPort: bhidConfig[section]['listen_port'] == '*' ? '' : bhidConfig[section]['listen_port'],
                         encrypted: bhidConfig[section]['encrypted'] == 'yes',
                         fixed: bhidConfig[section]['fixed'] == 'yes',
                         server: bhidConfig[section]['server'] || '',
@@ -346,8 +346,8 @@ class ConnectionsList {
                 }
                 for (let [ name, connection ] of list.clientConnections) {
                     output[trackerName + '#' + connection.name + this.constructor.clientSection] = {
-                        listen_address: connection.listenAddress,
-                        listen_port: connection.listenPort,
+                        listen_address: connection.listenPort ? connection.listenAddress : '*',
+                        listen_port: connection.listenPort || '*',
                         encrypted: connection.encrypted ? 'yes' : 'no',
                         fixed: connection.fixed ? 'yes' : 'no',
                         server: connection.server,

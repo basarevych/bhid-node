@@ -12,8 +12,8 @@ message ServerConnection {
 
 message ClientConnection {
     required string name = 1;
-    required string listen_address = 2;
-    required string listen_port = 3;
+    optional string listen_address = 2;
+    optional string listen_port = 3;
     required bool encrypted = 4;
     required bool fixed = 5;
     optional string server = 6;
@@ -95,7 +95,7 @@ message CreateRequest {
     optional string connect_address = 5;
     required string connect_port = 6;
     optional string listen_address = 7;
-    required string listen_port = 8;
+    optional string listen_port = 8;
 }
 
 message CreateResponse {
@@ -141,6 +141,8 @@ message ImportResponse {
 message AttachRequest {
     required string token = 1;
     required string path = 2;
+    optional string address_override = 3;
+    optional string port_override = 4;
 }
 
 message AttachResponse {

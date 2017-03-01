@@ -48,7 +48,26 @@ class Attach {
             return this.error('Invalid parameters');
 
         let apath = argv['_'][1];
+        let override = argv['_'].length > 2 && argv['_'][2];
         let trackerName = argv['t'] || '';
+        let random = argv['r'] || false;
+
+        let overrideAddress, overridePort;
+        if (override) {
+            let parts = override.split(':');
+            if (parts.length == 2) {
+                overrideAddress = parts[0];
+                overridePort = parts[1];
+            } else if (parts.length == 1 && parts[0].length && parts[0][0] == '/') {
+                overrideAddress = '';
+                overridePort = parts[0];
+            } else {
+                return this.error('Invalid override address notation');
+            }
+        } else {
+            overrideAddress = '';
+            overridePort = '';
+        }
 
         debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
@@ -69,6 +88,8 @@ class Attach {
                 let request = this.AttachRequest.create({
                     trackerName: trackerName,
                     path: apath,
+                    addressOverride: overrideAddress,
+                    portOverride: overridePort,
                 });
                 let message = this.ClientMessage.create({
                     type: this.ClientMessage.Type.ATTACH_REQUEST,
@@ -83,7 +104,7 @@ class Attach {
 
                         switch (message.attachResponse.response) {
                             case this.AttachResponse.Result.ACCEPTED:
-                                this.update(trackerName, message.attachResponse.updates);
+                                this.update(trackerName, message.attachResponse.updates, random);
                                 break;
                             case this.AttachResponse.Result.REJECTED:
                                 console.log('Request rejected');
@@ -132,10 +153,18 @@ class Attach {
      * Load the connection
      * @param {string} trackerName                      Name of the tracker
      * @param {object} [list]                           List of updated connections
+     * @param {boolean} random                          Use random port
      */
-    update(trackerName, list) {
+    update(trackerName, list, random) {
         if (!list)
             process.exit(0);
+
+        if (random) {
+            for (let connection of list.clientConnections) {
+                connection.listenAddress = '';
+                connection.listenPort = '';
+            }
+        }
 
         let request = this.UpdateConnectionsRequest.create({
             trackerName: trackerName,

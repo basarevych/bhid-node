@@ -103,6 +103,8 @@ class AttachRequest {
             let request = this.tracker.AttachRequest.create({
                 token: message.attachRequest.token,
                 path: message.attachRequest.path,
+                addressOverride: message.attachRequest.addressOverride,
+                portOverride: message.attachRequest.portOverride,
             });
             let relay = this.tracker.ClientMessage.create({
                 type: this.tracker.ClientMessage.Type.ATTACH_REQUEST,

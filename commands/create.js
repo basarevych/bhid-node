@@ -44,12 +44,12 @@ class Create {
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 4)
+        if (argv['_'].length < 3)
             return this.error('Invalid parameters');
 
         let cpath = argv['_'][1];
         let first = argv['_'][2];
-        let second = argv['_'][3];
+        let second = argv['_'].length > 3 && argv['_'][3];
         let server = !!argv['s'];
         let client = !!argv['c'];
         let encrypted = !!argv['e'];
@@ -59,8 +59,8 @@ class Create {
         if (server && client)
             return this.error('Daemon cannot be a server and a client of the same connection at the same time');
 
-        let parts = first.split(':');
         let firstAddress, firstPort;
+        let parts = first.split(':');
         if (parts.length == 2) {
             firstAddress = parts[0];
             firstPort = parts[1];
@@ -71,16 +71,21 @@ class Create {
             return this.error('Invalid connect address notation');
         }
 
-        parts = second.split(':');
         let secondAddress, secondPort;
-        if (parts.length == 2) {
-            secondAddress = parts[0];
-            secondPort = parts[1];
-        } else if (parts.length == 1 && parts[0].length && parts[0][0] == '/') {
-            secondAddress = '';
-            secondPort = parts[0];
+        if (second) {
+            parts = second.split(':');
+            if (parts.length == 2) {
+                secondAddress = parts[0];
+                secondPort = parts[1];
+            } else if (parts.length == 1 && parts[0].length && parts[0][0] == '/') {
+                secondAddress = '';
+                secondPort = parts[0];
+            } else {
+                return this.error('Invalid listen address notation');
+            }
         } else {
-            return this.error('Invalid listen address notation');
+            secondAddress = '';
+            secondPort = '';
         }
 
         debug('Loading protocol');
