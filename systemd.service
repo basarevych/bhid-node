@@ -13,6 +13,7 @@ StandardError=syslog
 SyslogIdentifier=bhid
 User=root
 Group=root
+#PermissionsStartOnly=true
 
 [Install]
 WantedBy=multi-user.target
