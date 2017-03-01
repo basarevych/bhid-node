@@ -1,6 +1,6 @@
 /**
- * Connect command
- * @module commands/connect
+ * Import command
+ * @module commands/import
  */
 const debug = require('debug')('bhid:command');
 const path = require('path');
@@ -11,7 +11,7 @@ const SocketWrapper = require('socket-wrapper');
 /**
  * Command class
  */
-class Connect {
+class Import {
     /**
      * Create the service
      * @param {App} app                 The application
@@ -23,11 +23,11 @@ class Connect {
     }
 
     /**
-     * Service name is 'commands.connect'
+     * Service name is 'commands.import'
      * @type {string}
      */
     static get provides() {
-        return 'commands.connect';
+        return 'commands.import';
     }
 
     /**
@@ -48,7 +48,6 @@ class Connect {
             return this.error('Invalid parameters');
 
         let token = argv['_'][1];
-        let daemonName = argv['d'] || '';
         let trackerName = argv['t'] || '';
 
         debug('Loading protocol');
@@ -58,54 +57,51 @@ class Connect {
 
             try {
                 this.proto = root;
-                this.ConnectRequest = this.proto.lookup('local.ConnectRequest');
-                this.ConnectResponse = this.proto.lookup('local.ConnectResponse');
+                this.ImportRequest = this.proto.lookup('local.ImportRequest');
+                this.ImportResponse = this.proto.lookup('local.ImportResponse');
                 this.ConnectionsList = this.proto.lookup('local.ConnectionsList');
-                this.UpdateConnectionsRequest = this.proto.lookup('local.UpdateConnectionsRequest');
-                this.UpdateConnectionsResponse = this.proto.lookup('local.UpdateConnectionsResponse');
+                this.ImportConnectionsRequest = this.proto.lookup('local.ImportConnectionsRequest');
+                this.ImportConnectionsResponse = this.proto.lookup('local.ImportConnectionsResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                debug(`Sending CONNECT REQUEST`);
-                let request = this.ConnectRequest.create({
+                debug(`Sending IMPORT REQUEST`);
+                let request = this.ImportRequest.create({
                     trackerName: trackerName,
-                    daemonName: daemonName,
                     token: token,
                 });
                 let message = this.ClientMessage.create({
-                    type: this.ClientMessage.Type.CONNECT_REQUEST,
-                    connectRequest: request,
+                    type: this.ClientMessage.Type.IMPORT_REQUEST,
+                    importRequest: request,
                 });
                 let buffer = this.ClientMessage.encode(message).finish();
                 this.send(buffer)
                     .then(data => {
                         let message = this.ServerMessage.decode(data);
-                        if (message.type !== this.ServerMessage.Type.CONNECT_RESPONSE)
+                        if (message.type !== this.ServerMessage.Type.IMPORT_RESPONSE)
                             throw new Error('Invalid reply from daemon');
 
-                        switch (message.connectResponse.response) {
-                            case this.ConnectResponse.Result.ACCEPTED:
-                                if (daemonName)
-                                    process.exit(0);
-                                this.update(trackerName, message.connectResponse.updates);
+                        switch (message.importResponse.response) {
+                            case this.ImportResponse.Result.ACCEPTED:
+                                this.import(trackerName, token, message.connectResponse.updates);
                                 break;
-                            case this.ConnectResponse.Result.REJECTED:
+                            case this.ImportResponse.Result.REJECTED:
                                 console.log('Request rejected');
                                 process.exit(1);
                                 break;
-                            case this.ConnectResponse.Result.ALREADY_CONNECTED:
+                            case this.ImportResponse.Result.ALREADY_CONNECTED:
                                 console.log('Already connected');
                                 process.exit(1);
                                 break;
-                            case this.ConnectResponse.Result.TIMEOUT:
+                            case this.ImportResponse.Result.TIMEOUT:
                                 console.log('No response from the tracker');
                                 process.exit(1);
                                 break;
-                            case this.ConnectResponse.Result.NO_TRACKER:
+                            case this.ImportResponse.Result.NO_TRACKER:
                                 console.log('Not connected to the tracker');
                                 process.exit(1);
                                 break;
-                            case this.ConnectResponse.Result.NOT_REGISTERED:
+                            case this.ImportResponse.Result.NOT_REGISTERED:
                                 console.log('Not registered with the tracker');
                                 process.exit(1);
                                 break;
@@ -125,35 +121,41 @@ class Connect {
     }
 
     /**
-     * Load the connection
+     * import the connection
      * @param {string} trackerName                      Name of the tracker
+     * @param {string} token                            The token
      * @param {object} [list]                           List of updated connections
      */
-    update(trackerName, list) {
+    import(trackerName, token, list) {
         if (!list)
             process.exit(0);
 
-        let request = this.UpdateConnectionsRequest.create({
+        let request = this.ImportConnectionsRequest.create({
             trackerName: trackerName,
+            token: token,
             list: list,
         });
         let message = this.ClientMessage.create({
-            type: this.ClientMessage.Type.UPDATE_CONNECTIONS_REQUEST,
-            updateConnectionsRequest: request,
+            type: this.ClientMessage.Type.IMPORT_CONNECTIONS_REQUEST,
+            importConnectionsRequest: request,
         });
         let buffer = this.ClientMessage.encode(message).finish();
         this.send(buffer)
             .then(data => {
                 let message = this.ServerMessage.decode(data);
-                if (message.type !== this.ServerMessage.Type.UPDATE_CONNECTIONS_RESPONSE)
+                if (message.type !== this.ServerMessage.Type.IMPORT_CONNECTIONS_RESPONSE)
                     throw new Error('Invalid reply from daemon');
 
-                switch (message.updateConnectionsResponse.response) {
-                    case this.UpdateConnectionsResponse.Result.ACCEPTED:
+                switch (message.importConnectionsResponse.response) {
+                    case this.ImportConnectionsResponse.Result.ACCEPTED:
+                        for (let connection of list.serverConnections)
+                            console.log(`Server of ${connection.name}`);
+                        for (let connection of list.clientConnections)
+                            console.log(`Client of ${connection.name}`);
                         process.exit(0);
                         break;
-                    case this.UpdateConnectionsResponse.Result.REJECTED:
-                        console.log('Could not start the connection');
+                    case this.ImportConnectionsResponse.Result.REJECTED:
+                        console.log('Could not import the connections');
                         process.exit(1);
                         break;
                     default:
@@ -213,4 +215,4 @@ class Connect {
     }
 }
 
-module.exports = Connect;
+module.exports = Import;

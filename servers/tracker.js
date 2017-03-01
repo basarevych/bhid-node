@@ -118,10 +118,12 @@ class Tracker extends EventEmitter {
                         this.CreateResponse = this.proto.lookup('tracker.CreateResponse');
                         this.DeleteRequest = this.proto.lookup('tracker.DeleteRequest');
                         this.DeleteResponse = this.proto.lookup('tracker.DeleteResponse');
-                        this.ConnectRequest = this.proto.lookup('tracker.ConnectRequest');
-                        this.ConnectResponse = this.proto.lookup('tracker.ConnectResponse');
-                        this.DisconnectRequest = this.proto.lookup('tracker.DisconnectRequest');
-                        this.DisconnectResponse = this.proto.lookup('tracker.DisconnectResponse');
+                        this.ImportRequest = this.proto.lookup('tracker.ImportRequest');
+                        this.ImportResponse = this.proto.lookup('tracker.ImportResponse');
+                        this.AttachRequest = this.proto.lookup('tracker.AttachRequest');
+                        this.AttachResponse = this.proto.lookup('tracker.AttachResponse');
+                        this.DetachRequest = this.proto.lookup('tracker.DetachRequest');
+                        this.DetachResponse = this.proto.lookup('tracker.DetachResponse');
                         this.Tree = this.proto.lookup('tracker.Tree');
                         this.TreeRequest = this.proto.lookup('tracker.TreeRequest');
                         this.TreeResponse = this.proto.lookup('tracker.TreeResponse');
@@ -569,11 +571,14 @@ class Tracker extends EventEmitter {
                 case this.ServerMessage.Type.DELETE_RESPONSE:
                     this.emit('delete_response', name, message);
                     break;
-                case this.ServerMessage.Type.CONNECT_RESPONSE:
-                    this.emit('connect_response', name, message);
+                case this.ServerMessage.Type.IMPORT_RESPONSE:
+                    this.emit('import_response', id, message);
                     break;
-                case this.ServerMessage.Type.DISCONNECT_RESPONSE:
-                    this.emit('disconnect_response', name, message);
+                case this.ServerMessage.Type.ATTACH_RESPONSE:
+                    this.emit('attach_response', id, message);
+                    break;
+                case this.ServerMessage.Type.DETACH_RESPONSE:
+                    this.emit('detach_response', id, message);
                     break;
                 case this.ServerMessage.Type.TREE_RESPONSE:
                     this.emit('tree_response', name, message);

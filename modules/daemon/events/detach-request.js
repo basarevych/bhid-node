@@ -1,15 +1,15 @@
 /**
- * Create Request event
- * @module daemon/events/create-request
+ * Detach Request event
+ * @module daemon/events/detach-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Create Request event class
+ * Detach Request event class
  */
-class CreateRequest {
+class DetachRequest {
     /**
      * Create service
      * @param {App} app                         The application
@@ -23,11 +23,11 @@ class CreateRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.events.createRequest'
+     * Service name is 'modules.daemon.events.detachRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.events.createRequest';
+        return 'modules.daemon.events.detachRequest';
     }
 
     /**
@@ -48,81 +48,66 @@ class CreateRequest {
         if (!client)
             return;
 
-        debug(`Got CREATE REQUEST`);
+        debug(`Got DETACH REQUEST`);
         try {
             let relayId = uuid.v1();
 
             let timer, onResponse;
-            let reply = (value, serverToken, clientToken, updates) => {
+            let reply = value => {
                 if (timer) {
                     clearTimeout(timer);
                     timer = null;
                 }
 
                 if (onResponse)
-                    this.tracker.removeListener('create_response', onResponse);
+                    this.tracker.removeListener('detach_response', onResponse);
 
-                let reply = this.daemon.CreateResponse.create({
+                let reply = this.daemon.DetachResponse.create({
                     response: value,
-                    serverToken: serverToken || '',
-                    clientToken: clientToken || '',
-                    updates: updates,
                 });
                 let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.CREATE_RESPONSE,
-                    createResponse: reply,
+                    type: this.daemon.ServerMessage.Type.DETACH_RESPONSE,
+                    detachResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending CREATE RESPONSE`);
+                debug(`Sending DETACH RESPONSE`);
                 this.daemon.send(id, data);
             };
 
-            let server = this.tracker.getServer(message.createRequest.trackerName);
+            let server = this.tracker.getServer(message.detachRequest.trackerName);
             if (!server || !server.connected)
-                return reply(this.daemon.CreateResponse.Result.NO_TRACKER);
+                return reply(this.daemon.DetachResponse.Result.NO_TRACKER);
             if (!server.registered)
-                return reply(this.daemon.CreateResponse.Result.NOT_REGISTERED);
+                return reply(this.daemon.DetachResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;
 
-                debug(`Got CREATE RESPONSE from tracker`);
-                reply(
-                    response.createResponse.response,
-                    response.createResponse.serverToken,
-                    response.createResponse.clientToken,
-                    response.createResponse.updates
-                );
+                debug(`Got DETACH RESPONSE from tracker`);
+                reply(response.detachResponse.response);
             };
-            this.tracker.on('create_response', onResponse);
+            this.tracker.on('detach_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.CreateResponse.Result.TIMEOUT);
+                    reply(this.daemon.DetachResponse.Result.TIMEOUT);
                 },
                 this.daemon.constructor.requestTimeout
             );
 
-            let request = this.tracker.CreateRequest.create({
-                path: message.createRequest.path,
-                type: message.createRequest.type,
-                encrypted: message.createRequest.encrypted,
-                fixed: message.createRequest.fixed,
-                connectAddress: message.createRequest.connectAddress,
-                connectPort: message.createRequest.connectPort,
-                listenAddress: message.createRequest.listenAddress,
-                listenPort: message.createRequest.listenPort,
+            let request = this.tracker.DetachRequest.create({
+                path: message.detachRequest.path,
             });
             let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.CREATE_REQUEST,
+                type: this.tracker.ClientMessage.Type.DETACH_REQUEST,
                 messageId: relayId,
-                createRequest: request,
+                detachRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.createRequest.trackerName, data);
+            this.tracker.send(message.detachRequest.trackerName, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'CreateRequest.handle()'));
+            this._logger.error(new WError(error, 'DetachRequest.handle()'));
         }
     }
 
@@ -149,4 +134,4 @@ class CreateRequest {
     }
 }
 
-module.exports = CreateRequest;
+module.exports = DetachRequest;

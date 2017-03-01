@@ -1,15 +1,15 @@
 /**
- * Connect Request event
- * @module daemon/events/connect-request
+ * Import Request event
+ * @module daemon/events/import-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Connect Request event class
+ * Import Request event class
  */
-class ConnectRequest {
+class ImportRequest {
     /**
      * Create service
      * @param {App} app                         The application
@@ -23,11 +23,11 @@ class ConnectRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.events.connectRequest'
+     * Service name is 'modules.daemon.events.importRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.events.connectRequest';
+        return 'modules.daemon.events.importRequest';
     }
 
     /**
@@ -48,7 +48,7 @@ class ConnectRequest {
         if (!client)
             return;
 
-        debug(`Got CONNECT REQUEST`);
+        debug(`Got IMPORT REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -60,59 +60,58 @@ class ConnectRequest {
                 }
 
                 if (onResponse)
-                    this.tracker.removeListener('connect_response', onResponse);
+                    this.tracker.removeListener('import_response', onResponse);
 
-                let reply = this.daemon.ConnectResponse.create({
+                let reply = this.daemon.ImportResponse.create({
                     response: value,
                     updates: updates,
                 });
                 let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.CONNECT_RESPONSE,
-                    connectResponse: reply,
+                    type: this.daemon.ServerMessage.Type.IMPORT_RESPONSE,
+                    importResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending CONNECT RESPONSE`);
+                debug(`Sending IMPORT RESPONSE`);
                 this.daemon.send(id, data);
             };
 
-            let server = this.tracker.getServer(message.connectRequest.trackerName);
+            let server = this.tracker.getServer(message.importRequest.trackerName);
             if (!server || !server.connected)
-                return reply(this.daemon.ConnectResponse.Result.NO_TRACKER);
+                return reply(this.daemon.ImportResponse.Result.NO_TRACKER);
             if (!server.registered)
-                return reply(this.daemon.ConnectResponse.Result.NOT_REGISTERED);
+                return reply(this.daemon.ImportResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;
 
-                debug(`Got CONNECT RESPONSE from tracker`);
+                debug(`Got IMPORT RESPONSE from tracker`);
                 reply(
-                    response.connectResponse.response,
-                    response.connectResponse.updates
+                    response.importResponse.response,
+                    response.importResponse.updates
                 );
             };
-            this.tracker.on('connect_response', onResponse);
+            this.tracker.on('import_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.ConnectResponse.Result.TIMEOUT);
+                    reply(this.daemon.ImportResponse.Result.TIMEOUT);
                 },
                 this.daemon.constructor.requestTimeout
             );
 
-            let request = this.tracker.ConnectRequest.create({
-                daemonName: message.connectRequest.daemonName,
-                connectToken: message.connectRequest.token,
+            let request = this.tracker.ImportRequest.create({
+                token: message.importRequest.token,
             });
             let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.CONNECT_REQUEST,
+                type: this.tracker.ClientMessage.Type.IMPORT_REQUEST,
                 messageId: relayId,
-                connectRequest: request,
+                importRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.connectRequest.trackerName, data);
+            this.tracker.send(message.importRequest.trackerName, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'ConnectRequest.handle()'));
+            this._logger.error(new WError(error, 'ImportRequest.handle()'));
         }
     }
 
@@ -139,4 +138,4 @@ class ConnectRequest {
     }
 }
 
-module.exports = ConnectRequest;
+module.exports = ImportRequest;

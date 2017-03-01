@@ -88,15 +88,14 @@ message CreateRequest {
         CLIENT = 1;
         NOT_CONNECTED = 2;
     }
-    optional string daemon_name = 1;
-    required string path = 2;
-    required Type type = 3;
-    required bool encrypted = 4;
-    required bool fixed = 5;
-    optional string connect_address = 6;
-    required string connect_port = 7;
-    optional string listen_address = 8;
-    required string listen_port = 9;
+    required string path = 1;
+    required Type type = 2;
+    required bool encrypted = 3;
+    required bool fixed = 4;
+    optional string connect_address = 5;
+    required string connect_port = 6;
+    optional string listen_address = 7;
+    required string listen_port = 8;
 }
 
 message CreateResponse {
@@ -126,34 +125,47 @@ message DeleteResponse {
     required Result response = 1;
 }
 
-message ConnectRequest {
-    optional string daemon_name = 1;
-    required string connect_token = 2;
+message ImportRequest {
+    required string token = 1;
 }
 
-message ConnectResponse {
+message ImportResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
-        ALREADY_CONNECTED = 10;
     }
     required Result response = 1;
     optional ConnectionsList updates = 2;
 }
 
-message DisconnectRequest {
-    optional string daemon_name = 1;
-    optional string email = 2;
-    required string path = 3;
+message AttachRequest {
+    required string token = 1;
+    required string path = 2;
 }
 
-message DisconnectResponse {
+message AttachResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
         INVALID_PATH = 10;
         PATH_NOT_FOUND = 11;
-        NOT_CONNECTED = 20;
+        ALREADY_ATTACHED = 20;
+    }
+    required Result response = 1;
+    optional ConnectionsList updates = 2;
+}
+
+message DetachRequest {
+    required string path = 1;
+}
+
+message DetachResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        INVALID_PATH = 10;
+        PATH_NOT_FOUND = 11;
+        NOT_ATTACHED = 20;
     }
     required Result response = 1;
 }
@@ -314,16 +326,17 @@ message ClientMessage {
         REGISTER_DAEMON_REQUEST = 40;
         CREATE_REQUEST = 50;
         DELETE_REQUEST = 60;
-        CONNECT_REQUEST = 70;
-        DISCONNECT_REQUEST = 80;
-        TREE_REQUEST = 90;
-        CONNECTIONS_LIST_REQUEST = 100;
-        LOOKUP_IDENTITY_REQUEST = 110;
-        PUNCH_REQUEST = 120;
-        ADDRESS_RESPONSE = 130;
-        REDEEM_MASTER_REQUEST = 140;
-        REDEEM_DAEMON_REQUEST = 141;
-        REDEEM_PATH_REQUEST = 142;
+        IMPORT_REQUEST = 70;
+        ATTACH_REQUEST = 80;
+        DETACH_REQUEST = 90;
+        TREE_REQUEST = 100;
+        CONNECTIONS_LIST_REQUEST = 110;
+        LOOKUP_IDENTITY_REQUEST = 120;
+        PUNCH_REQUEST = 130;
+        ADDRESS_RESPONSE = 140;
+        REDEEM_MASTER_REQUEST = 150;
+        REDEEM_DAEMON_REQUEST = 151;
+        REDEEM_PATH_REQUEST = 152;
     }
     required Type type = 1;
     optional string message_id = 2;
@@ -334,16 +347,17 @@ message ClientMessage {
     optional RegisterDaemonRequest register_daemon_request = 300;
     optional CreateRequest create_request = 400;
     optional DeleteRequest delete_request = 500;
-    optional ConnectRequest connect_request = 600;
-    optional DisconnectRequest disconnect_request = 700;
-    optional TreeRequest tree_request = 800;
-    optional ConnectionsListRequest connections_list_request = 900;
-    optional LookupIdentityRequest lookup_identity_request = 1000;
-    optional PunchRequest punch_request = 1100;
-    optional AddressResponse address_response = 1200;
-    optional RedeemMasterRequest redeem_master_request = 1300;
-    optional RedeemDaemonRequest redeem_daemon_request = 1310;
-    optional RedeemPathRequest redeem_path_request = 1320;
+    optional ImportRequest import_request = 600;
+    optional AttachRequest attach_request = 700;
+    optional DetachRequest detach_request = 800;
+    optional TreeRequest tree_request = 900;
+    optional ConnectionsListRequest connections_list_request = 1000;
+    optional LookupIdentityRequest lookup_identity_request = 1100;
+    optional PunchRequest punch_request = 1200;
+    optional AddressResponse address_response = 1300;
+    optional RedeemMasterRequest redeem_master_request = 1400;
+    optional RedeemDaemonRequest redeem_daemon_request = 1410;
+    optional RedeemPathRequest redeem_path_request = 1420;
 }
 
 message ServerMessage {
@@ -355,18 +369,19 @@ message ServerMessage {
         REGISTER_DAEMON_RESPONSE = 30;
         CREATE_RESPONSE = 40;
         DELETE_RESPONSE = 50;
-        CONNECT_RESPONSE = 60;
-        DISCONNECT_RESPONSE = 70;
-        TREE_RESPONSE = 80;
-        CONNECTIONS_LIST_RESPONSE = 90;
-        CONNECTIONS_LIST = 100;
-        SERVER_AVAILABLE = 110;
-        LOOKUP_IDENTITY_RESPONSE = 120;
-        ADDRESS_REQUEST = 130;
-        PEER_AVAILABLE = 140;
-        REDEEM_MASTER_RESPONSE = 150;
-        REDEEM_DAEMON_RESPONSE = 151;
-        REDEEM_PATH_RESPONSE = 152;
+        IMPORT_RESPONSE = 60;
+        ATTACH_RESPONSE = 70;
+        DETACH_RESPONSE = 80;
+        TREE_RESPONSE = 90;
+        CONNECTIONS_LIST_RESPONSE = 100;
+        CONNECTIONS_LIST = 110;
+        SERVER_AVAILABLE = 120;
+        LOOKUP_IDENTITY_RESPONSE = 130;
+        ADDRESS_REQUEST = 140;
+        PEER_AVAILABLE = 150;
+        REDEEM_MASTER_RESPONSE = 160;
+        REDEEM_DAEMON_RESPONSE = 161;
+        REDEEM_PATH_RESPONSE = 162;
     }
     required Type type = 1;
     optional string message_id = 2;
@@ -376,16 +391,17 @@ message ServerMessage {
     optional RegisterDaemonResponse register_daemon_response = 300;
     optional CreateResponse create_response = 400;
     optional DeleteResponse delete_response = 500;
-    optional ConnectResponse connect_response = 600;
-    optional DisconnectResponse disconnect_response = 700;
-    optional TreeResponse tree_response = 800;
-    optional ConnectionsListResponse connections_list_response = 900;
-    optional ConnectionsList connections_list = 1000;
-    optional ServerAvailable server_available = 1100;
-    optional LookupIdentityResponse lookupIdentityResponse = 1200;
-    optional AddressRequest address_request = 1300;
-    optional PeerAvailable peer_available = 1400;
-    optional RedeemMasterResponse redeem_master_response = 1500;
-    optional RedeemDaemonResponse redeem_daemon_response = 1510;
-    optional RedeemPathResponse redeem_path_response = 1520;
+    optional ImportResponse import_response = 600;
+    optional AttachResponse attach_response = 700;
+    optional DetachResponse detach_response = 800;
+    optional TreeResponse tree_response = 900;
+    optional ConnectionsListResponse connections_list_response = 1000;
+    optional ConnectionsList connections_list = 1100;
+    optional ServerAvailable server_available = 1200;
+    optional LookupIdentityResponse lookupIdentityResponse = 1300;
+    optional AddressRequest address_request = 1400;
+    optional PeerAvailable peer_available = 1500;
+    optional RedeemMasterResponse redeem_master_response = 1600;
+    optional RedeemDaemonResponse redeem_daemon_response = 1610;
+    optional RedeemPathResponse redeem_path_response = 1620;
 }

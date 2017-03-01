@@ -1,6 +1,6 @@
 /**
- * Disconnect command
- * @module commands/disconnect
+ * Detach command
+ * @module commands/detach
  */
 const debug = require('debug')('bhid:command');
 const path = require('path');
@@ -11,7 +11,7 @@ const SocketWrapper = require('socket-wrapper');
 /**
  * Command class
  */
-class Disconnect {
+class Detach {
     /**
      * Create the service
      * @param {App} app                 The application
@@ -23,11 +23,11 @@ class Disconnect {
     }
 
     /**
-     * Service name is 'commands.disconnect'
+     * Service name is 'commands.detach'
      * @type {string}
      */
     static get provides() {
-        return 'commands.disconnect';
+        return 'commands.detach';
     }
 
     /**
@@ -48,7 +48,6 @@ class Disconnect {
             return this.error('Invalid parameters');
 
         let dpath = argv['_'][1];
-        let daemonName = argv['d'] || '';
         let trackerName = argv['t'] || '';
 
         debug('Loading protocol');
@@ -58,57 +57,56 @@ class Disconnect {
 
             try {
                 this.proto = root;
-                this.DisconnectRequest = this.proto.lookup('local.DisconnectRequest');
-                this.DisconnectResponse = this.proto.lookup('local.DisconnectResponse');
+                this.DetachRequest = this.proto.lookup('local.DetachRequest');
+                this.DetachResponse = this.proto.lookup('local.DetachResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                debug(`Sending DISCONNECT REQUEST`);
-                let request = this.DisconnectRequest.create({
+                debug(`Sending DETACH REQUEST`);
+                let request = this.DetachRequest.create({
                     trackerName: trackerName,
-                    daemonName: daemonName,
                     path: dpath,
                 });
                 let message = this.ClientMessage.create({
-                    type: this.ClientMessage.Type.DISCONNECT_REQUEST,
-                    disconnectRequest: request,
+                    type: this.ClientMessage.Type.DETACH_REQUEST,
+                    detachRequest: request,
                 });
                 let buffer = this.ClientMessage.encode(message).finish();
                 this.send(buffer)
                     .then(data => {
                         let message = this.ServerMessage.decode(data);
-                        if (message.type !== this.ServerMessage.Type.DISCONNECT_RESPONSE)
+                        if (message.type !== this.ServerMessage.Type.DETACH_RESPONSE)
                             throw new Error('Invalid reply from daemon');
 
-                        switch (message.disconnectResponse.response) {
-                            case this.DisconnectResponse.Result.ACCEPTED:
+                        switch (message.detachResponse.response) {
+                            case this.DetachResponse.Result.ACCEPTED:
                                 process.exit(0);
                                 break;
-                            case this.DisconnectResponse.Result.REJECTED:
+                            case this.DetachResponse.Result.REJECTED:
                                 console.log('Request rejected');
                                 process.exit(1);
                                 break;
-                            case this.DisconnectResponse.Result.INVALID_PATH:
+                            case this.DetachResponse.Result.INVALID_PATH:
                                 console.log('Invalid path');
                                 process.exit(1);
                                 break;
-                            case this.DisconnectResponse.Result.PATH_NOT_FOUND:
+                            case this.DetachResponse.Result.PATH_NOT_FOUND:
                                 console.log('Path not found');
                                 process.exit(1);
                                 break;
-                            case this.DisconnectResponse.Result.NOT_CONNECTED:
-                                console.log('Not connected');
+                            case this.DetachResponse.Result.NOT_ATTACHED:
+                                console.log('Not attached');
                                 process.exit(1);
                                 break;
-                            case this.DisconnectResponse.Result.TIMEOUT:
+                            case this.DetachResponse.Result.TIMEOUT:
                                 console.log('No response from the tracker');
                                 process.exit(1);
                                 break;
-                            case this.DisconnectResponse.Result.NO_TRACKER:
+                            case this.DetachResponse.Result.NO_TRACKER:
                                 console.log('Not connected to the tracker');
                                 process.exit(1);
                                 break;
-                            case this.DisconnectResponse.Result.NOT_REGISTERED:
+                            case this.DetachResponse.Result.NOT_REGISTERED:
                                 console.log('Not registered with the tracker');
                                 process.exit(1);
                                 break;
@@ -175,4 +173,4 @@ class Disconnect {
     }
 }
 
-module.exports = Disconnect;
+module.exports = Detach;

@@ -1,15 +1,15 @@
 /**
- * Disconnect Request event
- * @module daemon/events/disconnect-request
+ * Attach Request event
+ * @module daemon/events/attach-request
  */
 const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
 /**
- * Disconnect Request event class
+ * Attach Request event class
  */
-class DisconnectRequest {
+class AttachRequest {
     /**
      * Create service
      * @param {App} app                         The application
@@ -23,11 +23,11 @@ class DisconnectRequest {
     }
 
     /**
-     * Service name is 'modules.daemon.events.disconnectRequest'
+     * Service name is 'modules.daemon.events.attachRequest'
      * @type {string}
      */
     static get provides() {
-        return 'modules.daemon.events.disconnectRequest';
+        return 'modules.daemon.events.attachRequest';
     }
 
     /**
@@ -48,67 +48,71 @@ class DisconnectRequest {
         if (!client)
             return;
 
-        debug(`Got DISCONNECT REQUEST`);
+        debug(`Got ATTACH REQUEST`);
         try {
             let relayId = uuid.v1();
 
             let timer, onResponse;
-            let reply = value => {
+            let reply = (value, updates) => {
                 if (timer) {
                     clearTimeout(timer);
                     timer = null;
                 }
 
                 if (onResponse)
-                    this.tracker.removeListener('disconnect_response', onResponse);
+                    this.tracker.removeListener('attach_response', onResponse);
 
-                let reply = this.daemon.DisconnectResponse.create({
+                let reply = this.daemon.AttachResponse.create({
                     response: value,
+                    updates: updates,
                 });
                 let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.DISCONNECT_RESPONSE,
-                    disconnectResponse: reply,
+                    type: this.daemon.ServerMessage.Type.ATTACH_RESPONSE,
+                    attachResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending DISCONNECT RESPONSE`);
+                debug(`Sending ATTACH RESPONSE`);
                 this.daemon.send(id, data);
             };
 
-            let server = this.tracker.getServer(message.disconnectRequest.trackerName);
+            let server = this.tracker.getServer(message.attachRequest.trackerName);
             if (!server || !server.connected)
-                return reply(this.daemon.DisconnectResponse.Result.NO_TRACKER);
+                return reply(this.daemon.AttachResponse.Result.NO_TRACKER);
             if (!server.registered)
-                return reply(this.daemon.DisconnectResponse.Result.NOT_REGISTERED);
+                return reply(this.daemon.AttachResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
                 if (response.messageId != relayId)
                     return;
 
-                debug(`Got DISCONNECT RESPONSE from tracker`);
-                reply(response.disconnectResponse.response);
+                debug(`Got ATTACH RESPONSE from tracker`);
+                reply(
+                    response.attachResponse.response,
+                    response.attachResponse.updates
+                );
             };
-            this.tracker.on('disconnect_response', onResponse);
+            this.tracker.on('attach_response', onResponse);
 
             timer = setTimeout(
                 () => {
-                    reply(this.daemon.DisconnectResponse.Result.TIMEOUT);
+                    reply(this.daemon.AttachResponse.Result.TIMEOUT);
                 },
                 this.daemon.constructor.requestTimeout
             );
 
-            let request = this.tracker.DisconnectRequest.create({
-                daemonName: message.disconnectRequest.daemonName,
-                path: message.disconnectRequest.path,
+            let request = this.tracker.AttachRequest.create({
+                token: message.attachRequest.token,
+                path: message.attachRequest.path,
             });
             let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.DISCONNECT_REQUEST,
+                type: this.tracker.ClientMessage.Type.ATTACH_REQUEST,
                 messageId: relayId,
-                disconnectRequest: request,
+                attachRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.disconnectRequest.trackerName, data);
+            this.tracker.send(message.attachRequest.trackerName, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'DisconnectRequest.handle()'));
+            this._logger.error(new WError(error, 'AttachRequest.handle()'));
         }
     }
 
@@ -135,4 +139,4 @@ class DisconnectRequest {
     }
 }
 
-module.exports = DisconnectRequest;
+module.exports = AttachRequest;

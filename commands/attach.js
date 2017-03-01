@@ -1,6 +1,6 @@
 /**
- * Create command
- * @module commands/create
+ * Attach command
+ * @module commands/attach
  */
 const debug = require('debug')('bhid:command');
 const path = require('path');
@@ -11,7 +11,7 @@ const SocketWrapper = require('socket-wrapper');
 /**
  * Command class
  */
-class Create {
+class Attach {
     /**
      * Create the service
      * @param {App} app                 The application
@@ -23,11 +23,11 @@ class Create {
     }
 
     /**
-     * Service name is 'commands.create'
+     * Service name is 'commands.attach'
      * @type {string}
      */
     static get provides() {
-        return 'commands.create';
+        return 'commands.attach';
     }
 
     /**
@@ -44,44 +44,11 @@ class Create {
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 4)
+        if (argv['_'].length < 2)
             return this.error('Invalid parameters');
 
-        let cpath = argv['_'][1];
-        let first = argv['_'][2];
-        let second = argv['_'][3];
-        let server = !!argv['s'];
-        let client = !!argv['c'];
-        let encrypted = !!argv['e'];
-        let fixed = !!argv['f'];
+        let apath = argv['_'][1];
         let trackerName = argv['t'] || '';
-
-        if (server && client)
-            return this.error('Daemon cannot be a server and a client of the same connection at the same time');
-
-        let parts = first.split(':');
-        let firstAddress, firstPort;
-        if (parts.length == 2) {
-            firstAddress = parts[0];
-            firstPort = parts[1];
-        } else if (parts.length == 1 && parts[0].length && parts[0][0] == '/') {
-            firstAddress = '';
-            firstPort = parts[0];
-        } else {
-            return this.error('Invalid connect address notation');
-        }
-
-        parts = second.split(':');
-        let secondAddress, secondPort;
-        if (parts.length == 2) {
-            secondAddress = parts[0];
-            secondPort = parts[1];
-        } else if (parts.length == 1 && parts[0].length && parts[0][0] == '/') {
-            secondAddress = '';
-            secondPort = parts[0];
-        } else {
-            return this.error('Invalid listen address notation');
-        }
 
         debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
@@ -90,78 +57,59 @@ class Create {
 
             try {
                 this.proto = root;
-                this.CreateRequest = this.proto.lookup('local.CreateRequest');
-                this.CreateResponse = this.proto.lookup('local.CreateResponse');
+                this.AttachRequest = this.proto.lookup('local.AttachRequest');
+                this.AttachResponse = this.proto.lookup('local.AttachResponse');
                 this.ConnectionsList = this.proto.lookup('local.ConnectionsList');
                 this.UpdateConnectionsRequest = this.proto.lookup('local.UpdateConnectionsRequest');
                 this.UpdateConnectionsResponse = this.proto.lookup('local.UpdateConnectionsResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                let type = this.CreateRequest.Type.NOT_CONNECTED;
-                if (server)
-                    type = this.CreateRequest.Type.SERVER;
-                else if (client)
-                    type = this.CreateRequest.Type.CLIENT;
-
-                debug(`Sending CREATE REQUEST`);
-                let request = this.CreateRequest.create({
+                debug(`Sending ATTACH REQUEST`);
+                let request = this.AttachRequest.create({
                     trackerName: trackerName,
-                    path: cpath,
-                    type: type,
-                    encrypted: encrypted,
-                    fixed: fixed,
-                    connectAddress: firstAddress,
-                    connectPort: firstPort,
-                    listenAddress: secondAddress,
-                    listenPort: secondPort,
+                    path: apath,
                 });
                 let message = this.ClientMessage.create({
-                    type: this.ClientMessage.Type.CREATE_REQUEST,
-                    createRequest: request,
+                    type: this.ClientMessage.Type.ATTACH_REQUEST,
+                    attachRequest: request,
                 });
                 let buffer = this.ClientMessage.encode(message).finish();
                 this.send(buffer)
                     .then(data => {
                         let message = this.ServerMessage.decode(data);
-                        if (message.type !== this.ServerMessage.Type.CREATE_RESPONSE)
+                        if (message.type !== this.ServerMessage.Type.ATTACH_RESPONSE)
                             throw new Error('Invalid reply from daemon');
 
-                        switch (message.createResponse.response) {
-                            case this.CreateResponse.Result.ACCEPTED:
-                                console.log(
-                                    'Server token: ' + message.createResponse.serverToken +
-                                    '\n' +
-                                    'Client token: ' + message.createResponse.clientToken
-                                );
-                                if (type != this.CreateRequest.Type.NOT_CONNECTED) {
-                                    console.log('This daemon is configured as ' + (client ? 'client' : 'server'));
-                                }
-                                if (type == this.CreateRequest.Type.NOT_CONNECTED)
-                                    process.exit(0);
-                                this.update(trackerName, message.createResponse.updates);
+                        switch (message.attachResponse.response) {
+                            case this.AttachResponse.Result.ACCEPTED:
+                                this.update(trackerName, message.attachResponse.updates);
                                 break;
-                            case this.CreateResponse.Result.REJECTED:
+                            case this.AttachResponse.Result.REJECTED:
                                 console.log('Request rejected');
                                 process.exit(1);
                                 break;
-                            case this.CreateResponse.Result.INVALID_PATH:
+                            case this.AttachResponse.Result.INVALID_PATH:
                                 console.log('Invalid path');
                                 process.exit(1);
                                 break;
-                            case this.CreateResponse.Result.PATH_EXISTS:
-                                console.log('Path exists');
+                            case this.AttachResponse.Result.PATH_NOT_FOUND:
+                                console.log('Path not found');
                                 process.exit(1);
                                 break;
-                            case this.CreateResponse.Result.TIMEOUT:
+                            case this.AttachResponse.Result.ALREADY_ATTACHED:
+                                console.log('Already attached');
+                                process.exit(1);
+                                break;
+                            case this.AttachResponse.Result.TIMEOUT:
                                 console.log('No response from the tracker');
                                 process.exit(1);
                                 break;
-                            case this.CreateResponse.Result.NO_TRACKER:
+                            case this.AttachResponse.Result.NO_TRACKER:
                                 console.log('Not connected to the tracker');
                                 process.exit(1);
                                 break;
-                            case this.CreateResponse.Result.NOT_REGISTERED:
+                            case this.AttachResponse.Result.NOT_REGISTERED:
                                 console.log('Not registered with the tracker');
                                 process.exit(1);
                                 break;
@@ -269,4 +217,4 @@ class Create {
     }
 }
 
-module.exports = Create;
+module.exports = Attach;
