@@ -82,7 +82,10 @@ class AttachRequest {
                 return reply(this.daemon.AttachResponse.Result.NO_TRACKER);
             if (!server.registered)
                 return reply(this.daemon.AttachResponse.Result.NOT_REGISTERED);
-            let token = this._connectionsList.getImport(message.attachRequest.trackerName, message.attachRequest.path);
+            let token = this._connectionsList.getImport(
+                server.name,
+                message.attachRequest.path[0] == '/' ? server.email + message.attachRequest.path : message.attachRequest.path
+            );
             if (!token)
                 return reply(this.daemon.AttachResponse.Result.REJECTED);
 

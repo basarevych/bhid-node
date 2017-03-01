@@ -184,6 +184,7 @@ class Tracker extends EventEmitter {
 
                     let server = {
                         name: tracker,
+                        email: null,
                         socket: null,
                         wrapper: new SocketWrapper(),
                         address: tracker,
