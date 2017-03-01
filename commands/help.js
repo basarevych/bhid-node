@@ -66,8 +66,9 @@ class Help {
         console.log('\tauth\t\tSet and save token for the daemon');
         console.log('\tcreate\t\tCreate new connection');
         console.log('\tdelete\t\tDelete a connection');
-        console.log('\tconnect\t\tMake the daemon server or client of a connection');
-        console.log('\tdisconnect\tDisconnect the daemon from given path');
+        console.log('\timport\t\tImport a token');
+        console.log('\tattach\t\tMake the daemon a server or a client of a connection');
+        console.log('\tdetach\tDetach the daemon from given connection');
         console.log('\ttree\t\tPrint user tree');
         console.log('\tload\t\tLoad current connection configuration from tracker');
         console.log('\tredeem\t\tRedeem account, daemon or connection token');
@@ -138,13 +139,12 @@ class Help {
      * Create command
      */
     helpCreate(argv) {
-        console.log('Usage:\tbhidctl create <path> <connect-addr> <listen-addr>');
-        console.log(      '\t               [-d <daemon-name>] [-s|-c] [-e] [-f] [-t <tracker>]\n');
+        console.log('Usage:\tbhidctl create <path> <connect-addr> [<listen-addr>] [-s|-c] [-e] [-f] [-t <tracker>]\n');
         console.log(
             '\tCreate a new connection. If -s is set then the daemon is configured as server of this connection,\n' +
             '\tor as client when -c is set. If -e is set then connection is encrypted. If -f is set then\n' +
             '\tconnection is fixed (clients list is saved and unknown clients will not be accepted until next\n' +
-            '\t"load" command run).\n\n' +
+            '\t"load" command run on server).\n\n' +
             '\t<connect-addr> and <listen-addr> are written in the form of address:port or just /path/to/unix/socket'
         );
         process.exit(0);
@@ -160,20 +160,29 @@ class Help {
     }
 
     /**
-     * Connect command
+     * Import command
      */
-    helpConnect(argv) {
-        console.log('Usage:\tbhidctl connect <token> [-d <daemon-name>] [-t <tracker>]\n');
-        console.log('\tConnect the daemon to the network with the help of the token');
+    helpImport(argv) {
+        console.log('Usage:\tbhidctl import <token> [-t <tracker>]\n');
+        console.log('\tImport the token and make its connections ready to be attached to');
         process.exit(0);
     }
 
     /**
-     * Disconnect command
+     * Attach command
+     */
+    helpAttach(argv) {
+        console.log('Usage:\tbhidctl attach <path> [<listen-address>] [-t <tracker>]\n');
+        console.log('\tAttach the daemon to the given path imported previously');
+        process.exit(0);
+    }
+
+    /**
+     * Detach command
      */
     helpDisconnect(argv) {
-        console.log('Usage:\tbhidctl disconnect <path> [-d <daemon-name>] [-t <tracker>]\n');
-        console.log('\tDisconnect the daemon without deleting the connection information and affecting other daemons');
+        console.log('Usage:\tbhidctl detach <path> [-t <tracker>]\n');
+        console.log('\tDetach the daemon from a connection without deleting the connection on the tracker');
         process.exit(0);
     }
 
