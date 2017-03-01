@@ -105,7 +105,7 @@ message CreateRequest {
     optional string connect_address = 7;
     required string connect_port = 8;
     optional string listen_address = 9;
-    required string listen_port = 10;
+    optional string listen_port = 10;
 }
 
 message CreateResponse {
@@ -163,6 +163,8 @@ message AttachRequest {
     required string tracker_name = 1;
     optional string daemon_name = 2;
     required string path = 3;
+    optional string address_override = 4;
+    optional string port_override = 5;
 }
 
 message AttachResponse {
