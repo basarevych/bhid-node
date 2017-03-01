@@ -272,6 +272,20 @@ message SetConnectionsResponse {
     required Result response = 1;
 }
 
+message ImportConnectionsRequest {
+    required string tracker_name = 1;
+    required string token = 2;
+    required ConnectionsList list = 3;
+}
+
+message ImportConnectionsResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+    }
+    required Result response = 1;
+}
+
 message UpdateConnectionsRequest {
     required string tracker_name = 1;
     required ConnectionsList list = 2;
@@ -353,7 +367,8 @@ message ClientMessage {
         TREE_REQUEST = 80;
         CONNECTIONS_LIST_REQUEST = 90;
         SET_CONNECTIONS_REQUEST = 100;
-        UPDATE_CONNECTIONS_REQUEST = 110;
+        IMPORT_CONNECTIONS_REQUEST = 110;
+        UPDATE_CONNECTIONS_REQUEST = 111;
         REDEEM_MASTER_REQUEST = 120;
         REDEEM_DAEMON_REQUEST = 121;
         REDEEM_PATH_REQUEST = 122;
@@ -371,7 +386,8 @@ message ClientMessage {
     optional TreeRequest tree_request = 900;
     optional ConnectionsListRequest connections_list_request = 1000;
     optional SetConnectionsRequest set_connections_request = 1100;
-    optional UpdateConnectionsRequest update_connections_request = 1200;
+    optional ImportConnectionsRequest import_connections_request = 1200;
+    optional UpdateConnectionsRequest update_connections_request = 1210;
     optional RedeemMasterRequest redeem_master_request = 1300;
     optional RedeemDaemonRequest redeem_daemon_request = 1310;
     optional RedeemPathRequest redeem_path_request = 1320;
@@ -391,7 +407,8 @@ message ServerMessage {
         TREE_RESPONSE = 80;
         CONNECTIONS_LIST_RESPONSE = 90;
         SET_CONNECTIONS_RESPONSE = 100;
-        UPDATE_CONNECTIONS_RESPONSE = 110;
+        IMPORT_CONNECTIONS_RESPONSE = 110;
+        UPDATE_CONNECTIONS_RESPONSE = 111;
         REDEEM_MASTER_RESPONSE = 120;
         REDEEM_DAEMON_RESPONSE = 121;
         REDEEM_PATH_RESPONSE = 122;
@@ -409,7 +426,8 @@ message ServerMessage {
     optional TreeResponse tree_response = 900;
     optional ConnectionsListResponse connections_list_response = 1000;
     optional SetConnectionsResponse set_connections_response = 1100;
-    optional UpdateConnectionsResponse update_connections_response = 1200;
+    optional ImportConnectionsResponse import_connections_response = 1200;
+    optional UpdateConnectionsResponse update_connections_response = 1210;
     optional RedeemMasterResponse redeem_master_response = 1300;
     optional RedeemDaemonResponse redeem_daemon_response = 1310;
     optional RedeemPathResponse redeem_path_response = 1320;

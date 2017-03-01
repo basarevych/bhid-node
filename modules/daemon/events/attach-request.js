@@ -12,14 +12,16 @@ const WError = require('verror').WError;
 class AttachRequest {
     /**
      * Create service
-     * @param {App} app                         The application
-     * @param {object} config                   Configuration
-     * @param {Logger} logger                   Logger service
+     * @param {App} app                             The application
+     * @param {object} config                       Configuration
+     * @param {Logger} logger                       Logger service
+     * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger) {
+    constructor(app, config, logger, connectionsList) {
         this._app = app;
         this._config = config;
         this._logger = logger;
+        this._connectionsList = connectionsList;
     }
 
     /**
@@ -35,7 +37,7 @@ class AttachRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
     }
 
     /**
@@ -80,6 +82,9 @@ class AttachRequest {
                 return reply(this.daemon.AttachResponse.Result.NO_TRACKER);
             if (!server.registered)
                 return reply(this.daemon.AttachResponse.Result.NOT_REGISTERED);
+            let token = this._connectionsList.getImport(message.attachRequest.trackerName, message.attachRequest.path);
+            if (!token)
+                return reply(this.daemon.AttachResponse.Result.REJECTED);
 
             onResponse = (name, response) => {
                 if (response.messageId != relayId)
@@ -101,7 +106,7 @@ class AttachRequest {
             );
 
             let request = this.tracker.AttachRequest.create({
-                token: message.attachRequest.token,
+                token: token,
                 path: message.attachRequest.path,
                 addressOverride: message.attachRequest.addressOverride,
                 portOverride: message.attachRequest.portOverride,

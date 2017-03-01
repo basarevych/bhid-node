@@ -18,6 +18,7 @@ class ConnectionsList {
      */
     constructor(app, config, logger) {
         this._list = new Map();
+        this._imports = new Map();
 
         this._app = app;
         this._config = config;
@@ -362,6 +363,36 @@ class ConnectionsList {
         }
 
         return true;
+    }
+
+    /**
+     * Import connections list
+     * @param {string} trackerName          Tracker name
+     * @param {string} token                Token
+     * @param {object} list                 Connections list
+     */
+    import(trackerName, token, list) {
+        let info = this._imports.get(trackerName);
+        if (!info) {
+            info = new Map();
+            this._imports.set(trackerName, info);
+        }
+        for (let connection of list.serverConnections.concat(list.clientConnections)) {
+            info.set(connection.name, token);
+        }
+    }
+
+    /**
+     * Get imported connection token
+     * @param {string} trackerName          Tracker name
+     * @param {string} connectionName       Connection name
+     */
+    getImport(trackerName, connectionName) {
+        let info = this._imports.get(trackerName);
+        if (!info)
+            return null;
+
+        return info.get(connectionName);
     }
 
     /**

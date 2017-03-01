@@ -102,6 +102,8 @@ class Daemon extends EventEmitter {
                         this.ConnectionsListResponse = this.proto.lookup('local.ConnectionsListResponse');
                         this.SetConnectionsRequest = this.proto.lookup('local.SetConnectionsRequest');
                         this.SetConnectionsResponse = this.proto.lookup('local.SetConnectionsResponse');
+                        this.ImportConnectionsRequest = this.proto.lookup('local.ImportConnectionsRequest');
+                        this.ImportConnectionsResponse = this.proto.lookup('local.ImportConnectionsResponse');
                         this.UpdateConnectionsRequest = this.proto.lookup('local.UpdateConnectionsRequest');
                         this.UpdateConnectionsResponse = this.proto.lookup('local.UpdateConnectionsResponse');
                         this.RedeemMasterRequest = this.proto.lookup('local.RedeemMasterRequest');
@@ -297,6 +299,9 @@ class Daemon extends EventEmitter {
                     break;
                 case this.ClientMessage.Type.SET_CONNECTIONS_REQUEST:
                     this.emit('set_connections_request', id, message);
+                    break;
+                case this.ClientMessage.Type.IMPORT_CONNECTIONS_REQUEST:
+                    this.emit('import_connections_request', id, message);
                     break;
                 case this.ClientMessage.Type.UPDATE_CONNECTIONS_REQUEST:
                     this.emit('update_connections_request', id, message);
