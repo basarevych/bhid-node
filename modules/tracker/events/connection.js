@@ -64,6 +64,7 @@ class Connection {
                     case this.tracker.RegisterDaemonResponse.Result.ACCEPTED:
                         server.registered = true;
                         server.email = response.registerDaemonResponse.email;
+                        server.daemonName = response.registerDaemonResponse.name;
                         this.tracker.emit('registration', name);
                         break;
                     case this.tracker.RegisterDaemonResponse.Result.REJECTED:

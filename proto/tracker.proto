@@ -80,7 +80,8 @@ message RegisterDaemonResponse {
         REJECTED = 1;
     }
     required Result response = 1;
-    required string email = 2;
+    optional string email = 2;
+    optional string name = 3;
 }
 
 message CreateRequest {
