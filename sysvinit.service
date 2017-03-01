@@ -1,8 +1,8 @@
 #!/bin/sh
-# Start/stop the cron daemon.
+# Start/stop the bhid daemon.
 #
 ### BEGIN INIT INFO
-# Provides:          cron
+# Provides:          bhid
 # Required-Start:    $remote_fs $syslog
 # Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5

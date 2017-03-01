@@ -19,7 +19,11 @@ try {
     process.exit(1);
 }
 
-let pidFile = '/var/run/bhid/daemon.pid';
+const daemonName = 'Breedhub Interconnect daemon';
+const pidFile = '/var/run/bhid/daemon.pid';
+const restartPause = 1000;
+const maxBufferLength = 10000;
+
 try {
     fs.accessSync(pidFile, fs.constants.F_OK);
     try {
@@ -57,7 +61,6 @@ let pidBuffer = Buffer(process.pid.toString() + '\n');
 fs.ftruncateSync(fd);
 fs.writeSync(fd, pidBuffer, 0, pidBuffer.length, null);
 
-let restartPause = 1000, maxBufferLength = 10000;
 function restart() {
     let buffer = '';
     let proc = runner.spawn('node', [ path.join(__dirname, 'server'), 'daemon', 'tracker', 'peer', 'front' ]);
@@ -78,7 +81,7 @@ function restart() {
             return emailer.send({
                     from: config.email.from,
                     to: config.email.daemon.to,
-                    subject: 'Exit code ' + result.code + ' of Breedhub Interconnect daemon',
+                    subject: `Exit code ${result.code} of ${daemonName}`,
                     text: stripAnsi(buffer),
                 })
                 .then(function () {
@@ -92,7 +95,7 @@ function restart() {
             return emailer.send({
                     from: config.email.from,
                     to: config.email.daemon.to,
-                    subject: 'Failed to start Breedhub Interconnect daemon',
+                    subject: `Failed to start ${daemonName}`,
                     text: error.message,
                 })
                 .then(function () {
