@@ -67,10 +67,54 @@ class GetConnectionsRequest {
                 this.daemon.send(id, data);
             };
 
-            let active = this._connectionsList.get(message.setConnectionsRequest.trackerName || this.tracker.default);
-            let imported = this._connectionsList.getImported(message.setConnectionsRequest.trackerName || this.tracker.default);
+            let server = this.tracker.getServer(message.getConnectionsRequest.trackerName);
+            if (!server || !server.connected)
+                return reply(this.daemon.GetConnectionsResponse.Result.NO_TRACKER);
+            if (!server.registered)
+                return reply(this.daemon.GetConnectionsResponse.Result.NOT_REGISTERED);
 
-            reply(this.daemon.GetConnectionsResponse.Result.ACCEPTED, active, imported);
+            let active = this._connectionsList.get(message.getConnectionsRequest.trackerName || this.tracker.default);
+            let imported = this._connectionsList.getImported(message.getConnectionsRequest.trackerName || this.tracker.default);
+
+            let activeList;
+            if (active) {
+                activeList = this.daemon.ConnectionsList.create({
+                    serverConnections: Array.from(active.serverConnections.values()),
+                    clientConnections: Array.from(active.clientConnections.values()),
+                });
+            }
+            let importedList;
+            if (imported) {
+                importedList = this.daemon.ConnectionsList.create({
+                    serverConnections: Array.from(imported.serverConnections.values()),
+                    clientConnections: Array.from(imported.clientConnections.values()),
+                });
+            }
+
+            if (activeList) {
+                for (let connection of activeList.serverConnections) {
+                    let info = this.peer.connections.get(
+                        message.getConnectionsRequest.trackerName || this.tracker.default +
+                        '#' + connection.name
+                    );
+                    if (info) {
+                        connection.listenAddress = info.listenAddress || '*';
+                        connection.listenPort = info.listenPort || '*';
+                    }
+                }
+                for (let connection of activeList.clientConnections) {
+                    let info = this.peer.connections.get(
+                        message.getConnectionsRequest.trackerName || this.tracker.default +
+                        '#' + connection.name
+                    );
+                    if (info) {
+                        connection.listenAddress = info.listenAddress || '*';
+                        connection.listenPort = info.listenPort || '*';
+                    }
+                }
+            }
+
+            reply(this.daemon.GetConnectionsResponse.Result.ACCEPTED, activeList, importedList);
         } catch (error) {
             this._logger.error(new WError(error, 'GetConnectionsRequest.handle()'));
         }
@@ -96,6 +140,17 @@ class GetConnectionsRequest {
             return this._tracker;
         this._tracker = this._app.get('servers').get('tracker');
         return this._tracker;
+    }
+
+    /**
+     * Retrieve peer server
+     * @return {Peer}
+     */
+    get peer() {
+        if (this._peer)
+            return this._peer;
+        this._peer = this._app.get('servers').get('peer');
+        return this._peer;
     }
 }
 

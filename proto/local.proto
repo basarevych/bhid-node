@@ -8,6 +8,7 @@ message ServerConnection {
     required bool encrypted = 4;
     required bool fixed = 5;
     repeated string clients = 6;
+    optional uint32 connected = 7;
 }
 
 message ClientConnection {
@@ -17,6 +18,7 @@ message ClientConnection {
     required bool encrypted = 4;
     required bool fixed = 5;
     optional string server = 6;
+    optional uint32 connected = 7;
 }
 
 message ConnectionsList {
@@ -280,6 +282,8 @@ message GetConnectionsResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
+        NO_TRACKER = 9010;
+        NOT_REGISTERED = 9020;
     }
     required Result response = 1;
     optional ConnectionsList active_list = 2;

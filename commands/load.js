@@ -149,7 +149,7 @@ class Load {
             table.cell('Name', row.name);
             table.cell('Type', 'client');
             table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
-            table.cell('Fixed', '');
+            table.cell('Fixed', row.fixed ? 'yes' : 'no');
             table.cell('Address', row.listenAddress);
             table.cell('Port', row.listenPort);
             table.cell('Peers', row.server);

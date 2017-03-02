@@ -134,7 +134,7 @@ class Register {
                                 process.exit(1);
                                 break;
                             case this.CreateDaemonResponse.Result.NAME_EXISTS:
-                                console.log('Bot with this name already exists');
+                                console.log('Daemon with this name already exists');
                                 process.exit(1);
                                 break;
                             case this.CreateDaemonResponse.Result.TIMEOUT:

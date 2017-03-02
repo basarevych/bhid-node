@@ -274,6 +274,10 @@ class ConnectionsList {
         connection.connected = connected;
         if (server) {
             conf.serverConnections.set(connectionName, connection);
+            let imported = this._imports.get(trackerName);
+            if (imported)
+                imported.serverConnections.delete(connectionName);
+
             if (!found || restart) {
                 this._peer.openServer(
                     trackerName,
@@ -289,6 +293,10 @@ class ConnectionsList {
             }
         } else {
             conf.clientConnections.set(connectionName, connection);
+            let imported = this._imports.get(trackerName);
+            if (imported)
+                imported.clientConnections.delete(connectionName);
+
             if (!found || restart) {
                 this._peer.openClient(
                     trackerName,
@@ -391,12 +399,16 @@ class ConnectionsList {
     import(trackerName, token, list) {
         let info = this._imports.get(trackerName);
         if (!info) {
-            info = new Map();
+            info = { serverConnections: new Map(), clientConnections: new Map() };
             this._imports.set(trackerName, info);
         }
-        for (let connection of list.serverConnections.concat(list.clientConnections)) {
+        for (let connection of list.serverConnections) {
             connection.token = token;
-            info.set(connection.name, connection);
+            info.serverConnections.set(connection.name, connection);
+        }
+        for (let connection of list.clientConnections) {
+            connection.token = token;
+            info.clientConnections.set(connection.name, connection);
         }
     }
 
@@ -408,9 +420,13 @@ class ConnectionsList {
     getImport(trackerName, connectionName) {
         let info = this._imports.get(trackerName);
         if (!info)
-            return null;
+            return undefined;
 
-        return info.get(connectionName);
+        let test = info.serverConnections.get(connectionName);
+        if (test)
+            return test;
+
+        return info.clientConnections.get(connectionName);
     }
 
     /**

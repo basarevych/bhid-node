@@ -187,8 +187,8 @@ class Front extends EventEmitter {
                 if (!newCon || newCon !== connection)
                     return;
 
-                connection.address = connection.tcp.localAddress;
-                connection.port = connection.tcp.localPort;
+                connection.address = connection.tcp.address().address;
+                connection.port = connection.tcp.address().port.toString();
 
                 let info = this._peer.connections.get(name);
                 if (info) {

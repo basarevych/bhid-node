@@ -574,13 +574,13 @@ class Tracker extends EventEmitter {
                     this.emit('delete_response', name, message);
                     break;
                 case this.ServerMessage.Type.IMPORT_RESPONSE:
-                    this.emit('import_response', id, message);
+                    this.emit('import_response', name, message);
                     break;
                 case this.ServerMessage.Type.ATTACH_RESPONSE:
-                    this.emit('attach_response', id, message);
+                    this.emit('attach_response', name, message);
                     break;
                 case this.ServerMessage.Type.DETACH_RESPONSE:
-                    this.emit('detach_response', id, message);
+                    this.emit('detach_response', name, message);
                     break;
                 case this.ServerMessage.Type.TREE_RESPONSE:
                     this.emit('tree_response', name, message);

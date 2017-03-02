@@ -85,7 +85,7 @@ class Import {
 
                         switch (message.importResponse.response) {
                             case this.ImportResponse.Result.ACCEPTED:
-                                this.import(trackerName, token, message.connectResponse.updates);
+                                this.import(trackerName, token, message.importResponse.updates);
                                 break;
                             case this.ImportResponse.Result.REJECTED:
                                 console.log('Request rejected');

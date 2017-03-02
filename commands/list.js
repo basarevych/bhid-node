@@ -80,13 +80,21 @@ class List {
                         switch (message.getConnectionsResponse.response) {
                             case this.GetConnectionsResponse.Result.ACCEPTED:
                                 this.printTable(
-                                    message.getConnectionsRequest.activeList,
-                                    message.getConnectionsRequest.importedList
+                                    message.getConnectionsResponse.activeList,
+                                    message.getConnectionsResponse.importedList
                                 );
                                 process.exit(0);
                                 break;
                             case this.GetConnectionsResponse.Result.REJECTED:
                                 console.log('Request rejected');
+                                process.exit(1);
+                                break;
+                            case this.ConnectionsListResponse.Result.NO_TRACKER:
+                                console.log('Not connected to the tracker');
+                                process.exit(1);
+                                break;
+                            case this.ConnectionsListResponse.Result.NOT_REGISTERED:
+                                console.log('Not registered with the tracker');
                                 process.exit(1);
                                 break;
                             default:
@@ -110,54 +118,65 @@ class List {
      * @param {object} importedList
      */
     printTable(activeList, importedList) {
-        if (!activeList.serverConnections.length && !activeList.clientConnections.length &&
-            !importedList.serverConnections.length && !importedList.clientConnections.length)
-        {
-            return console.log('No connections defined');
+        let counter = 0;
+        if (activeList) {
+            counter += activeList.serverConnections.length;
+            counter += activeList.clientConnections.length;
+        }
+        if (importedList) {
+            counter += importedList.serverConnections.length;
+            counter += importedList.clientConnections.length;
         }
 
+        if (!counter)
+            return console.log('No connections defined');
+
         let table = new Table();
-        activeList.serverConnections.forEach(row => {
-            table.cell('Name', row.name);
-            table.cell('Type', 'server');
-            table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
-            table.cell('Fixed', row.fixed ? 'yes' : 'no');
-            table.cell('Address', row.connectAddress);
-            table.cell('Port', row.connectPort);
-            table.cell('Peers', row.clients.length ? row.clients.join(', ') : '');
-            table.newRow();
-        });
-        activeList.clientConnections.forEach(row => {
-            table.cell('Name', row.name);
-            table.cell('Type', 'client');
-            table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
-            table.cell('Fixed', '');
-            table.cell('Address', row.listenAddress);
-            table.cell('Port', row.listenPort);
-            table.cell('Peers', row.server);
-            table.newRow();
-        });
-        importedList.serverConnections.forEach(row => {
-            table.cell('Name', row.name);
-            table.cell('Type', 'server');
-            table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
-            table.cell('Fixed', row.fixed ? 'yes' : 'no');
-            table.cell('Address', row.connectAddress);
-            table.cell('Port', row.connectPort);
-            table.cell('Peers', row.clients.length ? row.clients.join(', ') : '');
-            table.newRow();
-        });
-        importedList.clientConnections.forEach(row => {
-            table.cell('Name', row.name);
-            table.cell('Type', 'client');
-            table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
-            table.cell('Fixed', '');
-            table.cell('Address', row.listenAddress);
-            table.cell('Port', row.listenPort);
-            table.cell('Peers', row.server);
-            table.newRow();
-        });
-        console.log(table.toString().trim() + '\n');
+        if (activeList) {
+            activeList.serverConnections.forEach(row => {
+                table.cell('Name', row.name);
+                table.cell('Status', 'online');
+                table.cell('Type', 'server');
+                table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
+                table.cell('Fixed', row.fixed ? 'yes' : 'no');
+                table.cell('Address', row.connectAddress);
+                table.cell('Port', row.connectPort);
+                table.newRow();
+            });
+            activeList.clientConnections.forEach(row => {
+                table.cell('Name', row.name);
+                table.cell('Status', row.connected ? 'online' : 'offline');
+                table.cell('Type', 'client');
+                table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
+                table.cell('Fixed', row.fixed ? 'yes' : 'no');
+                table.cell('Address', row.listenAddress || '*');
+                table.cell('Port', row.listenPort || '*');
+                table.newRow();
+            });
+        }
+        if (importedList) {
+            importedList.serverConnections.forEach(row => {
+                table.cell('Name', row.name);
+                table.cell('Status', 'imported');
+                table.cell('Type', 'server');
+                table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
+                table.cell('Fixed', row.fixed ? 'yes' : 'no');
+                table.cell('Address', row.connectAddress);
+                table.cell('Port', row.connectPort);
+                table.newRow();
+            });
+            importedList.clientConnections.forEach(row => {
+                table.cell('Name', row.name);
+                table.cell('Status', 'imported');
+                table.cell('Type', 'client');
+                table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
+                table.cell('Fixed', row.fixed ? 'yes' : 'no');
+                table.cell('Address', row.listenAddress || '*');
+                table.cell('Port', row.listenPort || '*');
+                table.newRow();
+            });
+        }
+        console.log(table.toString().trim());
     }
 
     /**
@@ -208,4 +227,4 @@ class List {
     }
 }
 
-module.exports = Load;
+module.exports = List;

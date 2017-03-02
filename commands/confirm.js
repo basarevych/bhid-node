@@ -37,7 +37,7 @@ class Confirm {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'help' ];
+        return [ 'app', 'config', 'commands.help' ];
     }
 
     /**
