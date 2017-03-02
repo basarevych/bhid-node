@@ -68,7 +68,7 @@ class ImportConnectionsRequest {
             this._connectionsList.import(
                 message.importConnectionsRequest.trackerName || this.tracker.default,
                 message.importConnectionsRequest.token,
-                message.importConnectionsRequest.list,
+                message.importConnectionsRequest.list
             );
 
             reply(this.daemon.ImportConnectionsResponse.Result.ACCEPTED);

@@ -122,7 +122,9 @@ class Help {
      */
     helpRegister(argv) {
         console.log('Usage:\tbhidctl register <master-token> [<daemon-name>] [-r] [-t <tracker>]\n');
-        console.log('\tCreate new daemon. If name and -r flag are set then the name will be randomized');
+        console.log('\tCreate new daemon. If name and -r flag are set then random digits to the name');
+        console.log('\tprovided will be appended. Without -r the exact name will be used. If no name');
+        console.log('\tis given it will be random.');
         process.exit(0);
     }
 
@@ -181,7 +183,7 @@ class Help {
     /**
      * Detach command
      */
-    helpDisconnect(argv) {
+    helpDetach(argv) {
         console.log('Usage:\tbhidctl detach <path> [-t <tracker>]\n');
         console.log('\tDetach the daemon from a connection without deleting the connection on the tracker');
         process.exit(0);
@@ -200,8 +202,8 @@ class Help {
      * Load command
      */
     helpLoad(argv) {
-        console.log('Usage:\tbhidctl load [-q] [-t <tracker>]\n');
-        console.log('\tRetrieve and save locally connection configuration. If -q is set no confirmation is asked');
+        console.log('Usage:\tbhidctl load [-f] [-t <tracker>]\n');
+        console.log('\tRetrieve and save locally connection configuration. If -f is set no confirmation is asked');
         process.exit(0);
     }
 

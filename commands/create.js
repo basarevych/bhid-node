@@ -16,10 +16,12 @@ class Create {
      * Create the service
      * @param {App} app                 The application
      * @param {object} config           Configuration
+     * @param {Help} help               Help command
      */
-    constructor(app, config) {
+    constructor(app, config, help) {
         this._app = app;
         this._config = config;
+        this._help = help;
     }
 
     /**
@@ -35,7 +37,7 @@ class Create {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config' ];
+        return [ 'app', 'config', 'commands.help' ];
     }
 
     /**
@@ -45,7 +47,7 @@ class Create {
      */
     run(argv) {
         if (argv['_'].length < 3)
-            return this.error('Invalid parameters');
+            return this._help.helpCreate(argv);
 
         let cpath = argv['_'][1];
         let first = argv['_'][2];

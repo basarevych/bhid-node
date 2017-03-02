@@ -47,14 +47,30 @@ let fd;
 try {
     fd = fs.openSync(pidFile, 'r+');
 } catch (error) {
+    try {
+        fs.unlinkSync(pidFile);
+    } catch (error) {
+        // do nothing
+    }
     console.error(error.message);
     process.exit(1);
 }
 
+function exit(rc) {
+    fs.closeSync(fd);
+    try {
+        fs.unlinkSync(pidFile);
+    } catch (error) {
+        // do nothing
+    }
+    process.exit(rc);
+}
+process.on('SIGTERM', exit);
+
 try {
     fs.flockSync(fd, 'exnb');
 } catch (error) {
-    process.exit(0);
+    exit(0);
 }
 
 let pidBuffer = Buffer(process.pid.toString() + '\n');
@@ -63,7 +79,7 @@ fs.writeSync(fd, pidBuffer, 0, pidBuffer.length, null);
 
 function restart() {
     let buffer = '';
-    let proc = runner.spawn('node', [ path.join(__dirname, 'server'), 'daemon', 'tracker', 'peer', 'front' ]);
+    let proc = runner.spawn('node', [ path.join(__dirname, 'run'), 'daemon', 'tracker', 'peer', 'front' ]);
     proc.cmd.on('data', data => {
         process.stdout.write(data);
         buffer += data.toString();
@@ -73,7 +89,7 @@ function restart() {
     proc.promise
         .then(result => {
             if (result.code === 0)
-                process.exit(result.code);
+                exit(0);
 
             if (!config.email.daemon.enabled)
                 return setTimeout(() => { restart(); }, restartPause);
@@ -90,7 +106,7 @@ function restart() {
         })
         .catch(error => {
             if (!config.email.daemon.enabled)
-                process.exit(1);
+                exit(1);
 
             return emailer.send({
                     from: config.email.from,
@@ -99,7 +115,7 @@ function restart() {
                     text: error.message,
                 })
                 .then(function () {
-                    process.exit(1);
+                    exit(1);
                 });
         });
 }

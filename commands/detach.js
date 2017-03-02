@@ -16,10 +16,12 @@ class Detach {
      * Create the service
      * @param {App} app                 The application
      * @param {object} config           Configuration
+     * @param {Help} help               Help command
      */
-    constructor(app, config) {
+    constructor(app, config, help) {
         this._app = app;
         this._config = config;
+        this._help = help;
     }
 
     /**
@@ -35,7 +37,7 @@ class Detach {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config' ];
+        return [ 'app', 'config', 'commands.help' ];
     }
 
     /**
@@ -45,7 +47,7 @@ class Detach {
      */
     run(argv) {
         if (argv['_'].length < 2)
-            return this.error('Invalid parameters');
+            return this._help.helpDetach(argv);
 
         let dpath = argv['_'][1];
         let trackerName = argv['t'] || '';

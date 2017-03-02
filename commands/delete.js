@@ -16,10 +16,12 @@ class Delete {
      * Create the service
      * @param {App} app                 The application
      * @param {object} config           Configuration
+     * @param {Help} help               Help command
      */
-    constructor(app, config) {
+    constructor(app, config, help) {
         this._app = app;
         this._config = config;
+        this._help = help;
     }
 
     /**
@@ -35,7 +37,7 @@ class Delete {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config' ];
+        return [ 'app', 'config', 'help' ];
     }
 
     /**
@@ -45,7 +47,7 @@ class Delete {
      */
     run(argv) {
         if (argv['_'].length < 2)
-            return this.error('Invalid parameters');
+            return this._help.helpDelete(argv);
 
         let cpath = argv['_'][1];
         let trackerName = argv['t'] || '';
