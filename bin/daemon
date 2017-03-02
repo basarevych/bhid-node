@@ -47,13 +47,14 @@ let fd;
 try {
     fd = fs.openSync(pidFile, 'r+');
 } catch (error) {
-    try {
-        fs.unlinkSync(pidFile);
-    } catch (error) {
-        // do nothing
-    }
     console.error(error.message);
     process.exit(1);
+}
+
+try {
+    fs.flockSync(fd, 'exnb');
+} catch (error) {
+    process.exit(0);
 }
 
 function exit(rc) {
@@ -66,12 +67,6 @@ function exit(rc) {
     process.exit(rc);
 }
 process.on('SIGTERM', exit);
-
-try {
-    fs.flockSync(fd, 'exnb');
-} catch (error) {
-    exit(0);
-}
 
 let pidBuffer = Buffer(process.pid.toString() + '\n');
 fs.ftruncateSync(fd);
