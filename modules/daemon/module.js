@@ -89,6 +89,9 @@ class Daemon {
         let setConnectionsRequest = this._app.get('modules.daemon.events.setConnectionsRequest');
         server.on('set_connections_request', setConnectionsRequest.handle.bind(setConnectionsRequest));
 
+        let getConnectionsRequest = this._app.get('modules.daemon.events.getConnectionsRequest');
+        server.on('get_connections_request', getConnectionsRequest.handle.bind(getConnectionsRequest));
+
         let importConnectionsRequest = this._app.get('modules.daemon.events.importConnectionsRequest');
         server.on('import_connections_request', importConnectionsRequest.handle.bind(importConnectionsRequest));
 

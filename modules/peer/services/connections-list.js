@@ -72,11 +72,28 @@ class ConnectionsList {
     }
 
     /**
+     * Get imported connections
+     * @param {string} trackerName                  Tracker name
+     * @return {object}
+     */
+    getImported(trackerName) {
+        return this._imports.get(trackerName);
+    }
+
+    /**
      * Get the list
      * @return {Map}
      */
     getAll() {
         return this._list;
+    }
+
+    /**
+     * Get imports list
+     * @return {Map}
+     */
+    getAllImported() {
+        return this._imports;
     }
 
     /**
@@ -378,7 +395,8 @@ class ConnectionsList {
             this._imports.set(trackerName, info);
         }
         for (let connection of list.serverConnections.concat(list.clientConnections)) {
-            info.set(connection.name, token);
+            connection.token = token;
+            info.set(connection.name, connection);
         }
     }
 

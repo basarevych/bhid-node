@@ -70,6 +70,7 @@ class Help {
         console.log('\tattach\t\tMake the daemon a server or a client of a connection');
         console.log('\tdetach\tDetach the daemon from given connection');
         console.log('\ttree\t\tPrint user tree');
+        console.log('\tlist\t\tPrint current connections');
         console.log('\tload\t\tLoad current connection configuration from tracker');
         console.log('\tredeem\t\tRedeem account, daemon or connection token');
         console.log('\tstart\t\tStart the daemon');
@@ -195,6 +196,15 @@ class Help {
     helpTree(argv) {
         console.log('Usage:\tbhidctl tree [<path>] [-d <daemon-name>] [-t <tracker>]\n');
         console.log('\tPrint tree of connections of this account');
+        process.exit(0);
+    }
+
+    /**
+     * List command
+     */
+    helpList(argv) {
+        console.log('Usage:\tbhidctl list [-t <tracker>]\n');
+        console.log('\tPrint current connections');
         process.exit(0);
     }
 

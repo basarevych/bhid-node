@@ -82,11 +82,11 @@ class AttachRequest {
                 return reply(this.daemon.AttachResponse.Result.NO_TRACKER);
             if (!server.registered)
                 return reply(this.daemon.AttachResponse.Result.NOT_REGISTERED);
-            let token = this._connectionsList.getImport(
+            let info = this._connectionsList.getImport(
                 server.name,
                 message.attachRequest.path[0] == '/' ? server.email + message.attachRequest.path : message.attachRequest.path
             );
-            if (!token)
+            if (!info || !info.token)
                 return reply(this.daemon.AttachResponse.Result.REJECTED);
 
             onResponse = (name, response) => {
@@ -109,7 +109,7 @@ class AttachRequest {
             );
 
             let request = this.tracker.AttachRequest.create({
-                token: token,
+                token: info.token,
                 path: message.attachRequest.path,
                 addressOverride: message.attachRequest.addressOverride,
                 portOverride: message.attachRequest.portOverride,
