@@ -372,7 +372,7 @@ class ConnectionsList {
                 }
                 for (let [ name, connection ] of list.clientConnections) {
                     output[trackerName + '#' + connection.name + this.constructor.clientSection] = {
-                        listen_address: connection.listenPort ? connection.listenAddress : '*',
+                        listen_address: connection.listenAddress || '*',
                         listen_port: connection.listenPort || '*',
                         encrypted: connection.encrypted ? 'yes' : 'no',
                         fixed: connection.fixed ? 'yes' : 'no',

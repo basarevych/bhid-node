@@ -175,9 +175,11 @@ class Help {
      * Attach command
      */
     helpAttach(argv) {
-        console.log('Usage:\tbhidctl attach <path> [<listen-address>] [-r] [-t <tracker>]\n');
+        console.log('Usage:\tbhidctl attach <path> [<listen-address>] [-t <tracker>]\n');
         console.log('\tAttach the daemon to the given path imported previously');
-        console.log('\tIf -r is set then random port will be used for listening');
+        console.log('\tAddress is in the form of <host>:<port>. if <host> is "*" then all interfaces');
+        console.log('\twill be listen on, if <port> is "*" then random port will be used.');
+        console.log('\tFor server connections wildcard is not allowed.');
         process.exit(0);
     }
 

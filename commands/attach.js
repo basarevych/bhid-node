@@ -52,7 +52,8 @@ class Attach {
         let apath = argv['_'][1];
         let override = argv['_'].length > 2 && argv['_'][2];
         let trackerName = argv['t'] || '';
-        let random = argv['r'] || false;
+        let randomAddress = false;
+        let randomPort = false;
 
         let overrideAddress, overridePort;
         if (override) {
@@ -65,6 +66,14 @@ class Attach {
                 overridePort = parts[0];
             } else {
                 return this.error('Invalid override address notation');
+            }
+            if (overrideAddress == '*') {
+                overrideAddress = '';
+                randomAddress = true;
+            }
+            if (overridePort == '*') {
+                overridePort = '';
+                randomPort = true;
             }
         } else {
             overrideAddress = '';
@@ -106,7 +115,7 @@ class Attach {
 
                         switch (message.attachResponse.response) {
                             case this.AttachResponse.Result.ACCEPTED:
-                                this.update(trackerName, message.attachResponse.updates, random);
+                                this.update(trackerName, message.attachResponse.updates, randomAddress, randomPort);
                                 break;
                             case this.AttachResponse.Result.REJECTED:
                                 console.log('Request rejected');
@@ -155,17 +164,18 @@ class Attach {
      * Load the connection
      * @param {string} trackerName                      Name of the tracker
      * @param {object} [list]                           List of updated connections
-     * @param {boolean} random                          Use random port
+     * @param {boolean} randomAddress                   Use random address
+     * @param {boolean} randomPort                      Use random port
      */
-    update(trackerName, list, random) {
+    update(trackerName, list, randomAddress, randomPort) {
         if (!list)
             process.exit(0);
 
-        if (random) {
-            for (let connection of list.clientConnections) {
+        for (let connection of list.clientConnections) {
+            if (randomAddress)
                 connection.listenAddress = '';
+            if (randomPort)
                 connection.listenPort = '';
-            }
         }
 
         let request = this.UpdateConnectionsRequest.create({
