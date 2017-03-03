@@ -146,6 +146,11 @@ class Front extends EventEmitter {
         if (connection)
             return;
 
+        if (address == '*')
+            address = '';
+        if (port == '*')
+            port = '';
+
         debug(`Opening front for ${name}`);
         connection = {
             name: name,
@@ -192,10 +197,8 @@ class Front extends EventEmitter {
 
                 let info = this._peer.connections.get(name);
                 if (info) {
-                    if (info.listenAddress != connection.address)
-                        info.listenAddress = connection.address;
-                    if (info.listenPort != connection.port)
-                        info.listenPort = connection.port;
+                    info.listenAddress = connection.address;
+                    info.listenPort = connection.port;
                 }
 
                 this._logger.info(`Ready for connections for ${name} on ${connection.address}:${connection.port}`)
