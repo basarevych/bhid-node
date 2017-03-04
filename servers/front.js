@@ -151,8 +151,6 @@ class Front extends EventEmitter {
         if (port == '*')
             port = '';
 
-        this._logger.info(`DEBUG -${address}:${port}-`);
-
         debug(`Opening front for ${name}`);
         connection = {
             name: name,
@@ -189,7 +187,8 @@ class Front extends EventEmitter {
                 return;
 
             connection.tcp.once('error', onError);
-            connection.tcp.listen(port || undefined, address || undefined, () => {
+
+            let onListening = () => {
                 let newCon = this.connections.get(name);
                 if (!newCon || newCon !== connection)
                     return;
@@ -205,7 +204,16 @@ class Front extends EventEmitter {
 
                 this._logger.info(`Ready for connections for ${name} on ${connection.address}:${connection.port}`)
                 connection.tcp.removeListener('error', onError);
-            });
+            };
+            let listenArgs = [];
+            if (port.length) {
+                listenArgs.push(port);
+                if (address.length)
+                    listenArgs.push(address);
+            }
+            listenArgs.push(onListening);
+
+            connection.tcp.listen.apply(connection.tcp, listenArgs);
         };
         bind();
     }
