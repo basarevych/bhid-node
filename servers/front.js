@@ -151,6 +151,8 @@ class Front extends EventEmitter {
         if (port == '*')
             port = '';
 
+        this._logger.info(`DEBUG -${address}:${port}-`);
+
         debug(`Opening front for ${name}`);
         connection = {
             name: name,
