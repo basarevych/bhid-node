@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "archy": "~1.0.0",
-    "arpen": "~0.0.2",
+    "arpen": "~0.0.3",
     "daemon": "~1.1.0",
     "debug": "~2.6.0",
     "easy-table": "~1.0.0",
