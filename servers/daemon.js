@@ -207,7 +207,14 @@ class Daemon extends EventEmitter {
      * Server listening event handler
      */
     onListening() {
-        this._logger.info(`Daemon server listening on /var/run/${this._config.project}/${this._config.instance}.sock`);
+        let sock = `/var/run/${this._config.project}/${this._config.instance}.sock`;
+        try {
+            fs.chmodSync(sock, 0o600);
+        } catch (error) {
+            // do nothing
+        }
+
+        this._logger.info(`Daemon is listening on ${sock}`);
     }
 
     /**
