@@ -135,6 +135,7 @@ class Install {
                     debug('Creating sysvinit service');
                     let service = fs.readFileSync(path.join(__dirname, '..', 'sysvinit.service'), {encoding: 'utf8'});
                     fs.writeFileSync('/etc/init.d/bhid', service, {mode: 0o644});
+                    fs.chmodSync('/etc/init.d/bhid', 0o755);
                 } catch (error) {
                     // do nothing
                 }
