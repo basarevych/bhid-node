@@ -205,12 +205,11 @@ class Front extends EventEmitter {
                 this._logger.info(`Ready for connections for ${name} on ${connection.address}:${connection.port}`)
                 connection.tcp.removeListener('error', onError);
             };
+
             let listenArgs = [];
-            if (port.length) {
-                listenArgs.push(port);
-                if (address.length)
-                    listenArgs.push(address);
-            }
+            listenArgs.push(port.length ? port : 0);
+            if (address.length)
+                listenArgs.push(address);
             listenArgs.push(onListening);
 
             connection.tcp.listen.apply(connection.tcp, listenArgs);
