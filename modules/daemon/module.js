@@ -55,6 +55,7 @@ class Daemon {
                 this._logger.info(`Daemon v${json.version} started`);
                 process.on('SIGTERM', () => {
                     this._logger.info('Terminating on SIGTERM signal');
+                    process.exit(0);
                 });
             });
     }
