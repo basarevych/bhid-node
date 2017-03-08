@@ -21,8 +21,9 @@ class Daemon extends EventEmitter {
      * @param {App} app                     Application
      * @param {object} config               Configuration
      * @param {Logger} logger               Logger service
+     * @param {Filer} filer                 Filer service
      */
-    constructor(app, config, logger) {
+    constructor(app, config, logger, filer) {
         super();
 
         this.server = null;
@@ -32,6 +33,7 @@ class Daemon extends EventEmitter {
         this._app = app;
         this._config = config;
         this._logger = logger;
+        this._filer = filer;
     }
 
     /**
@@ -47,7 +49,7 @@ class Daemon extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger' ];
+        return [ 'app', 'config', 'logger', 'filer' ];
     }
 
     /**
@@ -152,6 +154,23 @@ class Daemon extends EventEmitter {
                 },
                 Promise.resolve()
             )
+            .then(() => {
+                return this._filer.lockRead(path.join(this._config.base_path, 'package.json'));
+            })
+            .then(packageInfo => {
+                let json;
+                try {
+                    json = JSON.parse(packageInfo);
+                } catch (error) {
+                    json = { version: '?.?.?' };
+                }
+
+                this._logger.info(`Daemon v${json.version} started`);
+                process.on('SIGTERM', () => {
+                    this._logger.info('Terminating on SIGTERM signal');
+                    process.exit(0);
+                });
+            })
             .then(() => {
                 debug('Starting the server');
                 try {
