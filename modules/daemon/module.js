@@ -2,7 +2,7 @@
  * Daemon module
  * @module daemon/module
  */
-
+const path = require('path');
 
 /**
  * Module main class
@@ -12,10 +12,14 @@ class Daemon {
      * Create the module
      * @param {App} app             The application
      * @param {object} config       Configuration
+     * @param {Logger} logger       Logger service
+     * @param {Filer} filer         Filer service
      */
-    constructor(app, config) {
+    constructor(app, config, logger, filer) {
         this._app = app;
         this._config = config;
+        this._logger = logger;
+        this._filer = filer;
     }
 
     /**
@@ -31,7 +35,7 @@ class Daemon {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config' ];
+        return [ 'app', 'config', 'logger', 'filer' ];
     }
 
     /**
@@ -39,7 +43,20 @@ class Daemon {
      * @return {Promise}
      */
     bootstrap() {
-        return Promise.resolve();
+        return this._filer.lockRead(path.join(this._config.base_path, 'package.json'))
+            .then(packageInfo => {
+                let json;
+                try {
+                    json = JSON.parse(packageInfo);
+                } catch (error) {
+                    json = { version: '?.?.?' };
+                }
+
+                this._logger.info(`Daemon v${json.version} started`);
+                process.on('SIGTERM', () => {
+                    this._logger.info('Terminating on SIGTERM signal');
+                });
+            });
     }
 
     /**
