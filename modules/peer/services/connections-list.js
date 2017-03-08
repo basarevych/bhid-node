@@ -314,6 +314,28 @@ class ConnectionsList {
     }
 
     /**
+     * Update connection port
+     * @param {string} trackerName          Tracker name
+     * @param {object} connectionName       Connection name
+     * @param {string} port                 Port number
+     */
+    updatePort(trackerName, connectionName, port) {
+        let conf = this._list.get(trackerName);
+        if (!conf)
+            return;
+
+        let connection = conf.clientConnections.get(connectionName);
+        if (!connection)
+            return;
+
+        if (connection.listenPort == port)
+            return;
+
+        connection.listenPort = port;
+        this.save();
+    }
+
+    /**
      * Delete connection
      * @param {string} trackerName          Tracker name
      * @param {object} connectionName       Connection name

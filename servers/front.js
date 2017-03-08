@@ -14,11 +14,12 @@ const WError = require('verror').WError;
 class Front extends EventEmitter {
     /**
      * Create the service
-     * @param {App} app                     Application
-     * @param {object} config               Configuration
-     * @param {Logger} logger               Logger service
+     * @param {App} app                             Application
+     * @param {object} config                       Configuration
+     * @param {Logger} logger                       Logger service
+     * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger) {
+    constructor(app, config, logger, connectionsList) {
         super();
 
         this.connections = new Map();
@@ -27,6 +28,7 @@ class Front extends EventEmitter {
         this._app = app;
         this._config = config;
         this._logger = logger;
+        this._connectionsList = connectionsList;
     }
 
     /**
@@ -42,7 +44,7 @@ class Front extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
     }
 
     /**
@@ -202,7 +204,10 @@ class Front extends EventEmitter {
                     info.listenPort = connection.port;
                 }
 
-                this._logger.info(`Ready for connections for ${name} on ${connection.address}:${connection.port}`)
+                let [ tracker, connName ] = connection.name.split('#');
+                this._connectionsList.updatePort(tracker, connName, connection.port);
+
+                this._logger.info(`Ready for connections for ${name} on ${connection.address}:${connection.port}`);
                 connection.tcp.removeListener('error', onError);
             };
 
