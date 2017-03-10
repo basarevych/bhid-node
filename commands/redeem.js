@@ -159,38 +159,7 @@ class Redeem {
                             case resClass.Result.ACCEPTED:
                                 switch (type) {
                                     case 'master':
-                                        debug(`Sending SET TOKEN REQUEST`);
-                                        request = this.SetTokenRequest.create({
-                                            type: this.SetTokenRequest.Type.MASTER,
-                                            token: message[resField].token,
-                                        });
-                                        message = this.ClientMessage.create({
-                                            type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
-                                            setTokenRequest: request,
-                                        });
-                                        buffer = this.ClientMessage.encode(message).finish();
-                                        this.send(buffer, sockName)
-                                            .then(data => {
-                                                message = this.ServerMessage.decode(data);
-                                                if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
-                                                    throw new Error('Invalid reply from daemon');
-
-                                                switch (message.setTokenResponse.response) {
-                                                    case this.SetTokenResponse.Result.ACCEPTED:
-                                                        console.log('Master token is saved to ~/.bhid/master.token on this computer and will be used automatically');
-                                                        process.exit(0);
-                                                        break;
-                                                    case this.SetTokenResponse.Result.REJECTED:
-                                                        console.log('Set token request rejected');
-                                                        process.exit(1);
-                                                        break;
-                                                    default:
-                                                        throw new Error('Unsupported response from daemon');
-                                                }
-                                            })
-                                            .catch(error => {
-                                                this.error(error.message);
-                                            });
+                                        process.exit(0);
                                         break;
                                     case 'daemon':
                                         console.log('Daemon token: ' + message[resField].token);
