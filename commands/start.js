@@ -14,10 +14,12 @@ class Start {
      * Create the service
      * @param {App} app                 The application
      * @param {object} config           Configuration
+     * @param {Install} install         Install command
      */
-    constructor(app, config) {
+    constructor(app, config, install) {
         this._app = app;
         this._config = config;
+        this._install = install;
     }
 
     /**
@@ -33,7 +35,7 @@ class Start {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config' ];
+        return [ 'app', 'config', 'commands.install' ];
     }
 
     /**
@@ -42,7 +44,16 @@ class Start {
      * @return {Promise}
      */
     run(argv) {
-        return this.launch()
+        let install = !!argv['i'];
+
+        return Promise.resolve()
+            .then(() => {
+                if (install)
+                    return this._install.install();
+            })
+            .then(() => {
+                return this.launch()
+            })
             .then(result => {
                 if (result.code != 0) {
                     console.log(result.stdout);

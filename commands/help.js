@@ -236,8 +236,9 @@ class Help {
      * Start command
      */
     helpStart(argv) {
-        console.log('Usage:\tbhidctl start\n');
-        console.log('\tThis command will start the daemon');
+        console.log('Usage:\tbhidctl start [-i]\n');
+        console.log('\tThis command will start the daemon. Install command will be ran before');
+        console.log('\tstarting the daemon if -i is set.');
         process.exit(0);
     }
 
