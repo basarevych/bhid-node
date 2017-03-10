@@ -15,12 +15,14 @@ class Restart {
      * @param {object} config           Configuration
      * @param {Start} start             Start command
      * @param {Stop} stop               Stop command
+     * @param {Install} install         Install command
      */
-    constructor(app, config, start, stop) {
+    constructor(app, config, start, stop, install) {
         this._app = app;
         this._config = config;
         this._start = start;
         this._stop = stop;
+        this._install = install;
     }
 
     /**
@@ -36,7 +38,7 @@ class Restart {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'commands.start', 'commands.stop' ];
+        return [ 'app', 'config', 'commands.start', 'commands.stop', 'commands.install' ];
     }
 
     /**
@@ -45,7 +47,13 @@ class Restart {
      * @return {Promise}
      */
     run(argv) {
+        let install = argv['i'] || false;
+
         return this._stop.terminate()
+            .then(() => {
+                if (install)
+                    return this._install.install();
+            })
             .then(() => {
                 return this._start.launch();
             })

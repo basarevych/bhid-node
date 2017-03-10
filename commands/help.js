@@ -253,8 +253,9 @@ class Help {
      * Restart command
      */
     helpRestart(argv) {
-        console.log('Usage:\tbhidctl restart\n');
-        console.log('\tThis command will stop and start the daemon');
+        console.log('Usage:\tbhidctl restart [-i]\n');
+        console.log('\tThis command will stop and start the daemon. Install command will be ran after');
+        console.log('\tstopping the daemon if -i is set.');
         process.exit(0);
     }
 

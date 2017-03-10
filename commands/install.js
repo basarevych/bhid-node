@@ -45,6 +45,16 @@ class Install {
      * @return {Promise}
      */
     run(argv) {
+        this.install()
+            .then(() => {
+                process.exit(0);
+            })
+            .catch(error => {
+                this.error(error.message);
+            });
+    }
+
+    install() {
         return Promise.resolve()
             .then(() => {
                 let configDir;
@@ -165,15 +175,15 @@ class Install {
                             throw new Error('Could not create private key');
 
                         return this._runner.exec(
-                                'openssl',
-                                [
-                                    'rsa',
-                                    '-in', path.join(configDir, 'id', 'private.rsa'),
-                                    '-outform', 'PEM',
-                                    '-pubout',
-                                    '-out', path.join(configDir, 'id', 'public.rsa')
-                                ]
-                            )
+                            'openssl',
+                            [
+                                'rsa',
+                                '-in', path.join(configDir, 'id', 'private.rsa'),
+                                '-outform', 'PEM',
+                                '-pubout',
+                                '-out', path.join(configDir, 'id', 'public.rsa')
+                            ]
+                        )
                             .then(result => {
                                 if (result.code !== 0)
                                     return result;
@@ -189,12 +199,6 @@ class Install {
                             throw new Error('Could not create public key');
                     });
             })
-            .then(() => {
-                process.exit(0);
-            })
-            .catch(error => {
-                this.error(error.message);
-            });
     }
 
     /**
