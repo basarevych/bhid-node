@@ -45,7 +45,7 @@ class Install {
      * @return {Promise}
      */
     run(argv) {
-        this.install()
+        return this.install()
             .then(() => {
                 process.exit(0);
             })

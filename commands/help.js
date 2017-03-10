@@ -49,7 +49,8 @@ class Help {
         if (typeof method != 'function')
             return this.usage();
 
-        return method.call(this, argv);
+        method.call(this, argv);
+        return Promise.resolve();
     }
 
     /**
