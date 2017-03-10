@@ -156,19 +156,12 @@ class Tracker extends EventEmitter {
                 })
             })
             .then(() => {
-                let configPath;
-                for (let candidate of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
-                    try {
-                        fs.accessSync(path.join(candidate, 'bhid.conf'), fs.constants.F_OK);
-                        configPath = candidate;
-                        break;
-                    } catch (error) {
-                        // do nothing
-                    }
-                }
-
-                if (!configPath)
+                let configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+                try {
+                    fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.F_OK);
+                } catch (error) {
                     throw new Error('Could not read bhid.conf');
+                }
 
                 let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
                 for (let section of Object.keys(bhidConfig)) {
@@ -267,12 +260,35 @@ class Tracker extends EventEmitter {
     }
 
     /**
+     * Set master token
+     * @param {string} token        The token
+     * @return {Promise}            Resolves to success
+     */
+    setMasterToken(token) {
+        return Promise.resolve()
+            .then(() => {
+                let dirPath = path.join(os.homedir(), '.bhid');
+                try {
+                    fs.accessSync(dirPath, fs.constants.F_OK);
+                } catch (error) {
+                    fs.mkdirSync(dirPath, 0o700);
+                }
+                fs.writeFileSync(path.join(dirPath, 'master.token'), token + '\n');
+                return true;
+            })
+            .catch(error => {
+                this._logger.error(`Could not set master token: ${error.message}`);
+                return false;
+            });
+    }
+
+    /**
      * Set daemon token for the tracker
      * @param {string} name         Name of the tracker
      * @param {string} token        The token
      * @return {Promise}            Resolves to success
      */
-    setToken(name, token) {
+    setDaemonToken(name, token) {
         if (!name)
             name = this.default;
         let server = this.servers.get(name);
@@ -282,18 +298,12 @@ class Tracker extends EventEmitter {
         let configPath, newIdentity = false;
         return Promise.resolve()
             .then(() => {
-                for (let candidate of ['/etc/bhid', '/usr/local/etc/bhid']) {
-                    try {
-                        fs.accessSync(path.join(candidate, 'bhid.conf'), fs.constants.F_OK);
-                        configPath = candidate;
-                        break;
-                    } catch (error) {
-                        // do nothing
-                    }
-                }
-
-                if (!configPath)
+                let configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+                try {
+                    fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.F_OK);
+                } catch (error) {
                     throw new Error('Could not read bhid.conf');
+                }
 
                 debug('Creating RSA keys');
                 return this._runner.exec(
@@ -373,7 +383,7 @@ class Tracker extends EventEmitter {
                 return true;
             })
             .catch(error => {
-                this._logger.error(new WError(error, 'Tracker.setToken()'));
+                this._logger.error(`Could not set daemon token: ${error.message}`);
                 if (newIdentity) {
                     server.socket.end();
                     server.wrapper.detach();

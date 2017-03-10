@@ -224,8 +224,8 @@ class Help {
      */
     helpRedeem(argv) {
         console.log('Usage:\tbhidctl redeem <email> [-t <tracker>]');
-        console.log(      '\tbhidctl redeem <master-token> <daemon-name> [-t <tracker>]');
-        console.log(      '\tbhidctl redeem <master-token> <path> [-s|-c] [-t <tracker>]\n');
+        console.log(      '\tbhidctl redeem [<master-token>] <daemon-name> [-t <tracker>]');
+        console.log(      '\tbhidctl redeem [<master-token>] <path> [-s|-c] [-t <tracker>]\n');
         console.log('\tRedeem account, daemon or connection token. If -c is set the client token will be');
         console.log('\tregenerated (default), or server token if -s is set.');
         process.exit(0);

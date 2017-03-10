@@ -50,7 +50,7 @@ class Attach {
             return this._help.helpAttach(argv);
 
         let apath = argv['_'][1];
-        let override = argv['_'].length > 2 && argv['_'][2];
+        let override = argv['_'][2] || '';
         let trackerName = argv['t'] || '';
         let sockName = argv['z'];
 

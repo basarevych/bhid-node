@@ -51,7 +51,7 @@ class Create {
 
         let cpath = argv['_'][1];
         let first = argv['_'][2];
-        let second = argv['_'].length > 3 && argv['_'][3];
+        let second = argv['_'][3] || '';
         let server = !!argv['s'];
         let client = !!argv['c'];
         let encrypted = !!argv['e'];

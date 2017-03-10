@@ -4,6 +4,8 @@
  */
 const debug = require('debug')('bhid:command');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const net = require('net');
 const protobuf = require('protobufjs');
 const SocketWrapper = require('socket-wrapper');
@@ -49,6 +51,8 @@ class Redeem {
         if (argv['_'].length < 2)
             return this._help.helpRedeem(argv);
 
+        let first = argv['_'][1];
+        let second = argv['_'][2] || '';
         let trackerName = argv['t'] || '';
         let server = argv['s'] || false;
         let client = argv['c'] || false;
@@ -59,21 +63,31 @@ class Redeem {
         if (!server && !client)
             client = true;
 
-        let email, token, target;
-        if (argv['_'].length == 2) {
-            email = argv['_'][1];
+        let type, email, token, target;
+        if (first && second) {
+            token = first;
+            target = second;
         } else {
-            token = argv['_'][1];
-            target = argv['_'][2];
+            if (first.indexOf('@') != -1) {
+                email = first;
+                type = 'master';
+            } else {
+                target = first;
+                try {
+                    token = fs.readFileSync(path.join(os.homedir(), '.bhid', 'master.token'), 'utf8').trim();
+                    if (!token)
+                        throw new Error('No token');
+                } catch (error) {
+                    return this._help.helpRedeem(argv);
+                }
+            }
         }
-
-        let type;
-        if (email)
-            type = 'master';
-        else if (target.indexOf('/') == -1)
-            type = 'daemon';
-        else
-            type = 'path';
+        if (type != 'master') {
+            if (target.indexOf('/') == -1)
+                type = 'daemon';
+            else
+                type = 'path';
+        }
 
         debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
@@ -88,6 +102,8 @@ class Redeem {
                 this.RedeemDaemonResponse = this.proto.lookup('local.RedeemDaemonResponse');
                 this.RedeemPathRequest = this.proto.lookup('local.RedeemPathRequest');
                 this.RedeemPathResponse = this.proto.lookup('local.RedeemPathResponse');
+                this.SetTokenRequest = this.proto.lookup('local.SetTokenRequest');
+                this.SetTokenResponse = this.proto.lookup('local.SetTokenResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
@@ -152,15 +168,49 @@ class Redeem {
                             case resClass.Result.ACCEPTED:
                                 switch (type) {
                                     case 'master':
+                                        console.log('Your master token is ' + message[resField].token);
+                                        debug(`Sending SET TOKEN REQUEST`);
+                                        request = this.SetTokenRequest.create({
+                                            type: this.SetTokenRequest.Type.MASTER,
+                                            token: message[resField].token,
+                                        });
+                                        message = this.ClientMessage.create({
+                                            type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
+                                            setTokenRequest: request,
+                                        });
+                                        buffer = this.ClientMessage.encode(message).finish();
+                                        this.send(buffer, sockName)
+                                            .then(data => {
+                                                message = this.ServerMessage.decode(data);
+                                                if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
+                                                    throw new Error('Invalid reply from daemon');
+
+                                                switch (message.setTokenResponse.response) {
+                                                    case this.SetTokenResponse.Result.ACCEPTED:
+                                                        console.log('It is saved to ~/.bhid/master.token on this computer and will be used automatically');
+                                                        process.exit(0);
+                                                        break;
+                                                    case this.SetTokenResponse.Result.REJECTED:
+                                                        console.log('Set token request rejected');
+                                                        process.exit(1);
+                                                        break;
+                                                    default:
+                                                        throw new Error('Unsupported response from daemon');
+                                                }
+                                            })
+                                            .catch(error => {
+                                                this.error(error.message);
+                                            });
                                         break;
                                     case 'daemon':
-                                        console.log('Token: ' + message[resField].token);
+                                        console.log('Daemon token: ' + message[resField].token);
+                                        process.exit(0);
                                         break;
                                     case 'path':
-                                        console.log('Token: ' + message[resField].token);
+                                        console.log('Connection ' + (server ? 'server' : 'client') + ' token: ' + message[resField].token);
+                                        process.exit(0);
                                         break;
                                 }
-                                process.exit(0);
                                 break;
                             case resClass.Result.REJECTED:
                                 console.log('Request rejected');

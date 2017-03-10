@@ -80,8 +80,13 @@ message CreateDaemonResponse {
 }
 
 message SetTokenRequest {
-    required string tracker_name = 1;
+    enum Type {
+        MASTER = 0;
+        DAEMON = 1;
+    }
+    required Type type = 1;
     required string token = 2;
+    optional string tracker_name = 3;
 }
 
 message SetTokenResponse {

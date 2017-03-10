@@ -49,8 +49,8 @@ class Init {
         if (argv['_'].length < 2)
             return this._help.helpInit(argv);
 
-        let trackerName = argv['t'] || '';
         let email = argv['_'][1];
+        let trackerName = argv['t'] || '';
         let sockName = argv['z'];
 
         debug('Loading protocol');

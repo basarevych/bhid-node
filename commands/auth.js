@@ -65,10 +65,11 @@ class Auth {
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                debug(`Sending CONFIRM REQUEST`);
+                debug(`Sending SET TOKEN REQUEST`);
                 let request = this.SetTokenRequest.create({
-                    trackerName: trackerName,
+                    type: this.SetTokenRequest.Type.DAEMON,
                     token: token,
+                    trackerName: trackerName,
                 });
                 let message = this.ClientMessage.create({
                     type: this.ClientMessage.Type.SET_TOKEN_REQUEST,

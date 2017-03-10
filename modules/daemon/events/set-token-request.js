@@ -49,7 +49,17 @@ class SetTokenRequest {
             return;
 
         debug(`Got SET TOKEN REQUEST`);
-        return this.tracker.setToken(message.setTokenRequest.trackerName, message.setTokenRequest.token)
+        return Promise.resolve()
+            .then(() => {
+                switch (message.setTokenRequest.type) {
+                    case this.daemon.SetTokenRequest.Type.MASTER:
+                        return this.tracker.setMasterToken(message.setTokenRequest.token);
+                    case this.daemon.SetTokenRequest.Type.DAEMON:
+                        return this.tracker.setDaemonToken(message.setTokenRequest.trackerName, message.setTokenRequest.token);
+                }
+
+                return false;
+            })
             .then(success => {
                 let reply = this.daemon.SetTokenResponse.create({
                     response: success ? this.daemon.SetTokenResponse.Result.ACCEPTED : this.daemon.SetTokenResponse.Result.REJECTED,

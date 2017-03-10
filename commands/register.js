@@ -95,8 +95,9 @@ class Register {
                                 );
                                 debug(`Sending SET TOKEN REQUEST`);
                                 request = this.SetTokenRequest.create({
-                                    trackerName: trackerName,
+                                    type: this.SetTokenRequest.Type.DAEMON,
                                     token: message.createDaemonResponse.token,
+                                    trackerName: trackerName,
                                 });
                                 message = this.ClientMessage.create({
                                     type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
@@ -115,7 +116,7 @@ class Register {
                                                 process.exit(0);
                                                 break;
                                             case this.SetTokenResponse.Result.REJECTED:
-                                                console.log('Save request rejected');
+                                                console.log('Set token request rejected');
                                                 process.exit(1);
                                                 break;
                                             default:

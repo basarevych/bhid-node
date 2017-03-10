@@ -5,6 +5,7 @@
 const debug = require('debug')('bhid:peer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const uuid = require('uuid');
 const utp = require('utp-punch');
 const protobuf = require('protobufjs');
@@ -124,19 +125,12 @@ class Peer extends EventEmitter {
                 })
             })
             .then(() => {
-                let configPath;
-                for (let candidate of [ '/etc/bhid', '/usr/local/etc/bhid' ]) {
-                    try {
-                        fs.accessSync(path.join(candidate, 'bhid.conf'), fs.constants.F_OK);
-                        configPath = candidate;
-                        break;
-                    } catch (error) {
-                        // do nothing
-                    }
-                }
-
-                if (!configPath)
+                let configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+                try {
+                    fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.F_OK);
+                } catch (error) {
                     throw new Error('Could not read bhid.conf');
+                }
 
                 this.publicKey = fs.readFileSync(path.join(configPath, 'id', 'public.rsa'), 'utf8');
                 this.privateKey = fs.readFileSync(path.join(configPath, 'id', 'private.rsa'), 'utf8');

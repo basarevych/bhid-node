@@ -62,6 +62,8 @@ class Confirm {
                 this.proto = root;
                 this.ConfirmRequest = this.proto.lookup('local.ConfirmRequest');
                 this.ConfirmResponse = this.proto.lookup('local.ConfirmResponse');
+                this.SetTokenRequest = this.proto.lookup('local.SetTokenRequest');
+                this.SetTokenResponse = this.proto.lookup('local.SetTokenResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
@@ -84,7 +86,38 @@ class Confirm {
                         switch (message.confirmResponse.response) {
                             case this.ConfirmResponse.Result.ACCEPTED:
                                 console.log('Your master token is ' + message.confirmResponse.token);
-                                process.exit(0);
+                                debug(`Sending SET TOKEN REQUEST`);
+                                request = this.SetTokenRequest.create({
+                                    type: this.SetTokenRequest.Type.MASTER,
+                                    token: message.confirmResponse.token,
+                                });
+                                message = this.ClientMessage.create({
+                                    type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
+                                    setTokenRequest: request,
+                                });
+                                buffer = this.ClientMessage.encode(message).finish();
+                                this.send(buffer, sockName)
+                                    .then(data => {
+                                        message = this.ServerMessage.decode(data);
+                                        if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
+                                            throw new Error('Invalid reply from daemon');
+
+                                        switch (message.setTokenResponse.response) {
+                                            case this.SetTokenResponse.Result.ACCEPTED:
+                                                console.log('It is saved to ~/.bhid/master.token on this computer and will be used automatically');
+                                                process.exit(0);
+                                                break;
+                                            case this.SetTokenResponse.Result.REJECTED:
+                                                console.log('Set token request rejected');
+                                                process.exit(1);
+                                                break;
+                                            default:
+                                                throw new Error('Unsupported response from daemon');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        this.error(error.message);
+                                    });
                                 break;
                             case this.ConfirmResponse.Result.REJECTED:
                                 console.log('Request rejected');
