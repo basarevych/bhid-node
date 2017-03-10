@@ -123,10 +123,10 @@ class Help {
      * Register command
      */
     helpRegister(argv) {
-        console.log('Usage:\tbhidctl register [<daemon-name>] [-r] [-t <tracker>]\n');
+        console.log('Usage:\tbhidctl register [<daemon-name>] [-r] [-a] [-t <tracker>]\n');
         console.log('\tCreate new daemon. If name and -r flag are set then random digits to the name');
         console.log('\tprovided will be appended. Without -r the exact name will be used. If no name');
-        console.log('\tis given it will be random.');
+        console.log('\tis given it will be random. If -a is set then auth command will be ran.');
         process.exit(0);
     }
 

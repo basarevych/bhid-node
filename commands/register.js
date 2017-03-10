@@ -19,11 +19,13 @@ class Register {
      * @param {App} app                 The application
      * @param {object} config           Configuration
      * @param {Help} help               Help command
+     * @param {Auth} auth               Auth command
      */
-    constructor(app, config, help) {
+    constructor(app, config, help, auth) {
         this._app = app;
         this._config = config;
         this._help = help;
+        this._auth = auth;
     }
 
     /**
@@ -39,7 +41,7 @@ class Register {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'commands.help' ];
+        return [ 'app', 'config', 'commands.help', 'commands.auth' ];
     }
 
     /**
@@ -59,6 +61,7 @@ class Register {
 
         let daemonName = argv['_'][1] || '';
         let randomize = daemonName ? !!argv['r'] || false : true;
+        let authenticate = !!argv['a'];
         let trackerName = argv['t'] || '';
         let sockName = argv['z'];
 
@@ -71,6 +74,8 @@ class Register {
                 this.proto = root;
                 this.CreateDaemonRequest = this.proto.lookup('local.CreateDaemonRequest');
                 this.CreateDaemonResponse = this.proto.lookup('local.CreateDaemonResponse');
+                this.SetTokenRequest = this.proto.lookup('local.SetTokenRequest');
+                this.SetTokenResponse = this.proto.lookup('local.SetTokenResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
@@ -94,11 +99,15 @@ class Register {
 
                         switch (message.createDaemonResponse.response) {
                             case this.CreateDaemonResponse.Result.ACCEPTED:
-                                console.log(
-                                    'Name: ' + message.createDaemonResponse.daemonName + '\n' +
-                                    'Token: ' + message.createDaemonResponse.token
-                                );
-                                process.exit(0);
+                                if (authenticate) {
+                                    return this._auth.auth(message.createDaemonResponse.token, trackerName, sockName);
+                                } else {
+                                    console.log(
+                                        'Name: ' + message.createDaemonResponse.daemonName + '\n' +
+                                        'Token: ' + message.createDaemonResponse.token
+                                    );
+                                    process.exit(0);
+                                }
                                 break;
                             case this.CreateDaemonResponse.Result.REJECTED:
                                 console.log('Request rejected');

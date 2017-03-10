@@ -64,45 +64,55 @@ class Auth {
                 this.SetTokenResponse = this.proto.lookup('local.SetTokenResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
-
-                debug(`Sending SET TOKEN REQUEST`);
-                let request = this.SetTokenRequest.create({
-                    type: this.SetTokenRequest.Type.DAEMON,
-                    token: token,
-                    trackerName: trackerName,
-                });
-                let message = this.ClientMessage.create({
-                    type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
-                    setTokenRequest: request,
-                });
-                let buffer = this.ClientMessage.encode(message).finish();
-                this.send(buffer, sockName)
-                    .then(data => {
-                        message = this.ServerMessage.decode(data);
-                        if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
-                            throw new Error('Invalid reply from daemon');
-
-                        switch (message.setTokenResponse.response) {
-                            case this.SetTokenResponse.Result.ACCEPTED:
-                                process.exit(0);
-                                break;
-                            case this.SetTokenResponse.Result.REJECTED:
-                                console.log('Request rejected');
-                                process.exit(1);
-                                break;
-                            default:
-                                throw new Error('Unsupported response from daemon');
-                        }
-                    })
+                this.auth(token, trackerName, sockName)
                     .catch(error => {
-                        this.error(error.message);
-                    });
+                            this.error(error.message);
+                        });
             } catch (error) {
                 return this.error(error.message);
             }
         });
 
         return Promise.resolve();
+    }
+
+    /**
+     * Authenticate the daemon
+     * @param {string} token
+     * @param {string} [trackerName]
+     * @param {string} [sockName]
+     * @returns {Promise}
+     */
+    auth(token, trackerName, sockName) {
+        debug(`Sending SET TOKEN REQUEST`);
+        let request = this.SetTokenRequest.create({
+            type: this.SetTokenRequest.Type.DAEMON,
+            token: token,
+            trackerName: trackerName,
+        });
+        let message = this.ClientMessage.create({
+            type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
+            setTokenRequest: request,
+        });
+        let buffer = this.ClientMessage.encode(message).finish();
+        return this.send(buffer, sockName)
+            .then(data => {
+                message = this.ServerMessage.decode(data);
+                if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
+                    throw new Error('Invalid reply from daemon');
+
+                switch (message.setTokenResponse.response) {
+                    case this.SetTokenResponse.Result.ACCEPTED:
+                        process.exit(0);
+                        break;
+                    case this.SetTokenResponse.Result.REJECTED:
+                        console.log('Request rejected');
+                        process.exit(1);
+                        break;
+                    default:
+                        throw new Error('Unsupported response from daemon');
+                }
+            });
     }
 
     /**
