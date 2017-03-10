@@ -211,7 +211,7 @@ class Daemon extends EventEmitter {
 
         switch (error.code) {
             case 'EACCES':
-                this._logger.error('Daemon socket requires elevated privileges');
+                this._logger.error('Could not bind to daemon socket');
                 break;
             case 'EADDRINUSE':
                 this._logger.error('Daemon socket is already in use');
