@@ -23,7 +23,7 @@
     "merge": "~1.2.0",
     "minimist": "~1.2.0",
     "node-rsa": "~0.4.2",
-    "protobufjs": "https://registry.npmjs.org/protobufjs/-/protobufjs-6.6.3.tgz",
+    "protobufjs": "~6.6.5",
     "read": "~1.0.7",
     "socket-wrapper": "~0.0.1",
     "strip-ansi": "~3.0.1",
