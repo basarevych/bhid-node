@@ -4,6 +4,8 @@
  */
 const debug = require('debug')('bhid:command');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const net = require('net');
 const protobuf = require('protobufjs');
 const SocketWrapper = require('socket-wrapper');
@@ -46,12 +48,17 @@ class Register {
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 2)
-            return this._help.helpRegister(argv);
+        let token;
+        try {
+            token = fs.readFileSync(path.join(os.homedir(), '.bhid', 'master.token'), 'utf8').trim();
+            if (!token)
+                throw new Error('No token');
+        } catch (error) {
+            return this.error('Master token not found');
+        }
 
-        let token = argv['_'][1];
-        let daemonName = argv['_'][2] || '';
-        let randomize = !!argv['r'];
+        let daemonName = argv['_'][1] || '';
+        let randomize = daemonName ? !!argv['r'] || false : true;
         let trackerName = argv['t'] || '';
         let sockName = argv['z'];
 
@@ -64,8 +71,6 @@ class Register {
                 this.proto = root;
                 this.CreateDaemonRequest = this.proto.lookup('local.CreateDaemonRequest');
                 this.CreateDaemonResponse = this.proto.lookup('local.CreateDaemonResponse');
-                this.SetTokenRequest = this.proto.lookup('local.SetTokenRequest');
-                this.SetTokenResponse = this.proto.lookup('local.SetTokenResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
@@ -93,39 +98,7 @@ class Register {
                                     'Name: ' + message.createDaemonResponse.daemonName + '\n' +
                                     'Token: ' + message.createDaemonResponse.token
                                 );
-                                debug(`Sending SET TOKEN REQUEST`);
-                                request = this.SetTokenRequest.create({
-                                    type: this.SetTokenRequest.Type.DAEMON,
-                                    token: message.createDaemonResponse.token,
-                                    trackerName: trackerName,
-                                });
-                                message = this.ClientMessage.create({
-                                    type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
-                                    setTokenRequest: request,
-                                });
-                                buffer = this.ClientMessage.encode(message).finish();
-                                this.send(buffer, sockName)
-                                    .then(data => {
-                                        message = this.ServerMessage.decode(data);
-                                        if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
-                                            throw new Error('Invalid reply from daemon');
-
-                                        switch (message.setTokenResponse.response) {
-                                            case this.SetTokenResponse.Result.ACCEPTED:
-                                                console.log('It has been saved in the configuration and will be used automatically with this tracker');
-                                                process.exit(0);
-                                                break;
-                                            case this.SetTokenResponse.Result.REJECTED:
-                                                console.log('Set token request rejected');
-                                                process.exit(1);
-                                                break;
-                                            default:
-                                                throw new Error('Unsupported response from daemon');
-                                        }
-                                    })
-                                    .catch(error => {
-                                        this.error(error.message);
-                                    });
+                                process.exit(0);
                                 break;
                             case this.CreateDaemonResponse.Result.REJECTED:
                                 console.log('Request rejected');

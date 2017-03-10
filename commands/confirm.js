@@ -85,7 +85,6 @@ class Confirm {
 
                         switch (message.confirmResponse.response) {
                             case this.ConfirmResponse.Result.ACCEPTED:
-                                console.log('Your master token is ' + message.confirmResponse.token);
                                 debug(`Sending SET TOKEN REQUEST`);
                                 request = this.SetTokenRequest.create({
                                     type: this.SetTokenRequest.Type.MASTER,
@@ -104,7 +103,7 @@ class Confirm {
 
                                         switch (message.setTokenResponse.response) {
                                             case this.SetTokenResponse.Result.ACCEPTED:
-                                                console.log('It is saved to ~/.bhid/master.token on this computer and will be used automatically');
+                                                console.log('Master token is saved to ~/.bhid/master.token on this computer and will be used automatically');
                                                 process.exit(0);
                                                 break;
                                             case this.SetTokenResponse.Result.REJECTED:

@@ -122,7 +122,7 @@ class Help {
      * Register command
      */
     helpRegister(argv) {
-        console.log('Usage:\tbhidctl register <master-token> [<daemon-name>] [-r] [-t <tracker>]\n');
+        console.log('Usage:\tbhidctl register [<daemon-name>] [-r] [-t <tracker>]\n');
         console.log('\tCreate new daemon. If name and -r flag are set then random digits to the name');
         console.log('\tprovided will be appended. Without -r the exact name will be used. If no name');
         console.log('\tis given it will be random.');
@@ -224,8 +224,8 @@ class Help {
      */
     helpRedeem(argv) {
         console.log('Usage:\tbhidctl redeem <email> [-t <tracker>]');
-        console.log(      '\tbhidctl redeem [<master-token>] <daemon-name> [-t <tracker>]');
-        console.log(      '\tbhidctl redeem [<master-token>] <path> [-s|-c] [-t <tracker>]\n');
+        console.log(      '\tbhidctl redeem <daemon-name> [-t <tracker>]');
+        console.log(      '\tbhidctl redeem <path> [-s|-c] [-t <tracker>]\n');
         console.log('\tRedeem account, daemon or connection token. If -c is set the client token will be');
         console.log('\tregenerated (default), or server token if -s is set.');
         process.exit(0);

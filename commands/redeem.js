@@ -51,8 +51,7 @@ class Redeem {
         if (argv['_'].length < 2)
             return this._help.helpRedeem(argv);
 
-        let first = argv['_'][1];
-        let second = argv['_'][2] || '';
+        let target = argv['_'][1];
         let trackerName = argv['t'] || '';
         let server = argv['s'] || false;
         let client = argv['c'] || false;
@@ -63,30 +62,22 @@ class Redeem {
         if (!server && !client)
             client = true;
 
-        let type, email, token, target;
-        if (first && second) {
-            token = first;
-            target = second;
-        } else {
-            if (first.indexOf('@') != -1) {
-                email = first;
-                type = 'master';
-            } else {
-                target = first;
-                try {
-                    token = fs.readFileSync(path.join(os.homedir(), '.bhid', 'master.token'), 'utf8').trim();
-                    if (!token)
-                        throw new Error('No token');
-                } catch (error) {
-                    return this._help.helpRedeem(argv);
-                }
-            }
-        }
+        let type, token;
+        if (target.indexOf('@') != -1)
+            type = 'master';
+        else if (target.indexOf('/') == -1)
+            type = 'daemon';
+        else
+            type = 'path';
+
         if (type != 'master') {
-            if (target.indexOf('/') == -1)
-                type = 'daemon';
-            else
-                type = 'path';
+            try {
+                token = fs.readFileSync(path.join(os.homedir(), '.bhid', 'master.token'), 'utf8').trim();
+                if (!token)
+                    throw new Error('No token');
+            } catch (error) {
+                return this.error('Master token not found');
+            }
         }
 
         debug('Loading protocol');
@@ -119,7 +110,7 @@ class Redeem {
                         resField = 'redeemMasterResponse';
                         request = reqClass.create({
                             trackerName: trackerName,
-                            email: email,
+                            email: target,
                         });
                         break;
                     case 'daemon':
@@ -148,7 +139,7 @@ class Redeem {
                             trackerName: trackerName,
                             token: token,
                             path: target,
-                            type: server ? reqClass.Type.Server: reqClass.Type.CLIENT,
+                            type: server ? reqClass.Type.SERVER : reqClass.Type.CLIENT,
                         });
                         break;
                 }
@@ -168,7 +159,6 @@ class Redeem {
                             case resClass.Result.ACCEPTED:
                                 switch (type) {
                                     case 'master':
-                                        console.log('Your master token is ' + message[resField].token);
                                         debug(`Sending SET TOKEN REQUEST`);
                                         request = this.SetTokenRequest.create({
                                             type: this.SetTokenRequest.Type.MASTER,
@@ -187,7 +177,7 @@ class Redeem {
 
                                                 switch (message.setTokenResponse.response) {
                                                     case this.SetTokenResponse.Result.ACCEPTED:
-                                                        console.log('It is saved to ~/.bhid/master.token on this computer and will be used automatically');
+                                                        console.log('Master token is saved to ~/.bhid/master.token on this computer and will be used automatically');
                                                         process.exit(0);
                                                         break;
                                                     case this.SetTokenResponse.Result.REJECTED:
