@@ -298,7 +298,7 @@ class Tracker extends EventEmitter {
         let configPath, newIdentity = false;
         return Promise.resolve()
             .then(() => {
-                let configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+                configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
                 try {
                     fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.F_OK);
                 } catch (error) {
