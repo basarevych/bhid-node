@@ -62,6 +62,7 @@ class Register {
         let daemonName = argv['_'][1] || '';
         let randomize = daemonName ? !!argv['r'] || false : true;
         let authenticate = !!argv['a'];
+        let quiet = !!argv['q'];
         let trackerName = argv['t'] || '';
         let sockName = argv['z'];
 
@@ -100,10 +101,14 @@ class Register {
                                 if (authenticate) {
                                     return this._auth.auth(message.createDaemonResponse.token, trackerName, sockName);
                                 } else {
-                                    console.log(
-                                        'Name: ' + message.createDaemonResponse.daemonName + '\n' +
-                                        'Token: ' + message.createDaemonResponse.token
-                                    );
+                                    if (quiet) {
+                                        console.log(message.createDaemonResponse.token);
+                                    } else {
+                                        console.log(
+                                            'Name: ' + message.createDaemonResponse.daemonName + '\n' +
+                                            'Token: ' + message.createDaemonResponse.token
+                                        );
+                                    }
                                     process.exit(0);
                                 }
                                 break;
