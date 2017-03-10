@@ -47,7 +47,7 @@ class Restart {
      * @return {Promise}
      */
     run(argv) {
-        let install = argv['i'] || false;
+        let install = !!argv['i'];
 
         return this._stop.terminate()
             .then(() => {
