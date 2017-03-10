@@ -49,6 +49,10 @@ class Restart {
     run(argv) {
         let install = !!argv['i'];
 
+        process.on('SIGHUP', () => {
+            // ignore
+        });
+
         return this._stop.terminate()
             .then(() => {
                 if (install)
