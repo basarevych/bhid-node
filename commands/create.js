@@ -57,6 +57,7 @@ class Create {
         let encrypted = !!argv['e'];
         let fixed = !!argv['f'];
         let trackerName = argv['t'] || '';
+        let sockName = argv['z'];
 
         if (server && client)
             return this.error('Daemon cannot be a server and a client of the same connection at the same time');
@@ -128,7 +129,7 @@ class Create {
                     createRequest: request,
                 });
                 let buffer = this.ClientMessage.encode(message).finish();
-                this.send(buffer)
+                this.send(buffer, sockName)
                     .then(data => {
                         let message = this.ServerMessage.decode(data);
                         if (message.type !== this.ServerMessage.Type.CREATE_RESPONSE)
@@ -146,7 +147,7 @@ class Create {
                                 }
                                 if (type == this.CreateRequest.Type.NOT_CONNECTED)
                                     process.exit(0);
-                                this.update(trackerName, message.createResponse.updates);
+                                this.update(trackerName, message.createResponse.updates, sockName);
                                 break;
                             case this.CreateResponse.Result.REJECTED:
                                 console.log('Request rejected');
@@ -191,8 +192,9 @@ class Create {
      * Load the connection
      * @param {string} trackerName                      Name of the tracker
      * @param {object} [list]                           List of updated connections
+     * @param {string} [sockName]                       Socket name
      */
-    update(trackerName, list) {
+    update(trackerName, list, sockName) {
         if (!list)
             process.exit(0);
 
@@ -205,7 +207,7 @@ class Create {
             updateConnectionsRequest: request,
         });
         let buffer = this.ClientMessage.encode(message).finish();
-        this.send(buffer)
+        this.send(buffer, sockName)
             .then(data => {
                 let message = this.ServerMessage.decode(data);
                 if (message.type !== this.ServerMessage.Type.UPDATE_CONNECTIONS_RESPONSE)
@@ -231,38 +233,35 @@ class Create {
     /**
      * Send request and return response
      * @param {Buffer} request
+     * @param {string} [sockName]
      * @return {Promise}
      */
-    send(request) {
+    send(request, sockName) {
         return new Promise((resolve, reject) => {
-            let sock = path.join('/var', 'run', this._config.project, this._config.instance + '.sock');
-            let attempts = 0;
-            let connect = () => {
-                if (++attempts > 10)
-                    return reject(new Error('Could not connect to daemon'));
+            let sock;
+            if (sockName && sockName[0] == '/')
+                sock = sockName;
+            else
+                sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
 
-                let connected = false;
-                let socket = net.connect(sock, () => {
-                    debug('Connected to daemon');
-                    connected = true;
-                    socket.once('error', error => { this.error(error.message) });
-
-                    let wrapper = new SocketWrapper(socket);
-                    wrapper.on('receive', data => {
-                        debug('Got daemon reply');
-                        resolve(data);
-                        socket.end();
-                    });
-                    wrapper.send(request);
-                });
-                socket.once('close', () => {
-                    if (connected)
-                        reject(new Error('Socket terminated'));
-                    else
-                        setTimeout(() => { connect(); }, 500);
-                });
+            let onError = error => {
+                this.error(`Could not connect to daemon: ${error.message}`);
             };
-            connect();
+
+            let socket = net.connect(sock, () => {
+                debug('Connected to daemon');
+                socket.removeListener('error', onError);
+                socket.once('error', error => { this.error(error.message) });
+
+                let wrapper = new SocketWrapper(socket);
+                wrapper.on('receive', data => {
+                    debug('Got daemon reply');
+                    resolve(data);
+                    socket.end();
+                });
+                wrapper.send(request);
+            });
+            socket.on('error', onError);
         });
     }
 

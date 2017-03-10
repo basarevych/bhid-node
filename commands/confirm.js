@@ -51,6 +51,7 @@ class Confirm {
 
         let token = argv['_'][1];
         let trackerName = argv['t'] || '';
+        let sockName = argv['z'];
 
         debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
@@ -74,7 +75,7 @@ class Confirm {
                     confirmRequest: request,
                 });
                 let buffer = this.ClientMessage.encode(message).finish();
-                this.send(buffer)
+                this.send(buffer, sockName)
                     .then(data => {
                         let message = this.ServerMessage.decode(data);
                         if (message.type !== this.ServerMessage.Type.CONFIRM_RESPONSE)
@@ -115,38 +116,35 @@ class Confirm {
     /**
      * Send request and return response
      * @param {Buffer} request
+     * @param {string} [sockName]
      * @return {Promise}
      */
-    send(request) {
+    send(request, sockName) {
         return new Promise((resolve, reject) => {
-            let sock = path.join('/var', 'run', this._config.project, this._config.instance + '.sock');
-            let attempts = 0;
-            let connect = () => {
-                if (++attempts > 10)
-                    return reject(new Error('Could not connect to daemon'));
+            let sock;
+            if (sockName && sockName[0] == '/')
+                sock = sockName;
+            else
+                sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
 
-                let connected = false;
-                let socket = net.connect(sock, () => {
-                    debug('Connected to daemon');
-                    connected = true;
-                    socket.once('error', error => { this.error(error.message) });
-
-                    let wrapper = new SocketWrapper(socket);
-                    wrapper.on('receive', data => {
-                        debug('Got daemon reply');
-                        resolve(data);
-                        socket.end();
-                    });
-                    wrapper.send(request);
-                });
-                socket.once('close', () => {
-                    if (connected)
-                        reject(new Error('Socket terminated'));
-                    else
-                        setTimeout(() => { connect(); }, 500);
-                });
+            let onError = error => {
+                this.error(`Could not connect to daemon: ${error.message}`);
             };
-            connect();
+
+            let socket = net.connect(sock, () => {
+                debug('Connected to daemon');
+                socket.removeListener('error', onError);
+                socket.once('error', error => { this.error(error.message) });
+
+                let wrapper = new SocketWrapper(socket);
+                wrapper.on('receive', data => {
+                    debug('Got daemon reply');
+                    resolve(data);
+                    socket.end();
+                });
+                wrapper.send(request);
+            });
+            socket.on('error', onError);
         });
     }
 
