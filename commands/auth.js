@@ -53,27 +53,10 @@ class Auth {
         let trackerName = argv['t'] || '';
         let sockName = argv['z'];
 
-        debug('Loading protocol');
-        protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
-            if (error)
-                return this.error(error.message);
-
-            try {
-                this.proto = root;
-                this.SetTokenRequest = this.proto.lookup('local.SetTokenRequest');
-                this.SetTokenResponse = this.proto.lookup('local.SetTokenResponse');
-                this.ClientMessage = this.proto.lookup('local.ClientMessage');
-                this.ServerMessage = this.proto.lookup('local.ServerMessage');
-                this.auth(token, trackerName, sockName)
-                    .catch(error => {
-                            this.error(error.message);
-                        });
-            } catch (error) {
-                return this.error(error.message);
-            }
-        });
-
-        return Promise.resolve();
+        return this.auth(token, trackerName, sockName)
+            .catch(error => {
+                this.error(error.message);
+            });
     }
 
     /**
@@ -84,34 +67,54 @@ class Auth {
      * @returns {Promise}
      */
     auth(token, trackerName, sockName) {
-        debug(`Sending SET TOKEN REQUEST`);
-        let request = this.SetTokenRequest.create({
-            type: this.SetTokenRequest.Type.DAEMON,
-            token: token,
-            trackerName: trackerName,
-        });
-        let message = this.ClientMessage.create({
-            type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
-            setTokenRequest: request,
-        });
-        let buffer = this.ClientMessage.encode(message).finish();
-        return this.send(buffer, sockName)
-            .then(data => {
-                message = this.ServerMessage.decode(data);
-                if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
-                    throw new Error('Invalid reply from daemon');
+        debug('Loading protocol');
+        return new Promise((resolve, reject) => {
+                protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
+                    if (error)
+                        return this.error(error.message);
 
-                switch (message.setTokenResponse.response) {
-                    case this.SetTokenResponse.Result.ACCEPTED:
-                        process.exit(0);
-                        break;
-                    case this.SetTokenResponse.Result.REJECTED:
-                        console.log('Request rejected');
-                        process.exit(1);
-                        break;
-                    default:
-                        throw new Error('Unsupported response from daemon');
-                }
+                    try {
+                        this.proto = root;
+                        this.SetTokenRequest = this.proto.lookup('local.SetTokenRequest');
+                        this.SetTokenResponse = this.proto.lookup('local.SetTokenResponse');
+                        this.ClientMessage = this.proto.lookup('local.ClientMessage');
+                        this.ServerMessage = this.proto.lookup('local.ServerMessage');
+                        resolve();
+                    } catch (error) {
+                        return this.error(error.message);
+                    }
+                });
+            })
+            .then(() => {
+                debug(`Sending SET TOKEN REQUEST`);
+                let request = this.SetTokenRequest.create({
+                    type: this.SetTokenRequest.Type.DAEMON,
+                    token: token,
+                    trackerName: trackerName,
+                });
+                let message = this.ClientMessage.create({
+                    type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
+                    setTokenRequest: request,
+                });
+                let buffer = this.ClientMessage.encode(message).finish();
+                return this.send(buffer, sockName)
+                    .then(data => {
+                        message = this.ServerMessage.decode(data);
+                        if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
+                            throw new Error('Invalid reply from daemon');
+
+                        switch (message.setTokenResponse.response) {
+                            case this.SetTokenResponse.Result.ACCEPTED:
+                                process.exit(0);
+                                break;
+                            case this.SetTokenResponse.Result.REJECTED:
+                                console.log('Request rejected');
+                                process.exit(1);
+                                break;
+                            default:
+                                throw new Error('Unsupported response from daemon');
+                        }
+                    });
             });
     }
 

@@ -74,8 +74,6 @@ class Register {
                 this.proto = root;
                 this.CreateDaemonRequest = this.proto.lookup('local.CreateDaemonRequest');
                 this.CreateDaemonResponse = this.proto.lookup('local.CreateDaemonResponse');
-                this.SetTokenRequest = this.proto.lookup('local.SetTokenRequest');
-                this.SetTokenResponse = this.proto.lookup('local.SetTokenResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
