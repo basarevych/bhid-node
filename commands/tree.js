@@ -143,7 +143,10 @@ class Tree {
                 (tree.type == this.Tree.Type.CLIENT ? '[' : '') +
                 tree.clientsNumber +
                 (tree.type == this.Tree.Type.CLIENT ? ']' : '') +
-                ' on ' + (tree.listenAddress ? tree.listenAddress + ':' : '') + tree.listenPort + ' ⇒ ' +
+                ' on ' + (tree.listenAddress ?
+                    tree.listenAddress + ':' :
+                    ((tree.listenPort && tree.listenPort[0] == '/') ? '' : '*:')) +
+                tree.listenPort || '*' + ' ⇒ ' +
                 (tree.type == this.Tree.Type.SERVER ? '[' : '') +
                 tree.serversNumber +
                 (tree.type == this.Tree.Type.SERVER ? ']' : '') +
