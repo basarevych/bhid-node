@@ -2,8 +2,8 @@
  * Stop command
  * @module commands/stop
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
+const argvParser = require('argv');
 
 /**
  * Command class
@@ -41,16 +41,24 @@ class Stop {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .run(argv);
+
         return this.terminate()
             .then(() => {
                 process.exit(0);
             })
             .catch(error => {
-                this.error(error.message);
+                return this.error(error.message);
             })
     }
 
@@ -71,15 +79,16 @@ class Stop {
                                 if (result.code === 100)
                                     return resolve();
 
-                                if (result.code != 0)
-                                    process.exit(1);
+                                if (result.code !== 0)
+                                    return reject(new Error('Could not get daemon status'));
 
-                                if (++tries > 10) {
-                                    console.error('Daemon would not exit');
-                                    process.exit(1);
-                                }
+                                if (++tries > 60)
+                                    return reject(new Error('Daemon would not exit'));
 
                                 setTimeout(() => { waitExit(); }, 500);
+                            })
+                            .catch(error => {
+                                reject(error);
                             });
                     };
                     waitExit();
@@ -92,8 +101,15 @@ class Stop {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

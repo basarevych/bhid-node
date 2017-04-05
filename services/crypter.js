@@ -1,8 +1,7 @@
 /**
  * Crypter
- * @module peer/services/crypter
+ * @module services/crypter
  */
-const debug = require('debug')('bhid:crypter');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -33,11 +32,11 @@ class Crypter {
     }
 
     /**
-     * Service name is 'modules.peer.crypter'
+     * Service name is 'crypter'
      * @type {string}
      */
     static get provides() {
-        return 'modules.peer.crypter';
+        return 'crypter';
     }
 
     /**
@@ -153,10 +152,10 @@ class Crypter {
                             return resolve(false);
 
                         let onResponse = (name, message) => {
-                            if (message.messageId == requestId) {
+                            if (message.messageId === requestId) {
                                 this._tracker.removeListener('lookup_identity_response', onResponse);
 
-                                if (message.lookupIdentityResponse.response != this._tracker.LookupIdentityResponse.Result.FOUND)
+                                if (message.lookupIdentityResponse.response !== this._tracker.LookupIdentityResponse.Result.FOUND)
                                     return resolve(false);
 
                                 resolve({
@@ -182,7 +181,7 @@ class Crypter {
                 let connection = this._peer.connections.get(session.connection);
                 if (!connection)
                     return { verified: false };
-                if (connection.fixed && connection.peers.indexOf(peer.name) == -1)
+                if (connection.fixed && connection.peers.indexOf(peer.name) === -1)
                     return { verified: false };
 
                 let hash = crypto.createHash(this._hash);
@@ -208,14 +207,14 @@ class Crypter {
             session.sharedKey = nacl.box.before(session.peerKey, session.privateKey);
 
         let nonce = nacl.randomBytes(nacl.secretbox.nonceLength);
-        if (nonce.length != nacl.secretbox.nonceLength) {
-            debug(`NaCl.randomBytes() failed`);
+        if (nonce.length !== nacl.secretbox.nonceLength) {
+            this._logger.debug('crypter', `NaCl.randomBytes() failed`);
             return false;
         }
 
         let encrypted = nacl.box.after(data, nonce, session.sharedKey);
         if (!encrypted || !encrypted.length) {
-            debug(`NaCl.box.after() failed`);
+            this._logger.debug('crypter', `NaCl.box.after() failed`);
             return false;
         }
 
@@ -287,7 +286,7 @@ class Crypter {
      */
     _loadPeer(identity) {
         if (!this._peersPath) {
-            this._peersPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid/peers' : '/etc/bhid/peers');
+            this._peersPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid/peers' : '/etc/bhid/peers');
             try {
                 fs.accessSync(this._peersPath, fs.constants.F_OK);
             } catch (error) {

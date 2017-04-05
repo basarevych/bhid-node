@@ -2,7 +2,6 @@
  * Connections List Request event
  * @module daemon/events/connections-list-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class ConnectionsListRequest {
         if (!client)
             return;
 
-        debug(`Got CONNECTIONS LIST REQUEST`);
+        this._logger.debug('connections-list-request', `Got CONNECTIONS LIST REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -71,7 +70,7 @@ class ConnectionsListRequest {
                     connectionsListResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending CONNECTIONS LIST RESPONSE`);
+                this._logger.debug('connections-list-request', `Sending CONNECTIONS LIST RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -82,10 +81,10 @@ class ConnectionsListRequest {
                 return reply(this.daemon.ConnectionsListResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got CONNECTIONS LIST RESPONSE from tracker`);
+                this._logger.debug('connections-list-request', `Got CONNECTIONS LIST RESPONSE from tracker`);
                 reply(response.connectionsListResponse.response, response.connectionsListResponse.list);
             };
             this.tracker.on('connections_list_response', onResponse);

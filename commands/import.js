@@ -2,10 +2,10 @@
  * Import command
  * @module commands/import
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
 const net = require('net');
 const protobuf = require('protobufjs');
+const argvParser = require('argv');
 const SocketWrapper = require('socket-wrapper');
 
 /**
@@ -42,18 +42,36 @@ class Import {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 2)
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'tracker',
+                short: 't',
+                type: 'string',
+            })
+            .option({
+                name: 'socket',
+                short: 'z',
+                type: 'string',
+            })
+            .run(argv);
+
+        if (args.targets.length < 2)
             return this._help.helpImport(argv);
 
-        let token = argv['_'][1];
-        let trackerName = argv['t'] || '';
-        let sockName = argv['z'];
+        let token = args.targets[1];
+        let trackerName = args.options['tracker'] || '';
+        let sockName = args.options['socket'];
 
-        debug('Loading protocol');
+        this._app.debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
                 return this.error(error.message);
@@ -68,7 +86,7 @@ class Import {
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                debug(`Sending IMPORT REQUEST`);
+                this._app.debug(`Sending IMPORT REQUEST`);
                 let request = this.ImportRequest.create({
                     trackerName: trackerName,
                     token: token,
@@ -86,34 +104,26 @@ class Import {
 
                         switch (message.importResponse.response) {
                             case this.ImportResponse.Result.ACCEPTED:
-                                this.import(trackerName, token, message.importResponse.updates, sockName);
-                                break;
+                                return this.importConnections(trackerName, token, message.importResponse.updates, sockName);
                             case this.ImportResponse.Result.REJECTED:
-                                console.log('Request rejected');
-                                process.exit(1);
-                                break;
+                                throw new Error('Request rejected');
                             case this.ImportResponse.Result.ALREADY_CONNECTED:
-                                console.log('Already connected');
-                                process.exit(1);
-                                break;
+                                throw new Error('Already connected');
                             case this.ImportResponse.Result.TIMEOUT:
-                                console.log('No response from the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('No response from the tracker');
                             case this.ImportResponse.Result.NO_TRACKER:
-                                console.log('Not connected to the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not connected to the tracker');
                             case this.ImportResponse.Result.NOT_REGISTERED:
-                                console.log('Not registered with the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not registered with the tracker');
                             default:
                                 throw new Error('Unsupported response from daemon');
                         }
                     })
+                    .then(() => {
+                        process.exit(0);
+                    })
                     .catch(error => {
-                        this.error(error.message);
+                        return this.error(error.message);
                     });
             } catch (error) {
                 return this.error(error.message);
@@ -130,9 +140,9 @@ class Import {
      * @param {object} [list]                           List of updated connections
      * @param {string} [sockName]                       Socket name
      */
-    import(trackerName, token, list, sockName) {
+    importConnections(trackerName, token, list, sockName) {
         if (!list)
-            process.exit(0);
+            return Promise.resolve();
 
         let request = this.ImportConnectionsRequest.create({
             trackerName: trackerName,
@@ -144,7 +154,7 @@ class Import {
             importConnectionsRequest: request,
         });
         let buffer = this.ClientMessage.encode(message).finish();
-        this.send(buffer, sockName)
+        return this.send(buffer, sockName)
             .then(data => {
                 let message = this.ServerMessage.decode(data);
                 if (message.type !== this.ServerMessage.Type.IMPORT_CONNECTIONS_RESPONSE)
@@ -152,22 +162,17 @@ class Import {
 
                 switch (message.importConnectionsResponse.response) {
                     case this.ImportConnectionsResponse.Result.ACCEPTED:
+                        let msg = [];
                         for (let connection of list.serverConnections)
-                            console.log(`Server of ${connection.name}`);
+                            msg.push(`Server of ${connection.name}`);
                         for (let connection of list.clientConnections)
-                            console.log(`Client of ${connection.name}`);
-                        process.exit(0);
-                        break;
+                            msg.push(`Client of ${connection.name}`);
+                        return this._app.info(msg.join('\n'));
                     case this.ImportConnectionsResponse.Result.REJECTED:
-                        console.log('Could not import the connections');
-                        process.exit(1);
-                        break;
+                        throw new Error('Could not import the connections');
                     default:
                         throw new Error('Unsupported response from daemon');
                 }
-            })
-            .catch(error => {
-                this.error(error.message);
             });
     }
 
@@ -180,7 +185,7 @@ class Import {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] == '/')
+            if (sockName && sockName[0] === '/')
                 sock = sockName;
             else
                 sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
@@ -190,13 +195,13 @@ class Import {
             };
 
             let socket = net.connect(sock, () => {
-                debug('Connected to daemon');
+                this._app.debug('Connected to daemon');
                 socket.removeListener('error', onError);
                 socket.once('error', error => { this.error(error.message) });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    debug('Got daemon reply');
+                    this._app.debug('Got daemon reply');
                     resolve(data);
                     socket.end();
                 });
@@ -211,8 +216,15 @@ class Import {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

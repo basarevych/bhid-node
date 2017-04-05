@@ -2,7 +2,6 @@
  * Connection event
  * @module peer/events/connection
  */
-const debug = require('debug')('bhid:peer');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class Connection {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.crypter' ];
+        return [ 'app', 'config', 'logger', 'crypter' ];
     }
 
     /**
@@ -66,7 +65,7 @@ class Connection {
                 connectRequest: request,
             });
             let data = this.peer.OuterMessage.encode(msg).finish();
-            debug(`Sending CONNECT REQUEST`);
+            this._logger.debug('connection', `Sending CONNECT REQUEST`);
             this.peer.send(name, sessionId, data);
         } catch (error) {
             this._logger.error(new WError(error, 'Connection.handle()'));

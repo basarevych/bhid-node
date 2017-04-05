@@ -2,7 +2,6 @@
  * Connect Response event
  * @module peer/events/connect-response
  */
-const debug = require('debug')('bhid:peer');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -53,7 +52,7 @@ class ConnectResponse {
         if (!session)
             return;
 
-        session.accepted = (message.connectResponse.response == this.peer.ConnectResponse.Result.ACCEPTED);
+        session.accepted = (message.connectResponse.response === this.peer.ConnectResponse.Result.ACCEPTED);
         if (!session.accepted) {
             this._logger.info(`Peer of ${name} rejected our connection request: ${session.socket.remoteAddress}:${session.socket.remotePort}`);
             let reply = this.peer.OuterMessage.create({
@@ -63,8 +62,10 @@ class ConnectResponse {
             this.peer.send(name, sessionId, buffer, true);
         }
 
-        if (session.verified && session.accepted)
+        if (session.verified && session.accepted && !session.established) {
+            session.established = true;
             this.peer.emit('established', name, sessionId);
+        }
     }
 
     /**

@@ -2,7 +2,6 @@
  * Redeem Master Request event
  * @module daemon/events/redeem-master-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class RedeemMasterRequest {
         if (!client)
             return;
 
-        debug(`Got REDEEM MASTER REQUEST`);
+        this._logger.debug('redeem-master-request', `Got REDEEM MASTER REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -70,7 +69,7 @@ class RedeemMasterRequest {
                     redeemMasterResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending REDEEM MASTER RESPONSE`);
+                this._logger.debug('redeem-master-request', `Sending REDEEM MASTER RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -79,10 +78,10 @@ class RedeemMasterRequest {
                 return reply(this.daemon.RedeemMasterResponse.Result.NO_TRACKER);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got REDEEM MASTER RESPONSE from tracker`);
+                this._logger.debug('redeem-master-request', `Got REDEEM MASTER RESPONSE from tracker`);
                 reply(response.redeemMasterResponse.response);
             };
             this.tracker.on('redeem_master_response', onResponse);

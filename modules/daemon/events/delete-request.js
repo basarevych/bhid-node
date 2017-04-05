@@ -2,7 +2,6 @@
  * Delete Request event
  * @module daemon/events/delete-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class DeleteRequest {
         if (!client)
             return;
 
-        debug(`Got DELETE REQUEST`);
+        this._logger.debug('delete-request', `Got DELETE REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -70,7 +69,7 @@ class DeleteRequest {
                     deleteResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending DELETE RESPONSE`);
+                this._logger.debug('delete-request', `Sending DELETE RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -81,10 +80,10 @@ class DeleteRequest {
                 return reply(this.daemon.DeleteResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got DELETE RESPONSE from tracker`);
+                this._logger.debug('delete-request', `Got DELETE RESPONSE from tracker`);
                 reply(response.deleteResponse.response);
             };
             this.tracker.on('delete_response', onResponse);

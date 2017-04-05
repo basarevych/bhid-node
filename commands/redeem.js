@@ -2,12 +2,12 @@
  * Redeem command
  * @module commands/redeem
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const net = require('net');
 const protobuf = require('protobufjs');
+const argvParser = require('argv');
 const SocketWrapper = require('socket-wrapper');
 
 /**
@@ -44,18 +44,46 @@ class Redeem {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 2)
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'server',
+                short: 's',
+                type: 'boolean',
+            })
+            .option({
+                name: 'client',
+                short: 'c',
+                type: 'boolean',
+            })
+            .option({
+                name: 'tracker',
+                short: 't',
+                type: 'string',
+            })
+            .option({
+                name: 'socket',
+                short: 'z',
+                type: 'string',
+            })
+            .run(argv);
+
+        if (args.targets.length < 2)
             return this._help.helpRedeem(argv);
 
-        let target = argv['_'][1];
-        let trackerName = argv['t'] || '';
-        let server = argv['s'] || false;
-        let client = argv['c'] || false;
-        let sockName = argv['z'];
+        let target = args.targets[1];
+        let trackerName = args.options['tracker'] || '';
+        let server = !!args.options['server'];
+        let client = !!args.options['client'];
+        let sockName = args.options['socket'];
 
         if (server && client)
             return this._help.helpRedeem(argv);
@@ -63,14 +91,14 @@ class Redeem {
             client = true;
 
         let type, token;
-        if (target.indexOf('@') != -1)
+        if (target.indexOf('@') !== -1)
             type = 'master';
-        else if (target.indexOf('/') == -1)
+        else if (target.indexOf('/') === -1)
             type = 'daemon';
         else
             type = 'path';
 
-        if (type != 'master') {
+        if (type !== 'master') {
             try {
                 token = fs.readFileSync(path.join(os.homedir(), '.bhid', 'master.token'), 'utf8').trim();
                 if (!token)
@@ -80,7 +108,7 @@ class Redeem {
             }
         }
 
-        debug('Loading protocol');
+        this._app.debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
                 return this.error(error.message);
@@ -101,7 +129,7 @@ class Redeem {
                 let reqClass, reqType, reqField, resClass, resType, resField, request;
                 switch (type) {
                     case 'master':
-                        debug(`Sending REDEEM MASTER REQUEST`);
+                        this._app.debug(`Sending REDEEM MASTER REQUEST`);
                         reqClass = this.RedeemMasterRequest;
                         reqType = this.ClientMessage.Type.REDEEM_MASTER_REQUEST;
                         reqField = 'redeemMasterRequest';
@@ -114,7 +142,7 @@ class Redeem {
                         });
                         break;
                     case 'daemon':
-                        debug(`Sending REDEEM DAEMON REQUEST`);
+                        this._app.debug(`Sending REDEEM DAEMON REQUEST`);
                         reqClass = this.RedeemDaemonRequest;
                         reqType = this.ClientMessage.Type.REDEEM_DAEMON_REQUEST;
                         reqField = 'redeemDaemonRequest';
@@ -128,7 +156,7 @@ class Redeem {
                         });
                         break;
                     case 'path':
-                        debug(`Sending REDEEM PATH REQUEST`);
+                        this._app.debug(`Sending REDEEM PATH REQUEST`);
                         reqClass = this.RedeemPathRequest;
                         reqType = this.ClientMessage.Type.REDEEM_PATH_REQUEST;
                         reqField = 'redeemPathRequest';
@@ -159,36 +187,28 @@ class Redeem {
                             case resClass.Result.ACCEPTED:
                                 switch (type) {
                                     case 'master':
-                                        process.exit(0);
-                                        break;
+                                        return;
                                     case 'daemon':
-                                        console.log('Daemon token: ' + message[resField].token);
-                                        process.exit(0);
-                                        break;
+                                        return this._app.info('Daemon token: ' + message[resField].token);
                                     case 'path':
-                                        console.log('Connection ' + (server ? 'server' : 'client') + ' token: ' + message[resField].token);
-                                        process.exit(0);
-                                        break;
+                                        return this._app.info('Connection ' + (server ? 'server' : 'client') + ' token: ' + message[resField].token);
                                 }
                                 break;
                             case resClass.Result.REJECTED:
-                                console.log('Request rejected');
-                                process.exit(1);
-                                break;
+                                throw new Error('Request rejected');
                             case resClass.Result.TIMEOUT:
-                                console.log('No response from the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('No response from the tracker');
                             case resClass.Result.NO_TRACKER:
-                                console.log('Not connected to the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not connected to the tracker');
                             default:
                                 throw new Error('Unsupported response from daemon');
                         }
                     })
+                    .then(() => {
+                        process.exit(0);
+                    })
                     .catch(error => {
-                        this.error(error.message);
+                        return this.error(error.message);
                     });
             } catch (error) {
                 return this.error(error.message);
@@ -207,7 +227,7 @@ class Redeem {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] == '/')
+            if (sockName && sockName[0] === '/')
                 sock = sockName;
             else
                 sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
@@ -217,13 +237,13 @@ class Redeem {
             };
 
             let socket = net.connect(sock, () => {
-                debug('Connected to daemon');
+                this._app.debug('Connected to daemon');
                 socket.removeListener('error', onError);
                 socket.once('error', error => { this.error(error.message) });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    debug('Got daemon reply');
+                    this._app.debug('Got daemon reply');
                     resolve(data);
                     socket.end();
                 });
@@ -238,8 +258,15 @@ class Redeem {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

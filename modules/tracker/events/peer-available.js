@@ -2,7 +2,6 @@
  * Peer Available event
  * @module tracker/events/peer-available
  */
-const debug = require('debug')('bhid:tracker');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -45,14 +44,14 @@ class PeerAvailable {
      */
     handle(name, message) {
         let connectionName = name + '#' + message.peerAvailable.connectionName;
-        debug(`Got PEER AVAILABLE for ${connectionName}`);
+        this._logger.debug('peer-available', `Got PEER AVAILABLE for ${connectionName}`);
 
         let connection = this.peer.connections.get(connectionName);
         if (!connection)
             return;
 
         if (connection.server) {
-            debug(`Punching ${name}: ${message.peerAvailable.externalAddress}:${message.peerAvailable.externalPort}`);
+            this._logger.debug('peer-available', `Punching ${name}: ${message.peerAvailable.externalAddress}:${message.peerAvailable.externalPort}`);
             connection.utp.punch(
                 this.peer.constructor.punchingAttempts,
                 message.peerAvailable.externalPort,

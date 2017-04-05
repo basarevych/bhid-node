@@ -2,9 +2,9 @@
  * Start command
  * @module commands/start
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
 const execFile = require('child_process').execFile;
+const argvParser = require('argv');
 
 /**
  * Command class
@@ -40,31 +40,36 @@ class Start {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
-        let install = !!argv['i'];
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'install',
+                short: 'i',
+                type: 'boolean',
+            })
+            .run(argv);
 
         return Promise.resolve()
             .then(() => {
-                if (install)
+                if (args.options['install'])
                     return this._install.install();
             })
             .then(() => {
-                return this.launch()
+                return this.launch();
             })
-            .then(result => {
-                if (result.code != 0) {
-                    console.log(result.stdout);
-                    console.error(result.stderr);
-                    process.exit(1);
-                }
-
-                process.exit(0);
+            .then(rc => {
+                process.exit(rc);
             })
             .catch(error => {
-                this.error(error.message);
+                return this.error(error.message);
             })
     }
 
@@ -74,7 +79,18 @@ class Start {
     launch() {
         return this.exec('daemon')
             .then(result => {
-                process.exit(result.code === 0 ? 0 : 1);
+                return Promise.resolve()
+                    .then(() => {
+                        if (result.code !== 0)
+                            return this._app.info(result.stdout);
+                    })
+                    .then(() => {
+                        if (result.code !== 0)
+                            return this._app.error(result.stderr);
+                    })
+                    .then(() => {
+                        return result.code;
+                    });
             });
     }
     /**
@@ -111,8 +127,15 @@ class Start {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

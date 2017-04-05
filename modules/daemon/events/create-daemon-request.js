@@ -2,7 +2,6 @@
  * Create Daemon Request event
  * @module daemon/events/create-daemon-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class CreateDaemonRequest {
         if (!client)
             return;
 
-        debug(`Got CREATE DAEMON REQUEST`);
+        this._logger.debug('create-daemon-request', `Got CREATE DAEMON REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -72,7 +71,7 @@ class CreateDaemonRequest {
                     createDaemonResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending CREATE DAEMON RESPONSE`);
+                this._logger.debug('create-daemon-request', `Sending CREATE DAEMON RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -81,10 +80,10 @@ class CreateDaemonRequest {
                 return reply(this.daemon.CreateDaemonResponse.Result.NO_TRACKER);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got CREATE DAEMON RESPONSE from tracker`);
+                this._logger.debug('create-daemon-request', `Got CREATE DAEMON RESPONSE from tracker`);
                 reply(
                     response.createDaemonResponse.response,
                     response.createDaemonResponse.daemonName,

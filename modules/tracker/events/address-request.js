@@ -2,7 +2,6 @@
  * Address Request event
  * @module tracker/events/address-request
  */
-const debug = require('debug')('bhid:tracker');
 const uuid = require('uuid');
 const utp = require('utp-punch');
 const WError = require('verror').WError;
@@ -46,7 +45,7 @@ class AddressRequest {
      */
     handle(name, message) {
         let connectionName = name + '#' + message.addressRequest.connectionName;
-        debug(`Got ADDRESS REQUEST for ${connectionName}`);
+        this._logger.debug('address-request', `Got ADDRESS REQUEST for ${connectionName}`);
 
         let connection = this.peer.connections.get(connectionName);
         if (!connection)
@@ -66,7 +65,7 @@ class AddressRequest {
             });
             let data = this.tracker.ClientMessage.encode(msg).finish();
             if (connection.server && connection.utp) {
-                debug(`Sending ADDRESS RESPONSE to ${connection.tracker}`);
+                this._logger.debug('address-request', `Sending ADDRESS RESPONSE to ${connection.tracker}`);
                 connection.utp.getUdpSocket().send(
                     data,
                     tracker.socket.remotePort,
@@ -74,7 +73,7 @@ class AddressRequest {
                 );
             } else if (!connection.internal && !connection.external) {
                 this.peer.createSession(connectionName, sessionId => {
-                    debug(`Sending ADDRESS RESPONSE to ${connection.tracker}`);
+                    this._logger.debug('address-request', `Sending ADDRESS RESPONSE to ${connection.tracker}`);
                     let session = this.peer.sessions.get(sessionId);
                     session.utp.getUdpSocket().send(
                         data,

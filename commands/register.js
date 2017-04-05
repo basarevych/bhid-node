@@ -2,12 +2,12 @@
  * Register command
  * @module commands/register
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const net = require('net');
 const protobuf = require('protobufjs');
+const argvParser = require('argv');
 const SocketWrapper = require('socket-wrapper');
 
 /**
@@ -46,10 +46,50 @@ class Register {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'randomize',
+                short: 'r',
+                type: 'boolean',
+            })
+            .option({
+                name: 'authenticate',
+                short: 'a',
+                type: 'boolean',
+            })
+            .option({
+                name: 'quiet',
+                short: 'q',
+                type: 'boolean',
+            })
+            .option({
+                name: 'tracker',
+                short: 't',
+                type: 'string',
+            })
+            .option({
+                name: 'socket',
+                short: 'z',
+                type: 'string',
+            })
+            .run(argv);
+
+        let daemonName = args.targets[1] || '';
+        let randomize = daemonName ? !!args.options['randomize'] : true;
+        let authenticate = !!args.options['authenticate'];
+        let quiet = !!args.options['quiet'];
+        let trackerName = args.options['tracker'] || '';
+        let sockName = args.options['socket'];
+
         let token;
         try {
             token = fs.readFileSync(path.join(os.homedir(), '.bhid', 'master.token'), 'utf8').trim();
@@ -59,14 +99,7 @@ class Register {
             return this.error('Master token not found');
         }
 
-        let daemonName = argv['_'][1] || '';
-        let randomize = daemonName ? !!argv['r'] || false : true;
-        let authenticate = !!argv['a'];
-        let quiet = !!argv['q'];
-        let trackerName = argv['t'] || '';
-        let sockName = argv['z'];
-
-        debug('Loading protocol');
+        this._app.debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
                 return this.error(error.message);
@@ -78,7 +111,7 @@ class Register {
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                debug(`Sending CREATE DAEMON REQUEST`);
+                this._app.debug(`Sending CREATE DAEMON REQUEST`);
                 let request = this.CreateDaemonRequest.create({
                     trackerName: trackerName,
                     token: token,
@@ -98,46 +131,33 @@ class Register {
 
                         switch (message.createDaemonResponse.response) {
                             case this.CreateDaemonResponse.Result.ACCEPTED:
-                                if (authenticate) {
+                                if (authenticate)
                                     return this._auth.auth(message.createDaemonResponse.token, trackerName, sockName);
-                                } else {
-                                    if (quiet) {
-                                        console.log(message.createDaemonResponse.token);
-                                    } else {
-                                        console.log(
-                                            'Name: ' + message.createDaemonResponse.daemonName + '\n' +
-                                            'Token: ' + message.createDaemonResponse.token
-                                        );
-                                    }
-                                    process.exit(0);
-                                }
-                                break;
+                                if (quiet)
+                                    return this._app.info(message.createDaemonResponse.token);
+                                return this._app.info(
+                                    'Name: ' + message.createDaemonResponse.daemonName + '\n' +
+                                    'Token: ' + message.createDaemonResponse.token
+                                );
                             case this.CreateDaemonResponse.Result.REJECTED:
-                                console.log('Request rejected');
-                                process.exit(1);
-                                break;
+                                throw new Error('Request rejected');
                             case this.CreateDaemonResponse.Result.INVALID_NAME:
-                                console.log('Invalid name');
-                                process.exit(1);
-                                break;
+                                throw new Error('Invalid name');
                             case this.CreateDaemonResponse.Result.NAME_EXISTS:
-                                console.log('Daemon with this name already exists');
-                                process.exit(1);
-                                break;
+                                throw new Error('Daemon with this name already exists');
                             case this.CreateDaemonResponse.Result.TIMEOUT:
-                                console.log('No response from the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('No response from the tracker');
                             case this.CreateDaemonResponse.Result.NO_TRACKER:
-                                console.log('Not connected to the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not connected to the tracker');
                             default:
                                 throw new Error('Unsupported response from daemon');
                         }
                     })
+                    .then(() => {
+                        process.exit(0);
+                    })
                     .catch(error => {
-                        this.error(error.message);
+                        return this.error(error.message);
                     });
             } catch (error) {
                 return this.error(error.message);
@@ -156,7 +176,7 @@ class Register {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] == '/')
+            if (sockName && sockName[0] === '/')
                 sock = sockName;
             else
                 sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
@@ -166,13 +186,13 @@ class Register {
             };
 
             let socket = net.connect(sock, () => {
-                debug('Connected to daemon');
+                this._app.debug('Connected to daemon');
                 socket.removeListener('error', onError);
                 socket.once('error', error => { this.error(error.message) });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    debug('Got daemon reply');
+                    this._app.debug('Got daemon reply');
                     resolve(data);
                     socket.end();
                 });
@@ -187,8 +207,15 @@ class Register {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

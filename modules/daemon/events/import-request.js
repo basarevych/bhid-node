@@ -2,7 +2,6 @@
  * Import Request event
  * @module daemon/events/import-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class ImportRequest {
         if (!client)
             return;
 
-        debug(`Got IMPORT REQUEST`);
+        this._logger.debug('import-request', `Got IMPORT REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -71,7 +70,7 @@ class ImportRequest {
                     importResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending IMPORT RESPONSE`);
+                this._logger.debug('import-request', `Sending IMPORT RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -82,10 +81,10 @@ class ImportRequest {
                 return reply(this.daemon.ImportResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got IMPORT RESPONSE from tracker`);
+                this._logger.debug('import-request', `Got IMPORT RESPONSE from tracker`);
                 reply(
                     response.importResponse.response,
                     response.importResponse.updates

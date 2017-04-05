@@ -48,7 +48,7 @@ class Tracker {
      * @return {Promise}
      */
     register(name) {
-        if (this._config.get(`servers.${name}.class`) != 'servers.tracker')
+        if (this._config.get(`servers.${name}.class`) !== 'servers.tracker')
             return Promise.resolve();
 
         let server = this._app.get('servers').get('tracker');

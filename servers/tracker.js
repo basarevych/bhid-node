@@ -2,7 +2,6 @@
  * Tracker server
  * @module servers/tracker
  */
-const debug = require('debug')('bhid:tracker');
 const path = require('path');
 const fs = require('fs');
 const ini = require('ini');
@@ -36,10 +35,10 @@ class Tracker extends EventEmitter {
         this._name = null;
         this._app = app;
         this._config = config;
-        this._connectionsList = connectionsList;
         this._logger = logger;
         this._runner = runner;
         this._crypter = crypter;
+        this._connectionsList = connectionsList;
         this._timeouts = new Map();
     }
 
@@ -56,7 +55,7 @@ class Tracker extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'runner', 'modules.peer.crypter', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'runner', 'crypter', 'connectionsList' ];
     }
 
     /**
@@ -99,7 +98,7 @@ class Tracker extends EventEmitter {
         this._name = name;
 
         return new Promise((resolve, reject) => {
-                debug('Loading protocol');
+                this._logger.debug('tracker', 'Loading protocol');
                 protobuf.load(path.join(this._config.base_path, 'proto', 'tracker.proto'), (error, root) => {
                     if (error)
                         return reject(new WError(error, 'Tracker.init()'));
@@ -156,7 +155,7 @@ class Tracker extends EventEmitter {
                 })
             })
             .then(() => {
-                let configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+                let configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
                 try {
                     fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.F_OK);
                 } catch (error) {
@@ -170,7 +169,7 @@ class Tracker extends EventEmitter {
 
                     let tracker = section.substr(0, section.length - this.constructor.trackerSection.length);
                     let ca = bhidConfig[section]['ca_file'];
-                    if (ca && ca[0] != '/')
+                    if (ca && ca[0] !== '/')
                         ca = path.join(configPath, 'certs', ca);
                     if (ca)
                         ca = fs.readFileSync(ca);
@@ -190,7 +189,7 @@ class Tracker extends EventEmitter {
                     };
 
                     this.servers.set(tracker, server);
-                    if (bhidConfig[section]['default'] == 'yes')
+                    if (bhidConfig[section]['default'] === 'yes')
                         this.default = tracker;
                 }
             });
@@ -212,7 +211,7 @@ class Tracker extends EventEmitter {
                             return;
 
                         let result = curModule.register(name);
-                        if (result === null || typeof result != 'object' || typeof result.then != 'function')
+                        if (result === null || typeof result !== 'object' || typeof result.then !== 'function')
                             throw new Error(`Module '${curName}' register() did not return a Promise`);
                         return result;
                     });
@@ -220,7 +219,7 @@ class Tracker extends EventEmitter {
                 Promise.resolve()
             )
             .then(() => {
-                debug('Starting the server');
+                this._logger.debug('tracker', 'Starting the server');
                 for (let server of this.servers.keys())
                     this._reconnect(server);
                 this._timeoutTimer = setInterval(() => { this._checkTimeout(); }, 500);
@@ -230,7 +229,7 @@ class Tracker extends EventEmitter {
     /**
      * Get server
      * @param {string} name                 Tracker name
-     * @return {string}
+     * @return {string|null}
      */
     getServer(name) {
         if (!name)
@@ -298,14 +297,14 @@ class Tracker extends EventEmitter {
         let configPath, newIdentity = false;
         return Promise.resolve()
             .then(() => {
-                configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+                configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
                 try {
                     fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.F_OK);
                 } catch (error) {
                     throw new Error('Could not read bhid.conf');
                 }
 
-                debug('Creating RSA keys');
+                this._logger.debug('tracker', 'Creating RSA keys');
                 return this._runner.exec(
                         'openssl',
                         [
@@ -366,9 +365,9 @@ class Tracker extends EventEmitter {
                         continue;
 
                     let tracker = section.substr(0, section.length - this.constructor.trackerSection.length);
-                    if (tracker == name) {
+                    if (tracker === name) {
                         bhidConfig[section]['token'] = token;
-                        debug(`Tracker ${name} token updated`);
+                        this._logger.debug('tracker', `Tracker ${name} token updated`);
                         break;
                     }
                 }
@@ -446,14 +445,14 @@ class Tracker extends EventEmitter {
         }
 
         try {
-            debug(`Sending STATUS of ${connectionName} to ${trackerName}`);
+            this._logger.debug('tracker', `Sending STATUS of ${connectionName} to ${trackerName}`);
             let addresses = [];
             if (connection.server && connection.utp) {
                 let utpAddress = connection.utp.address();
                 let interfaces = os.networkInterfaces();
                 for (let iface of Object.keys(interfaces)) {
                     for (let alias of interfaces[iface]) {
-                        if (alias.internal || [ 'IPv4', 'IPv6' ].indexOf(alias.family) == -1)
+                        if (alias.internal || [ 'IPv4', 'IPv6' ].indexOf(alias.family) === -1)
                             continue;
 
                         addresses.push(this.InternalAddress.create({
@@ -492,7 +491,7 @@ class Tracker extends EventEmitter {
             return null;
 
         try {
-            debug(`Sending LOOKUP IDENTITY to ${trackerName}`);
+            this._logger.debug('tracker', `Sending LOOKUP IDENTITY to ${trackerName}`);
             let id = uuid.v1();
             let request = this.LookupIdentityRequest.create({
                 identity: identity,
@@ -523,7 +522,7 @@ class Tracker extends EventEmitter {
             return;
 
         try {
-            debug(`Sending PUNCH REQUEST of ${connectionName} to ${trackerName}`);
+            this._logger.debug('tracker', `Sending PUNCH REQUEST of ${connectionName} to ${trackerName}`);
             let request = this.PunchRequest.create({
                 connectionName: connectionName,
             });
@@ -563,7 +562,7 @@ class Tracker extends EventEmitter {
         }
 
         try {
-            debug(`Tracker message ${message.type} from ${name}`);
+            this._logger.debug(`Tracker message ${message.type} from ${name}`);
             switch(message.type) {
                 case this.ServerMessage.Type.INIT_RESPONSE:
                     this.emit('init_response', name, message);
@@ -668,7 +667,7 @@ class Tracker extends EventEmitter {
      * @param {string} name                 Tracker name
      */
     onTimeout(name) {
-        debug(`Tracker ${name} timeout`);
+        this._logger.debug('tracker', `Tracker ${name} timeout`);
         let server = this.servers.get(name);
         if (server && server.socket) {
             server.socket.destroy();
@@ -684,7 +683,7 @@ class Tracker extends EventEmitter {
         let server = this.servers.get(name);
 
         try {
-            debug(`Initiating connection to ${name}`);
+            this._logger.debug('tracker', `Initiating connection to ${name}`);
             server.socket = tls.connect(
                 server.port,
                 server.address,

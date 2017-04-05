@@ -2,7 +2,6 @@
  * Redeem Path Request event
  * @module daemon/events/redeem-path-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class RedeemPathRequest {
         if (!client)
             return;
 
-        debug(`Got REDEEM PATH REQUEST`);
+        this._logger.debug('redeem-path-request', `Got REDEEM PATH REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -71,7 +70,7 @@ class RedeemPathRequest {
                     redeemPathResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending REDEEM PATH RESPONSE`);
+                this._logger.debug('redeem-path-request', `Sending REDEEM PATH RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -80,10 +79,10 @@ class RedeemPathRequest {
                 return reply(this.daemon.RedeemPathResponse.Result.NO_TRACKER);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got REDEEM PATH RESPONSE from tracker`);
+                this._logger.debug('redeem-path-request', `Got REDEEM PATH RESPONSE from tracker`);
                 reply(response.redeemPathResponse.response, response.redeemPathResponse.token);
             };
             this.tracker.on('redeem_path_response', onResponse);

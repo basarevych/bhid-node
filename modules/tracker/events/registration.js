@@ -2,7 +2,6 @@
  * Registration event
  * @module tracker/events/registration
  */
-const debug = require('debug')('bhid:tracker');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class Registration {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'connectionsList' ];
     }
 
     /**
@@ -50,7 +49,7 @@ class Registration {
             return;
 
         for (let [ tracker, connections ] of this._connectionsList.getAll()) {
-            if (tracker != name)
+            if (tracker !== name)
                 continue;
 
             let merged = new Map([ ...connections.serverConnections, ...connections.clientConnections ]);

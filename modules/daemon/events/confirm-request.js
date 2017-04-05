@@ -2,7 +2,6 @@
  * Confirm Request event
  * @module daemon/events/confirm-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class ConfirmRequest {
         if (!client)
             return;
 
-        debug(`Got CONFIRM REQUEST`);
+        this._logger.debug('confirm-request', `Got CONFIRM REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -71,7 +70,7 @@ class ConfirmRequest {
                     confirmResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending CONFIRM RESPONSE`);
+                this._logger.debug('confirm-request', `Sending CONFIRM RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -80,10 +79,10 @@ class ConfirmRequest {
                 return reply(this.daemon.ConfirmResponse.Result.NO_TRACKER);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got CONFIRM RESPONSE from tracker`);
+                this._logger.debug('confirm-request', `Got CONFIRM RESPONSE from tracker`);
                 reply(response.confirmResponse.response, response.confirmResponse.token);
             };
             this.tracker.on('confirm_response', onResponse);

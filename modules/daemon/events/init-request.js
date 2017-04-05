@@ -2,7 +2,6 @@
  * Init Request event
  * @module daemon/events/init-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class InitRequest {
         if (!client)
             return;
 
-        debug(`Got INIT REQUEST`);
+        this._logger.debug('init-request', `Got INIT REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -70,7 +69,7 @@ class InitRequest {
                     initResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending INIT RESPONSE`);
+                this._logger.debug('init-request', `Sending INIT RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -79,10 +78,10 @@ class InitRequest {
                 return reply(this.daemon.InitResponse.Result.NO_TRACKER);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got INIT RESPONSE from tracker`);
+                this._logger.debug('init-request', `Got INIT RESPONSE from tracker`);
                 reply(response.initResponse.response);
             };
             this.tracker.on('init_response', onResponse);

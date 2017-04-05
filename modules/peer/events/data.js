@@ -2,7 +2,6 @@
  * Data event
  * @module peer/events/data
  */
-const debug = require('debug')('bhid:peer');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class Data {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.crypter' ];
+        return [ 'app', 'config', 'logger', 'crypter' ];
     }
 
     /**

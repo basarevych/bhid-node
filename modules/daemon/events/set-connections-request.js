@@ -2,7 +2,6 @@
  * Set Connections Request event
  * @module daemon/events/set-connections-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class SetConnectionsRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'connectionsList' ];
     }
 
     /**
@@ -50,7 +49,7 @@ class SetConnectionsRequest {
         if (!client)
             return;
 
-        debug(`Got SET CONNECTIONS REQUEST`);
+        this._logger.debug('set-connections-request', `Got SET CONNECTIONS REQUEST`);
         try {
             let reply = value => {
                 let reply = this.daemon.SetConnectionsResponse.create({
@@ -61,7 +60,7 @@ class SetConnectionsRequest {
                     setConnectionsResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(result).finish();
-                debug(`Sending SET CONNECTIONS RESPONSE`);
+                this._logger.debug('set-connections-request', `Sending SET CONNECTIONS RESPONSE`);
                 this.daemon.send(id, data);
             };
 

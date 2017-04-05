@@ -2,7 +2,6 @@
  * Detach Request event
  * @module daemon/events/detach-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class DetachRequest {
         if (!client)
             return;
 
-        debug(`Got DETACH REQUEST`);
+        this._logger.debug('detach-request', `Got DETACH REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -70,7 +69,7 @@ class DetachRequest {
                     detachResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending DETACH RESPONSE`);
+                this._logger.debug('detach-request', `Sending DETACH RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -81,10 +80,10 @@ class DetachRequest {
                 return reply(this.daemon.DetachResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got DETACH RESPONSE from tracker`);
+                this._logger.debug('detach-request', `Got DETACH RESPONSE from tracker`);
                 reply(response.detachResponse.response);
             };
             this.tracker.on('detach_response', onResponse);

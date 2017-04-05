@@ -2,7 +2,6 @@
  * Import Connections Request event
  * @module daemon/events/import-connections-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class ImportConnectionsRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'connectionsList' ];
     }
 
     /**
@@ -50,7 +49,7 @@ class ImportConnectionsRequest {
         if (!client)
             return;
 
-        debug(`Got IMPORT CONNECTIONS REQUEST`);
+        this._logger.debug('import-connections-request', `Got IMPORT CONNECTIONS REQUEST`);
         try {
             let reply = value => {
                 let reply = this.daemon.ImportConnectionsResponse.create({
@@ -61,7 +60,7 @@ class ImportConnectionsRequest {
                     importConnectionsResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(result).finish();
-                debug(`Sending IMPORT CONNECTIONS RESPONSE`);
+                this._logger.debug('import-connections-request', `Sending IMPORT CONNECTIONS RESPONSE`);
                 this.daemon.send(id, data);
             };
 

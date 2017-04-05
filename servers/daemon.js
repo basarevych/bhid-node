@@ -2,7 +2,6 @@
  * Daemon server
  * @module servers/daemon
  */
-const debug = require('debug')('bhid:daemon');
 const path = require('path');
 const fs = require('fs');
 const net = require('net');
@@ -69,7 +68,7 @@ class Daemon extends EventEmitter {
         this._name = name;
 
         return new Promise((resolve, reject) => {
-                debug('Loading protocol');
+                this._logger.debug('daemon', 'Loading protocol');
                 protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
                     if (error)
                         return reject(new WError(error, 'Daemon.init()'));
@@ -147,7 +146,7 @@ class Daemon extends EventEmitter {
                             return;
 
                         let result = curModule.register(name);
-                        if (result === null || typeof result != 'object' || typeof result.then != 'function')
+                        if (result === null || typeof result !== 'object' || typeof result.then !== 'function')
                             throw new Error(`Module '${curName}' register() did not return a Promise`);
                         return result;
                     });
@@ -172,15 +171,19 @@ class Daemon extends EventEmitter {
                 });
             })
             .then(() => {
-                debug('Starting the server');
+                this._logger.debug('daemon', 'Starting the server');
                 try {
                     let sockDir = path.join('/var', 'run', this._config.project);
                     let sockFile = path.join(sockDir, this._config.instance + '.sock');
                     try {
                         fs.accessSync(sockDir, fs.constants.R_OK | fs.constants.W_OK);
                     } catch (error) {
-                        this._logger.error(`No access to ${sockDir}`);
-                        process.exit(1);
+                        this._logger.error(
+                            `No access to ${sockDir}`,
+                            () => {
+                                process.exit(1);
+                            }
+                        );
                     }
                     try {
                         fs.accessSync(sockFile, fs.constants.F_OK);
@@ -216,17 +219,18 @@ class Daemon extends EventEmitter {
         if (error.syscall !== 'listen')
             return this._logger.error(new WError(error, 'Daemon.onServerError()'));
 
+        let msg;
         switch (error.code) {
             case 'EACCES':
-                this._logger.error('Could not bind to daemon socket');
+                msg = 'Could not bind to daemon socket';
                 break;
             case 'EADDRINUSE':
-                this._logger.error('Daemon socket is already in use');
+                msg = 'Daemon socket is already in use';
                 break;
             default:
-                this._logger.error(error);
+                msg = error;
         }
-        process.exit(1);
+        this._logger.error(msg, () => { process.exit(1); });
     }
 
     /**
@@ -249,7 +253,7 @@ class Daemon extends EventEmitter {
      */
     onConnection(socket) {
         let id = uuid.v1();
-        debug(`New socket`);
+        this._logger.debug('daemon', `New socket`);
 
         let client = {
             id: id,
@@ -297,7 +301,7 @@ class Daemon extends EventEmitter {
         }
 
         try {
-            debug(`Client message ${message.type}`);
+            this._logger.debug('daemon', `Client message ${message.type}`);
             switch(message.type) {
                 case this.ClientMessage.Type.INIT_REQUEST:
                     this.emit('init_request', id, message);
@@ -377,7 +381,7 @@ class Daemon extends EventEmitter {
     onClose(id) {
         let client = this.clients.get(id);
         if (client) {
-            debug(`Client disconnected`);
+            this._logger.debug('daemon', `Client disconnected`);
             if (client.socket) {
                 if (!client.socket.destroyed)
                     client.socket.destroy();

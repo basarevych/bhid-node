@@ -2,7 +2,6 @@
  * Update Connections Request event
  * @module daemon/events/update-connections-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class UpdateConnectionsRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'connectionsList' ];
     }
 
     /**
@@ -50,7 +49,7 @@ class UpdateConnectionsRequest {
         if (!client)
             return;
 
-        debug(`Got UPDATE CONNECTIONS REQUEST`);
+        this._logger.debug('update-connections-request', `Got UPDATE CONNECTIONS REQUEST`);
         try {
             let reply = value => {
                 let reply = this.daemon.UpdateConnectionsResponse.create({
@@ -61,7 +60,7 @@ class UpdateConnectionsRequest {
                     updateConnectionsResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(result).finish();
-                debug(`Sending UPDATE CONNECTIONS RESPONSE`);
+                this._logger.debug('update-connections-request', `Sending UPDATE CONNECTIONS RESPONSE`);
                 this.daemon.send(id, data);
             };
 

@@ -2,8 +2,8 @@
  * Status command
  * @module commands/status
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
+const argvParser = require('argv');
 
 /**
  * Command class
@@ -39,16 +39,24 @@ class Status {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .run(argv);
+
         return this._start.exec('status', [ '/var/run/bhid/daemon.pid' ])
             .then(result => {
-                process.exit(result.code === 0 ? 0 : 1);
+                process.exit(result.code);
             })
             .catch(error => {
-                this.error(error.message);
+                return this.error(error.message);
             })
     }
 
@@ -57,8 +65,15 @@ class Status {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

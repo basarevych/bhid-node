@@ -2,8 +2,8 @@
  * Restart command
  * @module commands/restart
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
+const argvParser = require('argv');
 
 /**
  * Command class
@@ -43,29 +43,42 @@ class Restart {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
-        let install = !!argv['i'];
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'install',
+                short: 'i',
+                type: 'boolean',
+            })
+            .run(argv);
 
-        process.on('SIGHUP', () => {
-            // ignore
-        });
+        let onSignal = this._app.onSignal;
+        this._app.onSignal = signal => {
+            if (signal !== 'SIGHUP')
+                onSignal(signal);
+        };
 
         return this._stop.terminate()
             .then(() => {
-                if (install)
+                if (args.options['install'])
                     return this._install.install();
             })
             .then(() => {
                 return this._start.launch();
             })
-            .then(() => {
-                process.exit(0);
+            .then(rc => {
+                process.exit(rc);
             })
             .catch(error => {
-                this.error(error.message);
+                return this.error(error.message);
             })
     }
 
@@ -74,8 +87,15 @@ class Restart {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

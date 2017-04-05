@@ -2,10 +2,10 @@
  * Auth command
  * @module commands/auth
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
 const net = require('net');
 const protobuf = require('protobufjs');
+const argvParser = require('argv');
 const SocketWrapper = require('socket-wrapper');
 
 /**
@@ -42,20 +42,41 @@ class Auth {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 2)
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'tracker',
+                short: 't',
+                type: 'string',
+            })
+            .option({
+                name: 'socket',
+                short: 'z',
+                type: 'string',
+            })
+            .run(argv);
+
+        if (args.targets.length < 2)
             return this._help.helpAuth(argv);
 
-        let token = argv['_'][1];
-        let trackerName = argv['t'] || '';
-        let sockName = argv['z'];
+        let token = args.targets[1];
+        let trackerName = args.options['tracker'] || '';
+        let sockName = args.options['socket'];
 
         return this.auth(token, trackerName, sockName)
+            .then(() => {
+                process.exit(0);
+            })
             .catch(error => {
-                this.error(error.message);
+                return this.error(error.message);
             });
     }
 
@@ -67,11 +88,11 @@ class Auth {
      * @returns {Promise}
      */
     auth(token, trackerName, sockName) {
-        debug('Loading protocol');
+        this._app.debug('Loading protocol');
         return new Promise((resolve, reject) => {
                 protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
                     if (error)
-                        return this.error(error.message);
+                        return reject(error);
 
                     try {
                         this.proto = root;
@@ -86,7 +107,7 @@ class Auth {
                 });
             })
             .then(() => {
-                debug(`Sending SET TOKEN REQUEST`);
+                this._app.debug(`Sending SET TOKEN REQUEST`);
                 let request = this.SetTokenRequest.create({
                     type: this.SetTokenRequest.Type.DAEMON,
                     token: token,
@@ -105,12 +126,9 @@ class Auth {
 
                         switch (message.setTokenResponse.response) {
                             case this.SetTokenResponse.Result.ACCEPTED:
-                                process.exit(0);
-                                break;
+                                return;
                             case this.SetTokenResponse.Result.REJECTED:
-                                console.log('Request rejected');
-                                process.exit(1);
-                                break;
+                                throw new Error('Request rejected');
                             default:
                                 throw new Error('Unsupported response from daemon');
                         }
@@ -127,7 +145,7 @@ class Auth {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] == '/')
+            if (sockName && sockName[0] === '/')
                 sock = sockName;
             else
                 sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
@@ -137,13 +155,13 @@ class Auth {
             };
 
             let socket = net.connect(sock, () => {
-                debug('Connected to daemon');
+                this._app.debug('Connected to daemon');
                 socket.removeListener('error', onError);
                 socket.once('error', error => { this.error(error.message) });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    debug('Got daemon reply');
+                    this._app.debug('Got daemon reply');
                     resolve(data);
                     socket.end();
                 });
@@ -158,8 +176,15 @@ class Auth {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

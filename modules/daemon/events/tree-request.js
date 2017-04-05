@@ -2,7 +2,6 @@
  * Tree Request event
  * @module daemon/events/tree-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class TreeRequest {
         if (!client)
             return;
 
-        debug(`Got TREE REQUEST`);
+        this._logger.debug('tree-request', `Got TREE REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -71,7 +70,7 @@ class TreeRequest {
                     treeResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending TREE RESPONSE`);
+                this._logger.debug('tree-request', `Sending TREE RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -82,10 +81,10 @@ class TreeRequest {
                 return reply(this.daemon.TreeResponse.Result.NOT_REGISTERED);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got TREE RESPONSE from tracker`);
+                this._logger.debug('tree-request', `Got TREE RESPONSE from tracker`);
                 reply(response.treeResponse.response, response.treeResponse.tree);
             };
             this.tracker.on('tree_response', onResponse);

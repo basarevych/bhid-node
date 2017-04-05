@@ -2,7 +2,6 @@
  * Connections List event
  * @module tracker/events/connections-list
  */
-const debug = require('debug')('bhid:tracker');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class ConnectionsList {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'connectionsList' ];
     }
 
     /**
@@ -46,7 +45,7 @@ class ConnectionsList {
      * @param {object} message                  The message
      */
     handle(name, message) {
-        debug(`Got CONNECTIONS LIST from ${name}`);
+        this._logger.debug('connections-list', `Got CONNECTIONS LIST from ${name}`);
         let list = message.connectionsList;
 
         let trackedConnections = this._connectionsList.get(name);
@@ -55,7 +54,7 @@ class ConnectionsList {
             for (let connectionName of trackedConnections.serverConnections.keys()) {
                 let found = false;
                 for (let connection of list.serverConnections || []) {
-                    if (connectionName == connection.name) {
+                    if (connectionName === connection.name) {
                         found = true;
                         break;
                     }
@@ -68,7 +67,7 @@ class ConnectionsList {
             for (let connectionName of trackedConnections.clientConnections.keys()) {
                 let found = false;
                 for (let connection of list.clientConnections || []) {
-                    if (connectionName == connection.name) {
+                    if (connectionName === connection.name) {
                         found = true;
                         break;
                     }

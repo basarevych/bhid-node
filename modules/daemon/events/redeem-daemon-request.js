@@ -2,7 +2,6 @@
  * Redeem Daemon Request event
  * @module daemon/events/redeem-daemon-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class RedeemDaemonRequest {
         if (!client)
             return;
 
-        debug(`Got REDEEM DAEMON REQUEST`);
+        this._logger.debug('redeem-daemon-request', `Got REDEEM DAEMON REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -71,7 +70,7 @@ class RedeemDaemonRequest {
                     redeemDaemonResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending REDEEM DAEMON RESPONSE`);
+                this._logger.debug('redeem-daemon-request', `Sending REDEEM DAEMON RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -80,10 +79,10 @@ class RedeemDaemonRequest {
                 return reply(this.daemon.RedeemDaemonResponse.Result.NO_TRACKER);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got REDEEM DAEMON RESPONSE from tracker`);
+                this._logger.debug('redeem-daemon-request', `Got REDEEM DAEMON RESPONSE from tracker`);
                 reply(response.redeemDaemonResponse.response, response.redeemDaemonResponse.token);
             };
             this.tracker.on('redeem_daemon_response', onResponse);

@@ -2,10 +2,10 @@
  * Install command
  * @module commands/install
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const argvParser = require('argv');
 
 /**
  * Command class
@@ -41,29 +41,41 @@ class Install {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .run(argv);
+
         return this.install()
             .then(() => {
                 process.exit(0);
             })
             .catch(error => {
-                this.error(error.message);
+                return this.error(error.message);
             });
     }
 
+    /**
+     * Install bhid
+     * @return {Promise}
+     */
     install() {
         return Promise.resolve()
             .then(() => {
                 let configDir;
-                if (os.platform() == 'freebsd') {
+                if (os.platform() === 'freebsd') {
                     configDir = '/usr/local/etc/bhid';
-                    debug(`Platform: FreeBSD`);
+                    this._app.debug(`Platform: FreeBSD`);
                 } else {
                     configDir = '/etc/bhid';
-                    debug(`Platform: Linux`);
+                    this._app.debug(`Platform: Linux`);
                 }
 
                 try {
@@ -72,7 +84,7 @@ class Install {
                     try {
                         fs.mkdirSync(configDir, 0o750);
                     } catch (error) {
-                        this.error(`Could not create ${configDir}`);
+                        throw new Error(`Could not create ${configDir}`);
                     }
                 }
                 try {
@@ -81,7 +93,7 @@ class Install {
                     try {
                         fs.mkdirSync(path.join(configDir, 'id'), 0o750);
                     } catch (error) {
-                        this.error(`Could not create ${path.join(configDir, 'id')}`);
+                        throw new Error(`Could not create ${path.join(configDir, 'id')}`);
                     }
                 }
                 try {
@@ -90,7 +102,7 @@ class Install {
                     try {
                         fs.mkdirSync(path.join(configDir, 'peers'), 0o755);
                     } catch (error) {
-                        this.error(`Could not create ${path.join(configDir, 'peers')}`);
+                        throw new Error(`Could not create ${path.join(configDir, 'peers')}`);
                     }
                 }
                 try {
@@ -99,7 +111,7 @@ class Install {
                     try {
                         fs.mkdirSync(path.join(configDir, 'certs'), 0o755);
                     } catch (error) {
-                        this.error(`Could not create ${path.join(configDir, 'certs')}`);
+                        throw new Error(`Could not create ${path.join(configDir, 'certs')}`);
                     }
                 }
                 try {
@@ -108,7 +120,7 @@ class Install {
                     try {
                         fs.mkdirSync('/var/run/bhid', 0o755);
                     } catch (error) {
-                        this.error(`Could not create /var/run/bhid`);
+                        throw new Error(`Could not create /var/run/bhid`);
                     }
                 }
                 try {
@@ -117,24 +129,24 @@ class Install {
                     try {
                         fs.mkdirSync('/var/log/bhid', 0o755);
                     } catch (error) {
-                        this.error(`Could not create /var/log/bhid`);
+                        throw new Error(`Could not create /var/log/bhid`);
                     }
                 }
 
                 try {
-                    debug('Creating default config');
+                    this._app.debug('Creating default config');
                     fs.accessSync(path.join(configDir, 'bhid.conf'), fs.constants.F_OK);
                 } catch (error) {
                     try {
                         let config = fs.readFileSync(path.join(__dirname, '..', 'bhid.conf'), { encoding: 'utf8'});
                         fs.writeFileSync(path.join(configDir, 'bhid.conf'), config, { mode: 0o640 });
                     } catch (error) {
-                        this.error(`Could not create bhid.conf`);
+                        throw new Error(`Could not create bhid.conf`);
                     }
                 }
                 try {
                     fs.accessSync('/etc/systemd/system', fs.constants.F_OK);
-                    debug('Creating systemd service');
+                    this._app.debug('Creating systemd service');
                     let service = fs.readFileSync(path.join(__dirname, '..', 'systemd.service'), {encoding: 'utf8'});
                     fs.writeFileSync('/etc/systemd/system/bhid.service', service, {mode: 0o644});
                 } catch (error) {
@@ -142,7 +154,7 @@ class Install {
                 }
                 try {
                     fs.accessSync('/etc/init.d', fs.constants.F_OK);
-                    debug('Creating sysvinit service');
+                    this._app.debug('Creating sysvinit service');
                     let service = fs.readFileSync(path.join(__dirname, '..', 'sysvinit.service'), {encoding: 'utf8'});
                     fs.writeFileSync('/etc/init.d/bhid', service, {mode: 0o755});
                 } catch (error) {
@@ -161,7 +173,7 @@ class Install {
                 if (keysExist)
                     return;
 
-                debug('Creating RSA keys');
+                this._app.debug('Creating RSA keys');
                 return this._runner.exec(
                         'openssl',
                         [
@@ -175,15 +187,15 @@ class Install {
                             throw new Error('Could not create private key');
 
                         return this._runner.exec(
-                            'openssl',
-                            [
-                                'rsa',
-                                '-in', path.join(configDir, 'id', 'private.rsa'),
-                                '-outform', 'PEM',
-                                '-pubout',
-                                '-out', path.join(configDir, 'id', 'public.rsa')
-                            ]
-                        )
+                                'openssl',
+                                [
+                                    'rsa',
+                                    '-in', path.join(configDir, 'id', 'private.rsa'),
+                                    '-outform', 'PEM',
+                                    '-pubout',
+                                    '-out', path.join(configDir, 'id', 'public.rsa')
+                                ]
+                            )
                             .then(result => {
                                 if (result.code !== 0)
                                     return result;
@@ -206,8 +218,15 @@ class Install {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

@@ -2,7 +2,6 @@
  * Attach Request event
  * @module daemon/events/attach-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class AttachRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'connectionsList' ];
     }
 
     /**
@@ -50,7 +49,7 @@ class AttachRequest {
         if (!client)
             return;
 
-        debug(`Got ATTACH REQUEST`);
+        this._logger.debug('attach-request', `Got ATTACH REQUEST`);
         try {
             let relayId = uuid.v1();
 
@@ -73,7 +72,7 @@ class AttachRequest {
                     attachResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(relay).finish();
-                debug(`Sending ATTACH RESPONSE`);
+                this._logger.debug('attach-request', `Sending ATTACH RESPONSE`);
                 this.daemon.send(id, data);
             };
 
@@ -84,16 +83,16 @@ class AttachRequest {
                 return reply(this.daemon.AttachResponse.Result.NOT_REGISTERED);
             let info = this._connectionsList.getImport(
                 server.name,
-                message.attachRequest.path[0] == '/' ? server.email + message.attachRequest.path : message.attachRequest.path
+                message.attachRequest.path[0] === '/' ? server.email + message.attachRequest.path : message.attachRequest.path
             );
             if (!info || !info.token)
                 return reply(this.daemon.AttachResponse.Result.REJECTED);
 
             onResponse = (name, response) => {
-                if (response.messageId != relayId)
+                if (response.messageId !== relayId)
                     return;
 
-                debug(`Got ATTACH RESPONSE from tracker`);
+                this._logger.debug('attach-request', `Got ATTACH RESPONSE from tracker`);
                 reply(
                     response.attachResponse.response,
                     response.attachResponse.updates

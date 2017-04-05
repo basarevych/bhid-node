@@ -2,7 +2,8 @@
 
 const fs = require('fs-ext');
 
-let pidFile = process.argv.length > 2 && process.argv[2];
+let args = process.argv.slice(2);
+let pidFile = args.shift();
 if (!pidFile) {
     console.error('Usage:\tstatus <pidfile>');
     process.exit(1);
@@ -57,7 +58,7 @@ try {
                     console.error(error.message);
                     process.exit(1);
                 }
-                if (bytesRead != stats.size) {
+                if (bytesRead !== stats.size) {
                     console.error('Could not read PID file');
                     process.exit(1);
                 }

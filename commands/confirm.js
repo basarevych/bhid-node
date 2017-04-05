@@ -2,10 +2,10 @@
  * Confirm command
  * @module commands/confirm
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
 const net = require('net');
 const protobuf = require('protobufjs');
+const argvParser = require('argv');
 const SocketWrapper = require('socket-wrapper');
 
 /**
@@ -42,18 +42,36 @@ class Confirm {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 2)
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'tracker',
+                short: 't',
+                type: 'string',
+            })
+            .option({
+                name: 'socket',
+                short: 'z',
+                type: 'string',
+            })
+            .run(argv);
+
+        if (args.targets.length < 2)
             return this._help.helpConfirm(argv);
 
-        let token = argv['_'][1];
-        let trackerName = argv['t'] || '';
-        let sockName = argv['z'];
+        let token = args.targets[1];
+        let trackerName = args.options['tracker'] || '';
+        let sockName = args.options['socket'];
 
-        debug('Loading protocol');
+        this._app.debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
                 return this.error(error.message);
@@ -67,7 +85,7 @@ class Confirm {
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                debug(`Sending CONFIRM REQUEST`);
+                this._app.debug(`Sending CONFIRM REQUEST`);
                 let request = this.ConfirmRequest.create({
                     trackerName: trackerName,
                     token: token,
@@ -85,7 +103,7 @@ class Confirm {
 
                         switch (message.confirmResponse.response) {
                             case this.ConfirmResponse.Result.ACCEPTED:
-                                debug(`Sending SET TOKEN REQUEST`);
+                                this._app.debug(`Sending SET TOKEN REQUEST`);
                                 request = this.SetTokenRequest.create({
                                     type: this.SetTokenRequest.Type.MASTER,
                                     token: message.confirmResponse.token,
@@ -95,7 +113,7 @@ class Confirm {
                                     setTokenRequest: request,
                                 });
                                 buffer = this.ClientMessage.encode(message).finish();
-                                this.send(buffer, sockName)
+                                return this.send(buffer, sockName)
                                     .then(data => {
                                         message = this.ServerMessage.decode(data);
                                         if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
@@ -103,39 +121,28 @@ class Confirm {
 
                                         switch (message.setTokenResponse.response) {
                                             case this.SetTokenResponse.Result.ACCEPTED:
-                                                console.log('Master token is saved to ~/.bhid/master.token on this computer and will be used automatically');
-                                                process.exit(0);
-                                                break;
+                                                return this._app.info('Master token is saved to ~/.bhid/master.token on this computer and will be used automatically');
                                             case this.SetTokenResponse.Result.REJECTED:
-                                                console.log('Set token request rejected');
-                                                process.exit(1);
-                                                break;
+                                                throw new Error('Set token request rejected');
                                             default:
                                                 throw new Error('Unsupported response from daemon');
                                         }
-                                    })
-                                    .catch(error => {
-                                        this.error(error.message);
                                     });
-                                break;
                             case this.ConfirmResponse.Result.REJECTED:
-                                console.log('Request rejected');
-                                process.exit(1);
-                                break;
+                                throw new Error('Request rejected');
                             case this.ConfirmResponse.Result.TIMEOUT:
-                                console.log('No response from the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('No response from the tracker');
                             case this.ConfirmResponse.Result.NO_TRACKER:
-                                console.log('Not connected to the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not connected to the tracker');
                             default:
                                 throw new Error('Unsupported response from daemon');
                         }
                     })
+                    .then(() => {
+                        process.exit(0);
+                    })
                     .catch(error => {
-                        this.error(error.message);
+                        return this.error(error.message);
                     });
             } catch (error) {
                 return this.error(error.message);
@@ -154,7 +161,7 @@ class Confirm {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] == '/')
+            if (sockName && sockName[0] === '/')
                 sock = sockName;
             else
                 sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
@@ -164,13 +171,13 @@ class Confirm {
             };
 
             let socket = net.connect(sock, () => {
-                debug('Connected to daemon');
+                this._app.debug('Connected to daemon');
                 socket.removeListener('error', onError);
                 socket.once('error', error => { this.error(error.message) });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    debug('Got daemon reply');
+                    this._app.debug('Got daemon reply');
                     resolve(data);
                     socket.end();
                 });
@@ -185,8 +192,15 @@ class Confirm {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

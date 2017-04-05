@@ -2,7 +2,6 @@
  * Peer communications server
  * @module servers/peer
  */
-const debug = require('debug')('bhid:peer');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -53,7 +52,7 @@ class Peer extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.crypter', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'modules.peer.crypter', 'connectionsList' ];
     }
 
     /**
@@ -105,7 +104,7 @@ class Peer extends EventEmitter {
         this._name = name;
 
         return new Promise((resolve, reject) => {
-                debug('Loading protocol');
+                this._logger.debug('peer', 'Loading protocol');
                 protobuf.load(path.join(this._config.base_path, 'proto', 'daemon.proto'), (error, root) => {
                     if (error)
                         return reject(new WError(error, 'Peer.init()'));
@@ -125,7 +124,7 @@ class Peer extends EventEmitter {
                 })
             })
             .then(() => {
-                let configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+                let configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
                 try {
                     fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.F_OK);
                 } catch (error) {
@@ -154,7 +153,7 @@ class Peer extends EventEmitter {
                             return;
 
                         let result = curModule.register(name);
-                        if (result === null || typeof result != 'object' || typeof result.then != 'function')
+                        if (result === null || typeof result !== 'object' || typeof result.then !== 'function')
                             throw new Error(`Module '${curName}' register() did not return a Promise`);
                         return result;
                     });
@@ -162,7 +161,7 @@ class Peer extends EventEmitter {
                 Promise.resolve()
             )
             .then(() => {
-                debug('Starting the server');
+                this._logger.debug('peer', 'Starting the server');
                 this._connectionsList.load();
                 this._timeoutTimer = setInterval(() => { this._checkTimeout(); }, 500);
             });
@@ -184,7 +183,7 @@ class Peer extends EventEmitter {
         if (this.connections.has(fullName))
             return;
 
-        debug(`Starting ${fullName}`);
+        this._logger.debug('peer', `Starting ${fullName}`);
         try {
             let connection = {
                 server: true,
@@ -205,13 +204,13 @@ class Peer extends EventEmitter {
 
             let server = utp.createServer(socket => { this.onConnection(fullName, socket); });
             new Promise((resolveBind, rejectBind) => {
-                    debug('Initiating server socket');
+                    this._logger.debug('peer', 'Initiating server socket');
                     server.bind();
                     server.once('error', error => { rejectBind(error); });
                     server.listen(() => { resolveBind(); })
                 })
                 .then(() => {
-                    debug(`Network server for ${fullName} started`);
+                    this._logger.debug('peer', `Network server for ${fullName} started`);
                     connection.utp = server;
                     this._tracker.sendStatus(tracker, name);
                 })
@@ -239,7 +238,7 @@ class Peer extends EventEmitter {
         if (this.connections.has(fullName))
             return;
 
-        debug(`Starting ${fullName}`);
+        this._logger.debug('peer', `Starting ${fullName}`);
         let connection = {
             server: false,
             name: fullName,
@@ -270,7 +269,7 @@ class Peer extends EventEmitter {
         if (!connection)
             return;
 
-        debug(`Closing ${name}`);
+        this._logger.debug('peer', `Closing ${name}`);
         for (let id of connection.sessions) {
             let session = this.sessions.get(id);
             if (session) {
@@ -394,7 +393,7 @@ class Peer extends EventEmitter {
                 let address = addresses[0].address;
                 let port = addresses[0].port;
                 let session = this.sessions.get(sessionId);
-                debug(`Punching ${name}: ${address}:${port}`);
+                this._logger.debug('peer', `Punching ${name}: ${address}:${port}`);
                 session.utp.punch(this.constructor.punchingAttempts, port, address, success => {
                     if (success)
                         return doConnect(sessionId, address, port);
@@ -430,6 +429,7 @@ class Peer extends EventEmitter {
             wrapper: new SocketWrapper(),
             verified: false,
             accepted: false,
+            established: false,
         };
         this.sessions.set(sessionId, session);
         connection.sessions.add(sessionId);
@@ -463,7 +463,7 @@ class Peer extends EventEmitter {
             return;
 
         for (let id of connection.sessions) {
-            if (id == connection.sessionId)
+            if (id === connection.sessionId)
                 continue;
             let session = this.sessions.get(id);
             if (session) {
@@ -579,6 +579,7 @@ class Peer extends EventEmitter {
             wrapper: new SocketWrapper(socket),
             verified: false,
             accepted: false,
+            established: false,
         };
         this._timeouts.set(
             sessionId,
@@ -653,9 +654,9 @@ class Peer extends EventEmitter {
         }
 
         try {
-            debug(`Incoming message for ${name}: ${message.type}`);
+            this._logger.debug('peer', `Incoming message for ${name}: ${message.type}`);
             if (message.type === this.OuterMessage.Type.BYE) {
-                debug(`Received BYE from ${name}`);
+                this._logger.debug('peer', `Received BYE from ${name}`);
                 return false;
             } else {
                 if (!session.verified || !session.accepted) {
@@ -709,7 +710,7 @@ class Peer extends EventEmitter {
             if (connection.server)
                 established = session && session.verified && session.accepted;
             else
-                established = (connection.sessionId == sessionId);
+                established = (connection.sessionId === sessionId);
 
             connection.sessions.delete(sessionId);
 
@@ -749,13 +750,13 @@ class Peer extends EventEmitter {
         }
 
         let parts = name.split('#');
-        if (parts.length != 2)
+        if (parts.length !== 2)
             return;
 
         let tracker = parts[0];
         let connectionName = parts[1];
 
-        debug(`Socket for ${name} disconnected`);
+        this._logger.debug('peer', `Socket for ${name} disconnected`);
         if (established) {
             let trackedConnections = this._connectionsList.get(tracker);
             if (trackedConnections) {
@@ -813,7 +814,7 @@ class Peer extends EventEmitter {
      * @param {string} sessionId                Session ID
      */
     onTimeout(name, sessionId) {
-        debug(`Socket timeout for ${name}`);
+        this._logger.debug('peer', `Socket timeout for ${name}`);
         this.onClose(name, sessionId);
     }
 

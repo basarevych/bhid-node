@@ -2,7 +2,6 @@
  * Get Connections Request event
  * @module daemon/events/get-connections-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class GetConnectionsRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'connectionsList' ];
     }
 
     /**
@@ -50,7 +49,7 @@ class GetConnectionsRequest {
         if (!client)
             return;
 
-        debug(`Got GET CONNECTIONS REQUEST`);
+        this._logger.debug('get-connections-request', `Got GET CONNECTIONS REQUEST`);
         try {
             let reply = (value, activeList, importedList) => {
                 let reply = this.daemon.GetConnectionsResponse.create({
@@ -63,7 +62,7 @@ class GetConnectionsRequest {
                     getConnectionsResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(result).finish();
-                debug(`Sending GET CONNECTIONS RESPONSE`);
+                this._logger.debug('get-connections-request', `Sending GET CONNECTIONS RESPONSE`);
                 this.daemon.send(id, data);
             };
 

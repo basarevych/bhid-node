@@ -2,10 +2,10 @@
  * Delete command
  * @module commands/delete
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
 const net = require('net');
 const protobuf = require('protobufjs');
+const argvParser = require('argv');
 const SocketWrapper = require('socket-wrapper');
 
 /**
@@ -42,18 +42,36 @@ class Delete {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 2)
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'tracker',
+                short: 't',
+                type: 'string',
+            })
+            .option({
+                name: 'socket',
+                short: 'z',
+                type: 'string',
+            })
+            .run(argv);
+
+        if (args.targets.length < 2)
             return this._help.helpDelete(argv);
 
-        let cpath = argv['_'][1];
-        let trackerName = argv['t'] || '';
-        let sockName = argv['z'];
+        let cpath = args.targets[1];
+        let trackerName = args.options['tracker'] || '';
+        let sockName = args.options['socket'];
 
-        debug('Loading protocol');
+        this._app.debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
                 return this.error(error.message);
@@ -65,7 +83,7 @@ class Delete {
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                debug(`Sending DELETE REQUEST`);
+                this._app.debug(`Sending DELETE REQUEST`);
                 let request = this.DeleteRequest.create({
                     trackerName: trackerName,
                     path: cpath,
@@ -83,38 +101,28 @@ class Delete {
 
                         switch (message.deleteResponse.response) {
                             case this.DeleteResponse.Result.ACCEPTED:
-                                process.exit(0);
-                                break;
+                                return;
                             case this.DeleteResponse.Result.REJECTED:
-                                console.log('Request rejected');
-                                process.exit(1);
-                                break;
+                                throw new Error('Request rejected');
                             case this.DeleteResponse.Result.INVALID_PATH:
-                                console.log('Invalid path');
-                                process.exit(1);
-                                break;
+                                throw new Error('Invalid path');
                             case this.DeleteResponse.Result.PATH_NOT_FOUND:
-                                console.log('Path not found');
-                                process.exit(1);
-                                break;
+                                throw new Error('Path not found');
                             case this.DeleteResponse.Result.TIMEOUT:
-                                console.log('No response from the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('No response from the tracker');
                             case this.DeleteResponse.Result.NO_TRACKER:
-                                console.log('Not connected to the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not connected to the tracker');
                             case this.DeleteResponse.Result.NOT_REGISTERED:
-                                console.log('Not registered with the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not registered with the tracker');
                             default:
                                 throw new Error('Unsupported response from daemon');
                         }
                     })
+                    .then(() => {
+                        process.exit(0);
+                    })
                     .catch(error => {
-                        this.error(error.message);
+                        return this.error(error.message);
                     });
             } catch (error) {
                 return this.error(error.message);
@@ -133,7 +141,7 @@ class Delete {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] == '/')
+            if (sockName && sockName[0] === '/')
                 sock = sockName;
             else
                 sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
@@ -143,13 +151,13 @@ class Delete {
             };
 
             let socket = net.connect(sock, () => {
-                debug('Connected to daemon');
+                this._app.debug('Connected to daemon');
                 socket.removeListener('error', onError);
                 socket.once('error', error => { this.error(error.message) });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    debug('Got daemon reply');
+                    this._app.debug('Got daemon reply');
                     resolve(data);
                     socket.end();
                 });
@@ -164,8 +172,15 @@ class Delete {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

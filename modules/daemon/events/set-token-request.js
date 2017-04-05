@@ -2,7 +2,6 @@
  * Set Token Request event
  * @module daemon/events/set-token-request
  */
-const debug = require('debug')('bhid:daemon');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -48,7 +47,7 @@ class SetTokenRequest {
         if (!client)
             return;
 
-        debug(`Got SET TOKEN REQUEST`);
+        this._logger.debug('set-token-request', `Got SET TOKEN REQUEST`);
         return Promise.resolve()
             .then(() => {
                 switch (message.setTokenRequest.type) {
@@ -69,7 +68,7 @@ class SetTokenRequest {
                     setTokenResponse: reply,
                 });
                 let data = this.daemon.ServerMessage.encode(result).finish();
-                debug(`Sending SET TOKEN RESPONSE`);
+                this._logger.debug('set-token-request', `Sending SET TOKEN RESPONSE`);
                 this.daemon.send(id, data);
             })
             .catch (error => {

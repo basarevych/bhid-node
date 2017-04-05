@@ -2,7 +2,6 @@
  * Connect Request event
  * @module peer/events/connect-request
  */
-const debug = require('debug')('bhid:peer');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class ConnectRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.crypter' ];
+        return [ 'app', 'config', 'logger', 'crypter' ];
     }
 
     /**
@@ -82,11 +81,13 @@ class ConnectRequest {
                 });
                 let buffer = this.peer.OuterMessage.encode(reply).finish();
 
-                debug(session.verified ? 'Sending ACCEPT' : 'Sending REJECT');
+                this._logger.debug('connect-request', session.verified ? 'Sending ACCEPT' : 'Sending REJECT');
                 this.peer.send(name, sessionId, buffer);
 
-                if (session.verified && session.accepted)
+                if (session.verified && session.accepted && !session.established) {
+                    session.established = true;
                     this.peer.emit('established', name, sessionId);
+                }
             })
             .catch(error => {
                 this._logger.error(new WError(error, `ConnectRequest.handle()`));

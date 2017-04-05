@@ -2,10 +2,10 @@
  * Create command
  * @module commands/create
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
 const net = require('net');
 const protobuf = require('protobufjs');
+const argvParser = require('argv');
 const SocketWrapper = require('socket-wrapper');
 
 /**
@@ -42,32 +42,70 @@ class Create {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 3)
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'server',
+                short: 's',
+                type: 'boolean',
+            })
+            .option({
+                name: 'client',
+                short: 'c',
+                type: 'boolean',
+            })
+            .option({
+                name: 'encrypted',
+                short: 'e',
+                type: 'boolean',
+            })
+            .option({
+                name: 'fixed',
+                short: 'f',
+                type: 'boolean',
+            })
+            .option({
+                name: 'tracker',
+                short: 't',
+                type: 'string',
+            })
+            .option({
+                name: 'socket',
+                short: 'z',
+                type: 'string',
+            })
+            .run(argv);
+
+        if (args.targets.length < 3)
             return this._help.helpCreate(argv);
 
-        let cpath = argv['_'][1];
-        let first = argv['_'][2];
-        let second = argv['_'][3] || '';
-        let server = !!argv['s'];
-        let client = !!argv['c'];
-        let encrypted = !!argv['e'];
-        let fixed = !!argv['f'];
-        let trackerName = argv['t'] || '';
-        let sockName = argv['z'];
+        let cpath = args.targets[1];
+        let first = args.targets[2];
+        let second = args.targets[3] || '';
+        let server = !!args.options['server'];
+        let client = !!args.options['client'];
+        let encrypted = !!args.options['encrypted'];
+        let fixed = !!args.options['fixed'];
+        let trackerName = args.options['tracker'] || '';
+        let sockName = args.options['socket'];
 
         if (server && client)
             return this.error('Daemon cannot be a server and a client of the same connection at the same time');
 
         let firstAddress, firstPort;
         let parts = first.split(':');
-        if (parts.length == 2) {
+        if (parts.length === 2) {
             firstAddress = parts[0];
             firstPort = parts[1];
-        } else if (parts.length == 1 && parts[0].length && parts[0][0] == '/') {
+        } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
             firstAddress = '';
             firstPort = parts[0];
         } else {
@@ -77,10 +115,10 @@ class Create {
         let secondAddress, secondPort;
         if (second) {
             parts = second.split(':');
-            if (parts.length == 2) {
+            if (parts.length === 2) {
                 secondAddress = parts[0];
                 secondPort = parts[1];
-            } else if (parts.length == 1 && parts[0].length && parts[0][0] == '/') {
+            } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
                 secondAddress = '';
                 secondPort = parts[0];
             } else {
@@ -91,7 +129,7 @@ class Create {
             secondPort = '';
         }
 
-        debug('Loading protocol');
+        this._app.debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
                 return this.error(error.message);
@@ -112,7 +150,7 @@ class Create {
                 else if (client)
                     type = this.CreateRequest.Type.CLIENT;
 
-                debug(`Sending CREATE REQUEST`);
+                this._app.debug(`Sending CREATE REQUEST`);
                 let request = this.CreateRequest.create({
                     trackerName: trackerName,
                     path: cpath,
@@ -137,48 +175,43 @@ class Create {
 
                         switch (message.createResponse.response) {
                             case this.CreateResponse.Result.ACCEPTED:
-                                console.log(
-                                    'Server token: ' + message.createResponse.serverToken +
-                                    '\n' +
-                                    'Client token: ' + message.createResponse.clientToken
-                                );
-                                if (type != this.CreateRequest.Type.NOT_CONNECTED) {
-                                    console.log('This daemon is configured as ' + (client ? 'client' : 'server'));
-                                }
-                                if (type == this.CreateRequest.Type.NOT_CONNECTED)
-                                    process.exit(0);
-                                this.update(trackerName, message.createResponse.updates, sockName);
-                                break;
+                                return this._app.info(
+                                        'Server token: ' + message.createResponse.serverToken +
+                                        '\n' +
+                                        'Client token: ' + message.createResponse.clientToken + '\n'
+                                    )
+                                    .then(() => {
+                                        if (type !== this.CreateRequest.Type.NOT_CONNECTED)
+                                            return this._app.info('This daemon is configured as ' + (client ? 'client' : 'server'));
+                                    })
+                                    .then(() => {
+                                        if (type === this.CreateRequest.Type.NOT_CONNECTED)
+                                            process.exit(0);
+                                    })
+                                    .then(() => {
+                                        return this.update(trackerName, message.createResponse.updates, sockName);
+                                    });
                             case this.CreateResponse.Result.REJECTED:
-                                console.log('Request rejected');
-                                process.exit(1);
-                                break;
+                                throw new Error('Request rejected');
                             case this.CreateResponse.Result.INVALID_PATH:
-                                console.log('Invalid path');
-                                process.exit(1);
-                                break;
+                                throw new Error('Invalid path');
                             case this.CreateResponse.Result.PATH_EXISTS:
-                                console.log('Path exists');
-                                process.exit(1);
-                                break;
+                                throw new Error('Path exists');
                             case this.CreateResponse.Result.TIMEOUT:
-                                console.log('No response from the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('No response from the tracker');
                             case this.CreateResponse.Result.NO_TRACKER:
-                                console.log('Not connected to the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not connected to the tracker');
                             case this.CreateResponse.Result.NOT_REGISTERED:
-                                console.log('Not registered with the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not registered with the tracker');
                             default:
                                 throw new Error('Unsupported response from daemon');
                         }
                     })
+                    .then(() => {
+                        process.exit(0);
+                    })
                     .catch(error => {
-                        this.error(error.message);
+                        return this.error(error.message);
                     });
             } catch (error) {
                 return this.error(error.message);
@@ -193,10 +226,11 @@ class Create {
      * @param {string} trackerName                      Name of the tracker
      * @param {object} [list]                           List of updated connections
      * @param {string} [sockName]                       Socket name
+     * @return {Promise}
      */
     update(trackerName, list, sockName) {
         if (!list)
-            process.exit(0);
+            return Promise.resolve();
 
         let request = this.UpdateConnectionsRequest.create({
             trackerName: trackerName,
@@ -207,7 +241,7 @@ class Create {
             updateConnectionsRequest: request,
         });
         let buffer = this.ClientMessage.encode(message).finish();
-        this.send(buffer, sockName)
+        return this.send(buffer, sockName)
             .then(data => {
                 let message = this.ServerMessage.decode(data);
                 if (message.type !== this.ServerMessage.Type.UPDATE_CONNECTIONS_RESPONSE)
@@ -215,18 +249,12 @@ class Create {
 
                 switch (message.updateConnectionsResponse.response) {
                     case this.UpdateConnectionsResponse.Result.ACCEPTED:
-                        process.exit(0);
-                        break;
+                        return;
                     case this.UpdateConnectionsResponse.Result.REJECTED:
-                        console.log('Could not start the connection');
-                        process.exit(1);
-                        break;
+                        throw new Error('Could not start the connection');
                     default:
                         throw new Error('Unsupported response from daemon');
                 }
-            })
-            .catch(error => {
-                this.error(error.message);
             });
     }
 
@@ -239,7 +267,7 @@ class Create {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] == '/')
+            if (sockName && sockName[0] === '/')
                 sock = sockName;
             else
                 sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
@@ -249,13 +277,13 @@ class Create {
             };
 
             let socket = net.connect(sock, () => {
-                debug('Connected to daemon');
+                this._app.debug('Connected to daemon');
                 socket.removeListener('error', onError);
                 socket.once('error', error => { this.error(error.message) });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    debug('Got daemon reply');
+                    this._app.debug('Got daemon reply');
                     resolve(data);
                     socket.end();
                 });
@@ -270,8 +298,15 @@ class Create {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

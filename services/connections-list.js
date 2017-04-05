@@ -1,8 +1,7 @@
 /**
  * Connections list
- * @module peer/services/connections-list
+ * @module services/connections-list
  */
-const debug = require('debug')('bhid:connections-list');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -26,11 +25,11 @@ class ConnectionsList {
     }
 
     /**
-     * Service name is 'modules.peer.connectionsList'
+     * Service name is 'connectionsList'
      * @type {string}
      */
     static get provides() {
-        return 'modules.peer.connectionsList';
+        return 'connectionsList';
     }
 
     /**
@@ -102,7 +101,7 @@ class ConnectionsList {
      */
     load() {
         try {
-            let configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+            let configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
             try {
                 fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.R_OK);
             } catch (error) {
@@ -126,9 +125,9 @@ class ConnectionsList {
                         name: section.substring(tracker.length + 1, section.length - this.constructor.serverSection.length),
                         connectAddress: bhidConfig[section]['connect_address'],
                         connectPort: bhidConfig[section]['connect_port'],
-                        encrypted: bhidConfig[section]['encrypted'] == 'yes',
-                        fixed: bhidConfig[section]['fixed'] == 'yes',
-                        clients: (bhidConfig[section]['fixed'] == 'yes') ? bhidConfig[section]['clients'] : [],
+                        encrypted: bhidConfig[section]['encrypted'] === 'yes',
+                        fixed: bhidConfig[section]['fixed'] === 'yes',
+                        clients: (bhidConfig[section]['fixed'] === 'yes') ? bhidConfig[section]['clients'] : [],
                         connected: 0,
                     };
                     conf.serverConnections.set(connection.name, connection);
@@ -159,8 +158,8 @@ class ConnectionsList {
                         name: section.substring(tracker.length + 1, section.length - this.constructor.clientSection.length),
                         listenAddress: bhidConfig[section]['listen_address'],
                         listenPort: bhidConfig[section]['listen_port'],
-                        encrypted: bhidConfig[section]['encrypted'] == 'yes',
-                        fixed: bhidConfig[section]['fixed'] == 'yes',
+                        encrypted: bhidConfig[section]['encrypted'] === 'yes',
+                        fixed: bhidConfig[section]['fixed'] === 'yes',
                         server: bhidConfig[section]['server'] || '',
                         connected: 0,
                     };
@@ -260,7 +259,7 @@ class ConnectionsList {
 
         let connected = 0, found;
         for (let [ thisName, thisConnection ] of server ? conf.serverConnections : conf.clientConnections) {
-            if (thisName == connectionName) {
+            if (thisName === connectionName) {
                 found = trackerName + '#' + thisName;
                 if (!restart)
                     connected = thisConnection.connected;
@@ -328,7 +327,7 @@ class ConnectionsList {
         if (!connection)
             return;
 
-        if (connection.listenPort == port)
+        if (connection.listenPort === port)
             return;
 
         connection.listenPort = port;
@@ -365,7 +364,7 @@ class ConnectionsList {
      */
     save() {
         try {
-            let configPath = (os.platform() == 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+            let configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
             try {
                 fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.R_OK);
             } catch (error) {

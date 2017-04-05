@@ -2,11 +2,11 @@
  * Load command
  * @module commands/load
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
 const net = require('net');
 const protobuf = require('protobufjs');
 const read = require('read');
+const argvParser = require('argv');
 const SocketWrapper = require('socket-wrapper');
 const Table = require('easy-table');
 
@@ -42,15 +42,38 @@ class Load {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
-        let trackerName = argv['t'] || '';
-        let force = argv['f'] || false;
-        let sockName = argv['z'];
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'force',
+                short: 'f',
+                type: 'boolean',
+            })
+            .option({
+                name: 'tracker',
+                short: 't',
+                type: 'string',
+            })
+            .option({
+                name: 'socket',
+                short: 'z',
+                type: 'string',
+            })
+            .run(argv);
 
-        debug('Loading protocol');
+        let trackerName = args.options['tracker'] || '';
+        let force = !!args.options['force'];
+        let sockName = args.options['socket'];
+
+        this._app.debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
                 return this.error(error.message);
@@ -64,7 +87,7 @@ class Load {
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                debug(`Sending CONNECTION LIST REQUEST`);
+                this._app.debug(`Sending CONNECTION LIST REQUEST`);
                 let request = this.ConnectionsListRequest.create({
                     trackerName: trackerName,
                 });
@@ -82,42 +105,42 @@ class Load {
                         switch (message.connectionsListResponse.response) {
                             case this.ConnectionsListResponse.Result.ACCEPTED:
                                 if (force) {
-                                    this.load(trackerName, message.connectionsListResponse.list, sockName);
+                                    return this.load(trackerName, message.connectionsListResponse.list, sockName);
                                 } else {
-                                    this.printTable(message.connectionsListResponse.list);
-                                    read({prompt: '\nAccept? (yes/no): '}, (error, answer) => {
-                                        if (error)
-                                            return this.error(error.message);
+                                    return this.printTable(message.connectionsListResponse.list)
+                                        .then(() => {
+                                            return new Promise((resolve, reject) => {
+                                                read({ prompt: '\nAccept? (yes/no): ' }, (error, answer) => {
+                                                    if (error)
+                                                        return reject(error);
 
-                                        if (answer.toLowerCase() == 'yes' || answer.toLowerCase() == 'y')
-                                            this.load(trackerName, message.connectionsListResponse.list, sockName);
-                                        else
-                                            process.exit(0);
-                                    });
+                                                    resolve(answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y');
+                                                });
+                                            });
+                                        })
+                                        .then(load => {
+                                            if (load)
+                                                return this.load(trackerName, message.connectionsListResponse.list, sockName);
+                                        });
                                 }
                                 break;
                             case this.ConnectionsListResponse.Result.REJECTED:
-                                console.log('Request rejected');
-                                process.exit(1);
-                                break;
+                                throw new Error('Request rejected');
                             case this.ConnectionsListResponse.Result.TIMEOUT:
-                                console.log('No response from the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('No response from the tracker');
                             case this.ConnectionsListResponse.Result.NO_TRACKER:
-                                console.log('Not connected to the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not connected to the tracker');
                             case this.ConnectionsListResponse.Result.NOT_REGISTERED:
-                                console.log('Not registered with the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not registered with the tracker');
                             default:
                                 throw new Error('Unsupported response from daemon');
                         }
                     })
+                    .then(() => {
+                        process.exit(0);
+                    })
                     .catch(error => {
-                        this.error(error.message);
+                        return this.error(error.message);
                     });
             } catch (error) {
                 return this.error(error.message);
@@ -130,10 +153,11 @@ class Load {
     /**
      * Print the table
      * @param {object} list
+     * @return {Promise}
      */
     printTable(list) {
         if (!list.serverConnections.length && !list.clientConnections.length)
-            return console.log('No connections defined');
+            return this._app.info('No connections defined');
 
         let table = new Table();
         list.serverConnections.forEach(row => {
@@ -156,7 +180,7 @@ class Load {
             table.cell('Peers', row.server);
             table.newRow();
         });
-        console.log(table.toString().trim() + '\n');
+        return this._app.info(table.toString().trim());
     }
 
     /**
@@ -164,6 +188,7 @@ class Load {
      * @param {string} trackerName                      Name of the tracker
      * @param {object} list                             List as in the protocol
      * @param {string} [sockName]                       Socket name
+     * @return {Promise}
      */
     load(trackerName, list, sockName) {
         let request = this.SetConnectionsRequest.create({
@@ -175,7 +200,7 @@ class Load {
             setConnectionsRequest: request,
         });
         let buffer = this.ClientMessage.encode(message).finish();
-        this.send(buffer, sockName)
+        return this.send(buffer, sockName)
             .then(data => {
                 let message = this.ServerMessage.decode(data);
                 if (message.type !== this.ServerMessage.Type.SET_CONNECTIONS_RESPONSE)
@@ -183,18 +208,12 @@ class Load {
 
                 switch (message.setConnectionsResponse.response) {
                     case this.SetConnectionsResponse.Result.ACCEPTED:
-                        process.exit(0);
-                        break;
+                        return;
                     case this.SetConnectionsResponse.Result.REJECTED:
-                        console.log('Request rejected');
-                        process.exit(1);
-                        break;
+                        throw new Error('Request rejected');
                     default:
                         throw new Error('Unsupported response from daemon');
                 }
-            })
-            .catch(error => {
-                this.error(error.message);
             });
     }
 
@@ -207,7 +226,7 @@ class Load {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] == '/')
+            if (sockName && sockName[0] === '/')
                 sock = sockName;
             else
                 sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
@@ -217,13 +236,13 @@ class Load {
             };
 
             let socket = net.connect(sock, () => {
-                debug('Connected to daemon');
+                this._app.debug('Connected to daemon');
                 socket.removeListener('error', onError);
                 socket.once('error', error => { this.error(error.message) });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    debug('Got daemon reply');
+                    this._app.debug('Got daemon reply');
                     resolve(data);
                     socket.end();
                 });
@@ -238,8 +257,15 @@ class Load {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

@@ -2,10 +2,10 @@
  * Attach command
  * @module commands/attach
  */
-const debug = require('debug')('bhid:command');
 const path = require('path');
 const net = require('net');
 const protobuf = require('protobufjs');
+const argvParser = require('argv');
 const SocketWrapper = require('socket-wrapper');
 
 /**
@@ -42,25 +42,43 @@ class Attach {
 
     /**
      * Run the command
-     * @param {object} argv             Minimist object
+     * @param {string[]} argv           Arguments
      * @return {Promise}
      */
     run(argv) {
-        if (argv['_'].length < 2)
+        let args = argvParser
+            .option({
+                name: 'help',
+                short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'tracker',
+                short: 't',
+                type: 'string',
+            })
+            .option({
+                name: 'socket',
+                short: 'z',
+                type: 'string',
+            })
+            .run(argv);
+
+        if (args.targets.length < 2)
             return this._help.helpAttach(argv);
 
-        let apath = argv['_'][1];
-        let override = argv['_'][2] || '';
-        let trackerName = argv['t'] || '';
-        let sockName = argv['z'];
+        let apath = args.targets[1];
+        let override = args.targets[2] || '';
+        let trackerName = args.options['tracker'] || '';
+        let sockName = args.options['socket'];
 
         let overrideAddress, overridePort;
         if (override) {
             let parts = override.split(':');
-            if (parts.length == 2) {
+            if (parts.length === 2) {
                 overrideAddress = parts[0];
                 overridePort = parts[1];
-            } else if (parts.length == 1 && parts[0].length && parts[0][0] == '/') {
+            } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
                 overrideAddress = '';
                 overridePort = parts[0];
             } else {
@@ -71,7 +89,7 @@ class Attach {
             overridePort = '';
         }
 
-        debug('Loading protocol');
+        this._app.debug('Loading protocol');
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
                 return this.error(error.message);
@@ -86,7 +104,7 @@ class Attach {
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                debug(`Sending ATTACH REQUEST`);
+                this._app.debug(`Sending ATTACH REQUEST`);
                 let request = this.AttachRequest.create({
                     trackerName: trackerName,
                     path: apath,
@@ -106,42 +124,30 @@ class Attach {
 
                         switch (message.attachResponse.response) {
                             case this.AttachResponse.Result.ACCEPTED:
-                                this.update(trackerName, message.attachResponse.updates, sockName);
-                                break;
+                                return this.update(trackerName, message.attachResponse.updates, sockName);
                             case this.AttachResponse.Result.REJECTED:
-                                console.log('Request rejected');
-                                process.exit(1);
-                                break;
+                                throw new Error('Request rejected');
                             case this.AttachResponse.Result.INVALID_PATH:
-                                console.log('Invalid path');
-                                process.exit(1);
-                                break;
+                                throw new Error('Invalid path');
                             case this.AttachResponse.Result.PATH_NOT_FOUND:
-                                console.log('Path not found');
-                                process.exit(1);
-                                break;
+                                throw new Error('Path not found');
                             case this.AttachResponse.Result.ALREADY_ATTACHED:
-                                console.log('Already attached');
-                                process.exit(1);
-                                break;
+                                throw new Error('Already attached');
                             case this.AttachResponse.Result.TIMEOUT:
-                                console.log('No response from the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('No response from the tracker');
                             case this.AttachResponse.Result.NO_TRACKER:
-                                console.log('Not connected to the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not connected to the tracker');
                             case this.AttachResponse.Result.NOT_REGISTERED:
-                                console.log('Not registered with the tracker');
-                                process.exit(1);
-                                break;
+                                throw new Error('Not registered with the tracker');
                             default:
                                 throw new Error('Unsupported response from daemon');
                         }
                     })
+                    .then(() => {
+                        process.exit(0);
+                    })
                     .catch(error => {
-                        this.error(error.message);
+                        return this.error(error.message);
                     });
             } catch (error) {
                 return this.error(error.message);
@@ -156,10 +162,11 @@ class Attach {
      * @param {string} trackerName                      Name of the tracker
      * @param {object} [list]                           List of updated connections
      * @param {string} [sockName]                       Name of socket
+     * @return {Promise}
      */
     update(trackerName, list, sockName) {
         if (!list)
-            process.exit(0);
+            return Promise.resolve();
 
         let request = this.UpdateConnectionsRequest.create({
             trackerName: trackerName,
@@ -170,7 +177,7 @@ class Attach {
             updateConnectionsRequest: request,
         });
         let buffer = this.ClientMessage.encode(message).finish();
-        this.send(buffer, sockName)
+        return this.send(buffer, sockName)
             .then(data => {
                 let message = this.ServerMessage.decode(data);
                 if (message.type !== this.ServerMessage.Type.UPDATE_CONNECTIONS_RESPONSE)
@@ -178,18 +185,12 @@ class Attach {
 
                 switch (message.updateConnectionsResponse.response) {
                     case this.UpdateConnectionsResponse.Result.ACCEPTED:
-                        process.exit(0);
-                        break;
+                        return;
                     case this.UpdateConnectionsResponse.Result.REJECTED:
-                        console.log('Could not start the connection');
-                        process.exit(1);
-                        break;
+                        throw new Error('Could not start the connection');
                     default:
                         throw new Error('Unsupported response from daemon');
                 }
-            })
-            .catch(error => {
-                this.error(error.message);
             });
     }
 
@@ -202,7 +203,7 @@ class Attach {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] == '/')
+            if (sockName && sockName[0] === '/')
                 sock = sockName;
             else
                 sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
@@ -212,13 +213,13 @@ class Attach {
             };
 
             let socket = net.connect(sock, () => {
-                debug('Connected to daemon');
+                this._app.debug('Connected to daemon');
                 socket.removeListener('error', onError);
                 socket.once('error', error => { this.error(error.message) });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    debug('Got daemon reply');
+                    this._app.debug('Got daemon reply');
                     resolve(data);
                     socket.end();
                 });
@@ -233,8 +234,15 @@ class Attach {
      * @param {...*} args
      */
     error(...args) {
-        console.error(...args);
-        process.exit(1);
+        return this._app.error(...args)
+            .then(
+                () => {
+                    process.exit(1);
+                },
+                () => {
+                    process.exit(1);
+                }
+            );
     }
 }
 

@@ -48,7 +48,7 @@ class Peer {
      * @return {Promise}
      */
     register(name) {
-        if (this._config.get(`servers.${name}.class`) != 'servers.peer')
+        if (this._config.get(`servers.${name}.class`) !== 'servers.peer')
             return Promise.resolve();
 
         let server = this._app.get('servers').get('peer');

@@ -2,7 +2,6 @@
  * Connection event
  * @module tracker/events/connection
  */
-const debug = require('debug')('bhid:tracker');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class Connection {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.crypter' ];
+        return [ 'app', 'config', 'logger', 'crypter' ];
     }
 
     /**
@@ -49,7 +48,7 @@ class Connection {
         if (!server || !server.token)
             return;
 
-        debug(`${name} connected - registering`);
+        this._logger.debug('connection', `${name} connected - registering`);
         try {
             let msgId = uuid.v1();
 
@@ -59,7 +58,7 @@ class Connection {
 
                 this.tracker.removeListener('register_daemon_response', onResponse);
 
-                debug(`Got REGISTER DAEMON RESPONSE from tracker`);
+                this._logger.debug('connection', `Got REGISTER DAEMON RESPONSE from tracker`);
                 switch (response.registerDaemonResponse.response) {
                     case this.tracker.RegisterDaemonResponse.Result.ACCEPTED:
                         server.registered = true;
@@ -71,7 +70,7 @@ class Connection {
                         this.tracker._logger.error(`Tracker ${name} refused to register this daemon`);
                         break;
                     default:
-                        debug('Unsupported response from daemon');
+                        this._logger.debug('connection', 'Unsupported response from daemon');
                 }
             };
             this.tracker.on('register_daemon_response', onResponse);

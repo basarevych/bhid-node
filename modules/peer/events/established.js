@@ -2,7 +2,6 @@
  * Established event
  * @module peer/events/established
  */
-const debug = require('debug')('bhid:peer');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class Established {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'connectionsList' ];
     }
 
     /**
@@ -58,7 +57,7 @@ class Established {
             return;
 
         let parts = name.split('#');
-        if (parts.length != 2)
+        if (parts.length !== 2)
             return;
 
         try {

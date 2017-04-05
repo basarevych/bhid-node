@@ -2,7 +2,6 @@
  * Server Available event
  * @module tracker/events/server-available
  */
-const debug = require('debug')('bhid:tracker');
 const uuid = require('uuid');
 const WError = require('verror').WError;
 
@@ -37,7 +36,7 @@ class ServerAvailable {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'connectionsList' ];
     }
 
     /**
@@ -51,7 +50,7 @@ class ServerAvailable {
         if (!connection || connection.server)
             return;
 
-        debug(`Got SERVER AVAILABLE for ${connectionName}`);
+        this._logger.debug('server-available', `Got SERVER AVAILABLE for ${connectionName}`);
 
         let success = true;
         if (connection.peers.length === 0) {

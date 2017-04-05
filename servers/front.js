@@ -2,7 +2,6 @@
  * Front connections server and client
  * @module servers/front
  */
-const debug = require('debug')('bhid:front');
 const net = require('net');
 const uuid = require('uuid');
 const EventEmitter = require('events');
@@ -44,7 +43,7 @@ class Front extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.connectionsList' ];
+        return [ 'app', 'config', 'logger', 'connectionsList' ];
     }
 
     /**
@@ -88,7 +87,7 @@ class Front extends EventEmitter {
                             return;
 
                         let result = curModule.register(name);
-                        if (result === null || typeof result != 'object' || typeof result.then != 'function')
+                        if (result === null || typeof result !== 'object' || typeof result.then !== 'function')
                             throw new Error(`Module '${curName}' register() did not return a Promise`);
                         return result;
                     });
@@ -96,7 +95,7 @@ class Front extends EventEmitter {
                 Promise.resolve()
             )
             .then(() => {
-                debug('Starting the server');
+                this._logger.debug('front', 'Starting the server');
             });
     }
 
@@ -108,7 +107,7 @@ class Front extends EventEmitter {
      * @param {string} port                     Server port
      */
     openServer(name, tunnelId, address, port) {
-        debug(`Opening front for ${name}`);
+        this._logger.debug('front', `Opening front for ${name}`);
         let connection = this.connections.get(name);
         if (connection && !connection.server) {
             this.close(name);
@@ -148,12 +147,12 @@ class Front extends EventEmitter {
         if (connection)
             return;
 
-        if (address == '*')
+        if (address === '*')
             address = '';
-        if (port == '*')
+        if (port === '*')
             port = '';
 
-        debug(`Opening front for ${name}`);
+        this._logger.debug('front', `Opening front for ${name}`);
         connection = {
             name: name,
             server: false,
@@ -172,7 +171,7 @@ class Front extends EventEmitter {
 
             switch (error.code) {
                 case 'EACCES':
-                    this._logger.error(`${name}: port ${address}:${port} requires elevated privileges`);
+                    this._logger.error(`${name}: Could not bind to ${address}:${port}`);
                     setTimeout(() => { bind(); }, this.constructor.bindPause);
                     break;
                 case 'EADDRINUSE':
@@ -229,7 +228,7 @@ class Front extends EventEmitter {
      * @param {string} id                       Session ID
      */
     connect(name, tunnelId, id) {
-        debug(`Connecting front to ${name}`);
+        this._logger.debug('front', `Connecting front to ${name}`);
 
         let connection = this.connections.get(name);
         if (!connection)
@@ -254,7 +253,7 @@ class Front extends EventEmitter {
                     id: id,
                 });
                 let buffer = this._peer.InnerMessage.encode(message).finish();
-                debug(`Sending disconnect to ${name}`);
+                this._logger.debug('front', `Sending disconnect to ${name}`);
                 this._peer.sendInnerMessage(
                     name,
                     tunnelId,
@@ -274,7 +273,7 @@ class Front extends EventEmitter {
         info.socket = net.connect(
             options,
             () => {
-                debug(`Connected front to ${name}`);
+                this._logger.debug('front', `Connected front to ${name}`);
                 info.connected = true;
                 info.socket.setTimeout(0);
 
@@ -298,7 +297,7 @@ class Front extends EventEmitter {
      * @param {Buffer} data                     Message
      */
     relay(name, tunnelId, id, data) {
-        debug(`Relaying outgoing message to front of ${name}`);
+        this._logger.debug('front', `Relaying outgoing message to front of ${name}`);
 
         let connection = this.connections.get(name);
         if (!connection)
@@ -317,7 +316,7 @@ class Front extends EventEmitter {
                     id: id,
                 });
                 let buffer = this._peer.InnerMessage.encode(message).finish();
-                debug(`Sending disconnect to ${name}`);
+                this._logger.debug('front', `Sending disconnect to ${name}`);
                 this._peer.sendInnerMessage(
                     name,
                     tunnelId,
@@ -344,7 +343,7 @@ class Front extends EventEmitter {
      * @param {string} id                       Session ID
      */
     disconnect(name, tunnelId, id) {
-        debug(`Disconnecting front to ${name}`);
+        this._logger.debug('front', `Disconnecting front to ${name}`);
 
         let connection = this.connections.get(name);
         if (!connection)
@@ -374,7 +373,7 @@ class Front extends EventEmitter {
         if (!connection)
             return;
 
-        debug(`Closing front for ${name}`);
+        this._logger.debug('front', `Closing front for ${name}`);
         if (connection.server) {
             for (let [ id, info ] of connection.targets) {
                 if (!tunnelId || info.tunnelId === tunnelId) {
@@ -405,7 +404,7 @@ class Front extends EventEmitter {
      * @param {object} socket                   New connection
      */
     onConnection(name, tunnelId, socket) {
-        debug(`New front connection for ${name}`);
+        this._logger.debug('front', `New front connection for ${name}`);
 
         let connection = this.connections.get(name);
         if (!connection) {
@@ -433,7 +432,7 @@ class Front extends EventEmitter {
                 id: id,
             });
             let buffer = this._peer.InnerMessage.encode(message).finish();
-            debug(`Sending connect to ${name}`);
+            this._logger.debug('front', `Sending connect to ${name}`);
             this._peer.sendInnerMessage(
                 name,
                 tunnelId,
@@ -451,7 +450,7 @@ class Front extends EventEmitter {
      * @param {Buffer} data                     Message
      */
     onData(name, sessionId, data) {
-        debug(`Relaying incoming message from front of ${name}`);
+        this._logger.debug('front', `Relaying incoming message from front of ${name}`);
 
         let connection = this.connections.get(name);
         if (!connection)
@@ -472,7 +471,7 @@ class Front extends EventEmitter {
                 data: data,
             });
             let buffer = this._peer.InnerMessage.encode(message).finish();
-            debug(`Sending data to ${name}`);
+            this._logger.debug('front', `Sending data to ${name}`);
             this._peer.sendInnerMessage(
                 name,
                 info.tunnelId,
@@ -502,7 +501,7 @@ class Front extends EventEmitter {
      * @param {string} sessionId                Session ID
      */
     onTimeout(name, sessionId) {
-        debug(`Socket timeout for ${name}`);
+        this._logger.debug('front', `Socket timeout for ${name}`);
         this.onClose(name, sessionId);
     }
 
@@ -512,7 +511,7 @@ class Front extends EventEmitter {
      * @param {string} sessionId                Session ID
      */
     onClose(name, sessionId) {
-        debug(`Socket for ${name} disconnected`);
+        this._logger.debug('front', `Socket for ${name} disconnected`);
 
         let connection = this.connections.get(name);
         if (!connection)
@@ -548,7 +547,7 @@ class Front extends EventEmitter {
                 id: sessionId,
             });
             let buffer = this._peer.InnerMessage.encode(message).finish();
-            debug(`Sending disconnect to ${name}`);
+            this._logger.debug('front', `Sending disconnect to ${name}`);
             this._peer.sendInnerMessage(
                 name,
                 info.tunnelId,
