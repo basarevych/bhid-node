@@ -55,11 +55,13 @@ class ConnectResponse {
         session.accepted = (message.connectResponse.response === this.peer.ConnectResponse.Result.ACCEPTED);
         if (!session.accepted) {
             this._logger.info(`Peer of ${name} rejected our connection request: ${session.socket.remoteAddress}:${session.socket.remotePort}`);
-            let reply = this.peer.OuterMessage.create({
-                type: this.peer.OuterMessage.Type.BYE,
-            });
-            let buffer = this.peer.OuterMessage.encode(reply).finish();
-            this.peer.send(name, sessionId, buffer, true);
+            setTimeout(() => {
+                let reply = this.peer.OuterMessage.create({
+                    type: this.peer.OuterMessage.Type.BYE,
+                });
+                let buffer = this.peer.OuterMessage.encode(reply).finish();
+                this.peer.send(name, sessionId, buffer, true);
+            }, 3000);
         }
 
         if (session.verified && session.accepted && !session.established) {

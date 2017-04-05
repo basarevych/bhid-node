@@ -68,8 +68,9 @@ class ConnectRequest {
                     let cryptSession = this._crypter.sessions.get(sessionId);
                     cryptSession.peerKey = new Uint8Array(Buffer.from(message.connectRequest.publicKey, 'base64'));
                     cryptSession.peerName = result.name;
+                    this._logger.info(`Peer for ${name} authenticated as ${result.name} (${session.socket.address().address}:${session.socket.address().port})`);
                 } else {
-                    this._logger.info(`Peer for ${name} rejected: ${session.socket.remoteAddress}:${session.socket.remotePort}`);
+                    this._logger.info(`Peer for ${name} rejected: ${session.socket.address().address}:${session.socket.address().port}`);
                 }
 
                 let response = this.peer.ConnectResponse.create({

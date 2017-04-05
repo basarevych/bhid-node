@@ -158,10 +158,19 @@ class Crypter {
                                 if (message.lookupIdentityResponse.response !== this._tracker.LookupIdentityResponse.Result.FOUND)
                                     return resolve(false);
 
+                                let peersPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid/peers' : '/etc/bhid/peers');
+                                try {
+                                    fs.accessSync(path.join(peersPath, tracker, message.lookupIdentityResponse.name + '.rsa'), fs.constants.F_OK);
+                                    this._logger.info(`Possibly forged identity of ${message.lookupIdentityResponse.name} (${tracker})`);
+                                    return resolve(false);
+                                } catch (error) {
+                                    // do nothing
+                                }
+
                                 this._savePeer(tracker, message.lookupIdentityResponse.name, message.lookupIdentityResponse.key)
                                     .then(
                                         () => {
-                                            this._logger.info('crypter', `Identity of ${message.lookupIdentityResponse.name} (${tracker}) saved`);
+                                            this._logger.info(`Identity of ${message.lookupIdentityResponse.name} (${tracker}) saved`);
                                             resolve({
                                                 name: message.lookupIdentityResponse.name,
                                                 key: new NodeRSA(message.lookupIdentityResponse.key),
@@ -309,17 +318,17 @@ class Crypter {
         return new Promise((resolve, reject) => {
             try {
                 for (let file of fs.readdirSync(path.join(peersPath, tracker))) {
-                    let buffer = fs.readFileSync(path.join(peersPath, tracker, file));
+                    let contents = fs.readFileSync(path.join(peersPath, tracker, file), 'utf8');
 
                     let hash = crypto.createHash(this._hash);
-                    hash.update(buffer.toString('base64'));
+                    hash.update(contents.toString('base64'));
                     let thisIdentity = hash.digest('hex');
                     if (identity === thisIdentity) {
                         let name = file.replace(/^(.*)\.rsa$/, '$1');
                         this._logger.debug('crypter', `Found saved identity for ${name}`);
                         return resolve({
                             name: name,
-                            key: new NodeRSA(buffer),
+                            key: new NodeRSA(contents),
                         });
                     }
                 }
