@@ -52,7 +52,7 @@ class Peer extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'modules.peer.crypter', 'connectionsList' ];
+        return [ 'app', 'config', 'logger', 'crypter', 'connectionsList' ];
     }
 
     /**

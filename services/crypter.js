@@ -140,7 +140,7 @@ class Crypter {
         if (!session)
             return Promise.resolve({ verified: false });
 
-        return this._loadPeer(identity)
+        return this._loadPeer(tracker, identity)
             .then(peer => {
                 if (peer)
                     return peer;
@@ -158,10 +158,23 @@ class Crypter {
                                 if (message.lookupIdentityResponse.response !== this._tracker.LookupIdentityResponse.Result.FOUND)
                                     return resolve(false);
 
-                                resolve({
-                                    name: message.lookupIdentityResponse.name,
-                                    key: new NodeRSA(message.lookupIdentityResponse.key),
-                                });
+                                this._savePeer(tracker, message.lookupIdentityResponse.name, message.lookupIdentityResponse.key)
+                                    .then(
+                                        () => {
+                                            this._logger.info('crypter', `Identity of ${message.lookupIdentityResponse.name} (${tracker}) saved`);
+                                            resolve({
+                                                name: message.lookupIdentityResponse.name,
+                                                key: new NodeRSA(message.lookupIdentityResponse.key),
+                                            });
+                                        },
+                                        error => {
+                                            this._logger.debug('crypter', `Could not save identity: ${error.message}`);
+                                            resolve({
+                                                name: message.lookupIdentityResponse.name,
+                                                key: new NodeRSA(message.lookupIdentityResponse.key),
+                                            });
+                                        }
+                                    );
                             }
                         };
                         this._tracker.on('lookup_identity_response', onResponse);
@@ -275,8 +288,9 @@ class Crypter {
 
     /**
      * Find and load peer
+     * @param {string} tracker                  Tracker name
      * @param {string} identity                 Peer supplied identity
-     * @return {object}                         Peer info
+     * @return {Promise}                        Peer info
      * <code>
      * {
      *     name: 'user@example.com/daemon-name',
@@ -284,27 +298,27 @@ class Crypter {
      * }
      * </code>
      */
-    _loadPeer(identity) {
-        if (!this._peersPath) {
-            this._peersPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid/peers' : '/etc/bhid/peers');
-            try {
-                fs.accessSync(this._peersPath, fs.constants.F_OK);
-            } catch (error) {
-                return Promise.resolve(null);
-            }
+    _loadPeer(tracker, identity) {
+        let peersPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid/peers' : '/etc/bhid/peers');
+        try {
+            fs.accessSync(path.join(peersPath, tracker), fs.constants.F_OK);
+        } catch (error) {
+            return Promise.resolve(null);
         }
 
         return new Promise((resolve, reject) => {
             try {
-                for (let file of fs.readdirSync(this._peersPath)) {
-                    let buffer = fs.readFileSync(path.join(this._peersPath, file));
+                for (let file of fs.readdirSync(path.join(peersPath, tracker))) {
+                    let buffer = fs.readFileSync(path.join(peersPath, tracker, file));
 
                     let hash = crypto.createHash(this._hash);
                     hash.update(buffer.toString('base64'));
                     let thisIdentity = hash.digest('hex');
                     if (identity === thisIdentity) {
+                        let name = file.replace(/^(.*)\.rsa$/, '$1');
+                        this._logger.debug('crypter', `Found saved identity for ${name}`);
                         return resolve({
-                            name: file.replace(/^(.*)\.rsa$/, '$1'),
+                            name: name,
                             key: new NodeRSA(buffer),
                         });
                     }
@@ -312,6 +326,41 @@ class Crypter {
                 resolve(null);
             } catch (error) {
                 reject(new WError(error, 'Crypter._loadPeer()'));
+            }
+        });
+    }
+
+    /**
+     * Save peer identity
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Peer name
+     * @param {string} key                      Peer public key
+     * @return {Promise}
+     */
+    _savePeer(tracker, name, key) {
+        let peersPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid/peers' : '/etc/bhid/peers');
+        try {
+            fs.accessSync(path.join(peersPath), fs.constants.F_OK);
+        } catch (error) {
+            return Promise.resolve(null);
+        }
+
+        try {
+            fs.accessSync(path.join(peersPath, tracker), fs.constants.F_OK);
+        } catch (error) {
+            try {
+                fs.mkdirSync(path.join(peersPath, tracker));
+            } catch (error) {
+                return Promise.resolve(null);
+            }
+        }
+
+        return new Promise((resolve, reject) => {
+            try {
+                fs.writeFileSync(path.join(peersPath, tracker, name + '.rsa'), key);
+                resolve();
+            } catch (error) {
+                reject(error);
             }
         });
     }
