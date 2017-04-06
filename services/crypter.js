@@ -133,9 +133,10 @@ class Crypter {
      * @param {string} identity                 Peer supplied identity
      * @param {string} buffer                   Buffer
      * @param {string} signature                Signature
+     * @param {boolean} [strict=false]          Allow identity change
      * @return {object}                         Returns { verified, name }
      */
-    verify(id, tracker, identity, buffer, signature) {
+    verify(id, tracker, identity, buffer, signature, strict = false) {
         let session = this.sessions.get(id);
         if (!session)
             return Promise.resolve({ verified: false });
@@ -159,31 +160,42 @@ class Crypter {
                                     return resolve(false);
 
                                 let peersPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid/peers' : '/etc/bhid/peers');
+                                let exists;
                                 try {
                                     fs.accessSync(path.join(peersPath, tracker, message.lookupIdentityResponse.name + '.rsa'), fs.constants.F_OK);
-                                    this._logger.info(`Possibly forged identity of ${message.lookupIdentityResponse.name} (${tracker})`);
-                                    return resolve(false);
+                                    exists = true;
                                 } catch (error) {
-                                    // do nothing
+                                    exists = false;
                                 }
 
-                                this._savePeer(tracker, message.lookupIdentityResponse.name, message.lookupIdentityResponse.key)
-                                    .then(
-                                        () => {
-                                            this._logger.info(`Identity of ${message.lookupIdentityResponse.name} (${tracker}) saved`);
-                                            resolve({
-                                                name: message.lookupIdentityResponse.name,
-                                                key: new NodeRSA(message.lookupIdentityResponse.key),
-                                            });
-                                        },
-                                        error => {
-                                            this._logger.debug('crypter', `Could not save identity: ${error.message}`);
-                                            resolve({
-                                                name: message.lookupIdentityResponse.name,
-                                                key: new NodeRSA(message.lookupIdentityResponse.key),
-                                            });
-                                        }
-                                    );
+                                let success = () => {
+                                    resolve({
+                                        name: message.lookupIdentityResponse.name,
+                                        key: new NodeRSA(message.lookupIdentityResponse.key),
+                                    });
+                                };
+
+                                if (exists) {
+                                    if (strict) {
+                                        this._logger.info(`Possibly forged identity of ${message.lookupIdentityResponse.name} (${tracker})`);
+                                        resolve(false);
+                                    } else {
+                                        success();
+                                    }
+                                } else {
+                                    this._savePeer(tracker, message.lookupIdentityResponse.name, message.lookupIdentityResponse.key)
+                                        .then(
+                                            () => {
+                                                this._logger.info(`Identity of ${message.lookupIdentityResponse.name} (${tracker}) saved`);
+                                            },
+                                            error => {
+                                                this._logger.debug('crypter', `Could not save identity: ${error.message}`);
+                                            }
+                                        )
+                                        .then(() => {
+                                            success();
+                                        });
+                                }
                             }
                         };
                         this._tracker.on('lookup_identity_response', onResponse);

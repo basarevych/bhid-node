@@ -59,7 +59,8 @@ class ConnectRequest {
                 connection.tracker,
                 message.connectRequest.identity,
                 message.connectRequest.publicKey,
-                message.connectRequest.signature
+                message.connectRequest.signature,
+                !connection.server
             )
             .then(result => {
                 session.verified = result.verified;
