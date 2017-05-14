@@ -21,11 +21,10 @@ module.exports = {
     instance: 'daemon',
 
     // Environment
-    env: process.env.NODE_ENV || 'production',
+    env: process.env.NODE_ENV || (process.env.DEBUG ? 'development' : 'production'),
 
     // Load base classes and services, path names
     autoload: [
-        '!src/servers',
         '!src/services',
         'commands',
         'servers',
@@ -87,6 +86,7 @@ module.exports = {
             path: '/var/log/bhid',
             interval: '1d',
             mode: 0o640,
+            maxFiles: 3,
         },
     },
 

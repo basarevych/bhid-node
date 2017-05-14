@@ -154,23 +154,6 @@ class Daemon extends EventEmitter {
                 Promise.resolve()
             )
             .then(() => {
-                return this._filer.lockRead(path.join(this._config.base_path, 'package.json'));
-            })
-            .then(packageInfo => {
-                let json;
-                try {
-                    json = JSON.parse(packageInfo);
-                } catch (error) {
-                    json = { version: '?.?.?' };
-                }
-
-                this._logger.info(`Daemon v${json.version} started`);
-                process.on('SIGTERM', () => {
-                    this._logger.info('Terminating on SIGTERM signal');
-                    process.exit(0);
-                });
-            })
-            .then(() => {
                 this._logger.debug('daemon', 'Starting the server');
                 try {
                     let sockDir = path.join('/var', 'run', this._config.project);
