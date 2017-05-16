@@ -1,6 +1,6 @@
 {
   "name": "bhid",
-  "version": "0.4.9",
+  "version": "0.4.10",
   "description": "Daemon for Breedhub Interconnect (connect server and client both behind NAT)",
   "license": "MIT",
   "author": "Ross Basarevych <basarevych@gmail.com>",
@@ -15,7 +15,7 @@
   "dependencies": {
     "archy": "~1.0.0",
     "argv": "~0.0.2",
-    "arpen": "~0.0.22",
+    "arpen": "~0.0.23",
     "daemon": "~1.1.0",
     "easy-table": "~1.1.0",
     "fs-ext": "~0.6.0",
