@@ -104,15 +104,16 @@ message CreateRequest {
         NOT_CONNECTED = 2;
     }
     string tracker_name = 1;
-    string daemon_name = 2;
-    string path = 3;
-    Type type = 4;
-    bool encrypted = 5;
-    bool fixed = 6;
-    string connect_address = 7;
-    string connect_port = 8;
-    string listen_address = 9;
-    string listen_port = 10;
+    string token = 2;
+    string daemon_name = 3;
+    string path = 4;
+    Type type = 5;
+    bool encrypted = 6;
+    bool fixed = 7;
+    string connect_address = 8;
+    string connect_port = 9;
+    string listen_address = 10;
+    string listen_port = 11;
 }
 
 message CreateResponse {
@@ -133,7 +134,8 @@ message CreateResponse {
 
 message DeleteRequest {
     string tracker_name = 1;
-    string path = 2;
+    string token = 2;
+    string path = 3;
 }
 
 message DeleteResponse {

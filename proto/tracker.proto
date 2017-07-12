@@ -90,14 +90,15 @@ message CreateRequest {
         CLIENT = 1;
         NOT_CONNECTED = 2;
     }
-    string path = 1;
-    Type type = 2;
-    bool encrypted = 3;
-    bool fixed = 4;
-    string connect_address = 5;
-    string connect_port = 6;
-    string listen_address = 7;
-    string listen_port = 8;
+    string token = 1;
+    string path = 2;
+    Type type = 3;
+    bool encrypted = 4;
+    bool fixed = 5;
+    string connect_address = 6;
+    string connect_port = 7;
+    string listen_address = 8;
+    string listen_port = 9;
 }
 
 message CreateResponse {
@@ -114,7 +115,8 @@ message CreateResponse {
 }
 
 message DeleteRequest {
-    string path = 1;
+    string token = 1;
+    string path = 2;
 }
 
 message DeleteResponse {

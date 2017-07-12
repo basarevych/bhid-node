@@ -96,6 +96,7 @@ class DeleteRequest {
             );
 
             let request = this.tracker.DeleteRequest.create({
+                token: message.deleteRequest.token,
                 path: message.deleteRequest.path,
             });
             let relay = this.tracker.ClientMessage.create({

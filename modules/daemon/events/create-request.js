@@ -104,6 +104,7 @@ class CreateRequest {
             );
 
             let request = this.tracker.CreateRequest.create({
+                token: message.createRequest.token,
                 path: message.createRequest.path,
                 type: message.createRequest.type,
                 encrypted: message.createRequest.encrypted,
