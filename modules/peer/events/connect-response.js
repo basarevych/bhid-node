@@ -3,7 +3,7 @@
  * @module peer/events/connect-response
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Connect Response event class

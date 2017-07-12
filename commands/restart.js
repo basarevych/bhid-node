@@ -68,7 +68,7 @@ class Restart {
 
         return this._stop.terminate()
             .then(() => {
-                if (args.options['install'])
+                if (args.options.install)
                     return this._install.install();
             })
             .then(() => {
@@ -78,8 +78,8 @@ class Restart {
                 process.exit(rc);
             })
             .catch(error => {
-                return this.error(error.message);
-            })
+                return this.error(error.messages || error.message);
+            });
     }
 
     /**
@@ -87,7 +87,14 @@ class Restart {
      * @param {...*} args
      */
     error(...args) {
-        return this._app.error(...args)
+        return args.reduce(
+                (prev, cur) => {
+                    return prev.then(() => {
+                        return this._app.error(cur.fullStack || cur.stack || cur.message || cur);
+                    });
+                },
+                Promise.resolve()
+            )
             .then(
                 () => {
                     process.exit(1);

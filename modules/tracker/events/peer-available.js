@@ -3,7 +3,7 @@
  * @module tracker/events/peer-available
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Peer Available event class

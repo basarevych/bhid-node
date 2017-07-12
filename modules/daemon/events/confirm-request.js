@@ -3,7 +3,7 @@
  * @module daemon/events/confirm-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Confirm Request event class
@@ -105,7 +105,7 @@ class ConfirmRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.confirmRequest.trackerName, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'ConfirmRequest.handle()'));
+            this._logger.error(new NError(error, 'ConfirmRequest.handle()'));
         }
     }
 

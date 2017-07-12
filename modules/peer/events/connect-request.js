@@ -3,7 +3,7 @@
  * @module peer/events/connect-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Connect Request event class
@@ -92,7 +92,7 @@ class ConnectRequest {
                 }
             })
             .catch(error => {
-                this._logger.error(new WError(error, `ConnectRequest.handle()`));
+                this._logger.error(new NError(error, `ConnectRequest.handle()`));
             });
     }
 

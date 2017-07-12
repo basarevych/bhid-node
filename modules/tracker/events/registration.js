@@ -3,7 +3,7 @@
  * @module tracker/events/registration
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Registration event class

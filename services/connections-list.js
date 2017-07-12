@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const ini = require('ini');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 class ConnectionsList {
     /**
@@ -16,8 +16,31 @@ class ConnectionsList {
      * @param {Logger} logger               Logger service
      */
     constructor(app, config, logger) {
-        this._list = new Map();
-        this._imports = new Map();
+        this._list = new Map();                         // tracker name => { serverConnections: Map, clientConnections: Map }
+        this._imports = new Map();                      // tracker name => { serverConnections: Map, clientConnections: Map }
+
+                                                        /*
+                                                            serverConnections:
+                                                                name => {
+                                                                    name: 'user@dom/path',
+                                                                    connectAddress: string,
+                                                                    connectPort: string,
+                                                                    encrypted: boolean,
+                                                                    fixed: boolean,
+                                                                    clients: array,
+                                                                    connected: number,
+                                                                }
+                                                             clientConnections:
+                                                                name => {
+                                                                    name: 'user@dom/path',
+                                                                    listenAddress: string,
+                                                                    listenPort: string,
+                                                                    encrypted: boolean,
+                                                                    fixed: boolean,
+                                                                    server: string,
+                                                                    connected: number,
+                                                                }
+                                                         */
 
         this._app = app;
         this._config = config;
@@ -123,11 +146,11 @@ class ConnectionsList {
                     }
                     let connection = {
                         name: section.substring(tracker.length + 1, section.length - this.constructor.serverSection.length),
-                        connectAddress: bhidConfig[section]['connect_address'],
-                        connectPort: bhidConfig[section]['connect_port'],
-                        encrypted: bhidConfig[section]['encrypted'] === 'yes',
-                        fixed: bhidConfig[section]['fixed'] === 'yes',
-                        clients: (bhidConfig[section]['fixed'] === 'yes') ? bhidConfig[section]['clients'] : [],
+                        connectAddress: bhidConfig[section].connect_address,
+                        connectPort: bhidConfig[section].connect_port,
+                        encrypted: bhidConfig[section].encrypted === 'yes',
+                        fixed: bhidConfig[section].fixed === 'yes',
+                        clients: (bhidConfig[section].fixed === 'yes') ? bhidConfig[section].clients : [],
                         connected: 0,
                     };
                     conf.serverConnections.set(connection.name, connection);
@@ -144,7 +167,7 @@ class ConnectionsList {
                             peers: connection.clients,
                         }
                     );
-                    openedConnections.add(section.substring(0, section.length - this.constructor.serverSection.length));
+                    openedConnections.add(tracker + '#' + connection.name);
                 } else if (section.endsWith(this.constructor.clientSection)) {
                     let tracker = section.split('#')[0];
                     if (!tracker)
@@ -156,11 +179,11 @@ class ConnectionsList {
                     }
                     let connection = {
                         name: section.substring(tracker.length + 1, section.length - this.constructor.clientSection.length),
-                        listenAddress: bhidConfig[section]['listen_address'],
-                        listenPort: bhidConfig[section]['listen_port'],
-                        encrypted: bhidConfig[section]['encrypted'] === 'yes',
-                        fixed: bhidConfig[section]['fixed'] === 'yes',
-                        server: bhidConfig[section]['server'] || '',
+                        listenAddress: bhidConfig[section].listen_address,
+                        listenPort: bhidConfig[section].listen_port,
+                        encrypted: bhidConfig[section].encrypted === 'yes',
+                        fixed: bhidConfig[section].fixed === 'yes',
+                        server: bhidConfig[section].server || '',
                         connected: 0,
                     };
                     conf.clientConnections.set(connection.name, connection);
@@ -177,7 +200,7 @@ class ConnectionsList {
                             peers: connection.server ? [ connection.server ] : [],
                         }
                     );
-                    openedConnections.add(section.substring(0, section.length - this.constructor.clientSection.length));
+                    openedConnections.add(tracker + '#' + connection.name);
                 }
 
                 for (let connection of this._peer.connections.keys()) {
@@ -186,7 +209,7 @@ class ConnectionsList {
                 }
             }
         } catch (error) {
-            this._logger.error(new WError(error, 'ConnectionsList.load()'));
+            this._logger.error(new NError(error, 'ConnectionsList.load()'));
             return false;
         }
 
@@ -243,9 +266,9 @@ class ConnectionsList {
     }
 
     /**
-     * Create or update connection
+     * Create or update connection. Will delete it from imports also
      * @param {string} trackerName          Tracker name
-     * @param {object} connectionName       Connection name
+     * @param {object} connectionName       Connection short name
      * @param {boolean} server              Is server connection
      * @param {object} connection           Connection info
      * @param {boolean} [restart=true]      Restart connection
@@ -313,9 +336,9 @@ class ConnectionsList {
     }
 
     /**
-     * Update connection port
+     * Update client connection port
      * @param {string} trackerName          Tracker name
-     * @param {object} connectionName       Connection name
+     * @param {object} connectionName       Connection short name
      * @param {string} port                 Port number
      */
     updatePort(trackerName, connectionName, port) {
@@ -337,7 +360,7 @@ class ConnectionsList {
     /**
      * Delete connection
      * @param {string} trackerName          Tracker name
-     * @param {object} connectionName       Connection name
+     * @param {object} connectionName       Connection short name
      * @param {boolean} server              Is server connection
      */
     delete(trackerName, connectionName, server) {
@@ -359,16 +382,16 @@ class ConnectionsList {
     }
 
     /**
-     * Save connections list
+     * Save current connections list
      * @return {boolean}
      */
     save() {
         try {
             let configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
             try {
-                fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.R_OK);
+                fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.R_OK | fs.constants.W_OK);
             } catch (error) {
-                throw new Error('Could not read bhid.conf');
+                throw new Error('Could not update bhid.conf');
             }
 
             let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
@@ -404,7 +427,7 @@ class ConnectionsList {
 
             fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(output));
         } catch (error) {
-            this._logger.error(new WError(error, 'ConnectionsList.save()'));
+            this._logger.error(new NError(error, 'ConnectionsList.save()'));
             return false;
         }
 
@@ -436,7 +459,7 @@ class ConnectionsList {
     /**
      * Get imported connection token
      * @param {string} trackerName          Tracker name
-     * @param {string} connectionName       Connection name
+     * @param {string} connectionName       Connection short name
      */
     getImport(trackerName, connectionName) {
         let info = this._imports.get(trackerName);

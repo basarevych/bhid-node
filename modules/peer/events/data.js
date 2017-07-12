@@ -3,7 +3,7 @@
  * @module peer/events/data
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Data event class
@@ -89,7 +89,7 @@ class Data {
                     break;
             }
         } catch (error) {
-            this._logger.error(new WError(error, 'Data.handle()'));
+            this._logger.error(new NError(error, 'Data.handle()'));
         }
     }
 

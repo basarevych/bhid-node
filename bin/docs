@@ -1,0 +1,22 @@
+#!/bin/sh
+
+basepath=`dirname "$0"`
+basepath=`cd "$basepath" && cd .. && pwd`
+if [ ! -d "$basepath" ]; then
+    echo "Could not get base path"
+    exit 1
+fi
+
+if [ ! -x "$basepath/node_modules/.bin/jsdoc" ]; then
+    echo "jsDoc is not installed"
+    exit 1
+fi
+
+rm -rf "$basepath/docs"
+find "$basepath" \
+    \( -name "node_modules" -o -name "spec" -o -name "docs" -o -name "config" -o -name "public" -o -path "*/.*" \) -prune \
+    -o -type d -mindepth 1 -not \( -name "modules" -o -regex '.*/modules/[^/]*$' \) -print | \
+    xargs "$basepath/node_modules/.bin/jsdoc" \
+    -c "$basepath/jsdoc.json" \
+    -t "$basepath/node_modules/ink-docstrap/template" \
+    -R README.md -d "$basepath/docs" -r "$basepath/node_modules/arpen/src"

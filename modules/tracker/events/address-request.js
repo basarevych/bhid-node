@@ -4,7 +4,7 @@
  */
 const uuid = require('uuid');
 const utp = require('utp-punch');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Address Request event class
@@ -83,7 +83,7 @@ class AddressRequest {
                 });
             }
         } catch (error) {
-            this._logger.error(new WError(error, 'AddressRequest.handle()'));
+            this._logger.error(new NError(error, 'AddressRequest.handle()'));
         }
     }
 

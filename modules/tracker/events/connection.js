@@ -3,7 +3,7 @@
  * @module tracker/events/connection
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Connection event class
@@ -88,7 +88,7 @@ class Connection {
             let data = this.tracker.ClientMessage.encode(msg).finish();
             this.tracker.send(name, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'Connection.handle()'));
+            this._logger.error(new NError(error, 'Connection.handle()'));
         }
     }
 

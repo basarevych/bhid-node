@@ -3,7 +3,7 @@
  * @module daemon/events/import-connections-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Import Connections Request event class
@@ -72,7 +72,7 @@ class ImportConnectionsRequest {
 
             reply(this.daemon.ImportConnectionsResponse.Result.ACCEPTED);
         } catch (error) {
-            this._logger.error(new WError(error, 'UpdateConnectionsRequest.handle()'));
+            this._logger.error(new NError(error, 'UpdateConnectionsRequest.handle()'));
         }
     }
 

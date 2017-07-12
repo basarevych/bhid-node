@@ -8,11 +8,11 @@ const net = require('net');
 const uuid = require('uuid');
 const protobuf = require('protobufjs');
 const EventEmitter = require('events');
-const WError = require('verror').WError;
+const NError = require('nerror');
 const SocketWrapper = require('socket-wrapper');
 
 /**
- * Server class
+ * Server for unix socket clients, i.e. command line interface
  */
 class Daemon extends EventEmitter {
     /**
@@ -20,19 +20,23 @@ class Daemon extends EventEmitter {
      * @param {App} app                     Application
      * @param {object} config               Configuration
      * @param {Logger} logger               Logger service
-     * @param {Filer} filer                 Filer service
      */
-    constructor(app, config, logger, filer) {
+    constructor(app, config, logger) {
         super();
 
-        this.server = null;
-        this.clients = new Map();
+        this.server = null;                                 // tcp on unix socket
+        this.clients = new Map();                           /* id => {
+                                                                    id: uuid,
+                                                                    socket: socket,
+                                                                    wrapper: SocketWrapper(socket),
+                                                               }
+                                                            */
 
         this._name = null;
+        this._listening = false;
         this._app = app;
         this._config = config;
         this._logger = logger;
-        this._filer = filer;
     }
 
     /**
@@ -48,7 +52,7 @@ class Daemon extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'filer' ];
+        return [ 'app', 'config', 'logger' ];
     }
 
     /**
@@ -71,7 +75,7 @@ class Daemon extends EventEmitter {
                 this._logger.debug('daemon', 'Loading protocol');
                 protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
                     if (error)
-                        return reject(new WError(error, 'Daemon.init()'));
+                        return reject(new NError(error, 'Daemon.init()'));
 
                     try {
                         this.proto = root;
@@ -119,14 +123,19 @@ class Daemon extends EventEmitter {
                         this.ServerMessage = this.proto.lookup('local.ServerMessage');
                         resolve();
                     } catch (error) {
-                        reject(new WError(error, 'Daemon.init()'));
+                        reject(new NError(error, 'Daemon.init()'));
                     }
-                })
+                });
             })
             .then(() => {
                 this.server = net.createServer(this.onConnection.bind(this));
                 this.server.on('error', this.onServerError.bind(this));
                 this.server.on('listening', this.onListening.bind(this));
+            })
+            .catch(error => {
+                return new Promise(() => {
+                    this._logger.error(error.messages || error.message, () => { process.exit(255); });
+                })
             });
     }
 
@@ -155,18 +164,13 @@ class Daemon extends EventEmitter {
             )
             .then(() => {
                 this._logger.debug('daemon', 'Starting the server');
-                try {
+                return new Promise((resolve, reject) => {
                     let sockDir = path.join('/var', 'run', this._config.project);
                     let sockFile = path.join(sockDir, this._config.instance + '.sock');
                     try {
                         fs.accessSync(sockDir, fs.constants.R_OK | fs.constants.W_OK);
                     } catch (error) {
-                        this._logger.error(
-                            `No access to ${sockDir}`,
-                            () => {
-                                process.exit(1);
-                            }
-                        );
+                        return reject(new Error(`No access to ${sockDir}`));
                     }
                     try {
                         fs.accessSync(sockFile, fs.constants.F_OK);
@@ -174,11 +178,41 @@ class Daemon extends EventEmitter {
                     } catch (error) {
                         // do nothing
                     }
-                    this.server.listen(sockFile);
-                } catch (error) {
-                    throw new WError(error, 'Daemon.start()');
-                }
+                    try {
+                        this.server.once('listening', resolve);
+                        this.server.listen(sockFile);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            })
+            .catch(error => {
+                return new Promise(() => {
+                    this._logger.error(error.messages || error.message, () => { process.exit(255); });
+                })
             });
+    }
+
+    /**
+     * Stop the server
+     * @param {string} name                     Config section name
+     * @return {Promise}
+     */
+    stop(name) {
+        if (name !== this._name)
+            return Promise.reject(new Error(`Server ${name} was not properly initialized`));
+
+        this.server.close();
+        this.server = null;
+
+        return new Promise((resolve, reject) => {
+            try {
+                let sock = `/var/run/${this._config.project}/${this._config.instance}.sock`;
+                this._logger.info(`Daemon is no longer listening on ${sock}`, () => { resolve(); });
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
 
     /**
@@ -188,7 +222,7 @@ class Daemon extends EventEmitter {
      */
     send(id, data) {
         let client = this.clients.get(id);
-        if (!client || !client.socket || !client.wrapper)
+        if (!client)
             return;
 
         client.wrapper.send(data);
@@ -200,7 +234,7 @@ class Daemon extends EventEmitter {
      */
     onServerError(error) {
         if (error.syscall !== 'listen')
-            return this._logger.error(new WError(error, 'Daemon.onServerError()'));
+            return this._logger.error(new NError(error, 'Daemon.onServerError()'));
 
         let msg;
         switch (error.code) {
@@ -213,7 +247,7 @@ class Daemon extends EventEmitter {
             default:
                 msg = error;
         }
-        this._logger.error(msg, () => { process.exit(1); });
+        this._logger.error(msg, () => { process.exit(255); });
     }
 
     /**
@@ -224,9 +258,10 @@ class Daemon extends EventEmitter {
         try {
             fs.chmodSync(sock, 0o600);
         } catch (error) {
-            // do nothing
+            this._logger.error('Could not prepare daemon socket', () => { process.exit(255); });
         }
 
+        this._listening = true;
         this._logger.info(`Daemon is listening on ${sock}`);
     }
 
@@ -235,8 +270,13 @@ class Daemon extends EventEmitter {
      * @param {object} socket           Client socket
      */
     onConnection(socket) {
+        if (!this._listening) {
+            socket.end();
+            return;
+        }
+
         let id = uuid.v1();
-        this._logger.debug('daemon', `New socket`);
+        this._logger.debug('daemon', `New socket ${id}`);
 
         let client = {
             id: id,
@@ -271,9 +311,6 @@ class Daemon extends EventEmitter {
         let client = this.clients.get(id);
         if (!client)
             return false;
-
-        if (!data || !data.length)
-            return true;
 
         let message;
         try {
@@ -342,7 +379,7 @@ class Daemon extends EventEmitter {
                     break;
             }
         } catch (error) {
-            this._logger.error(new WError(error, 'Daemon.onMessage()'));
+            this._logger.error(new NError(error, 'Daemon.onMessage()'));
         }
 
         return true;
@@ -354,7 +391,7 @@ class Daemon extends EventEmitter {
      * @param {Error} error                 Error
      */
     onError(id, error) {
-        this._logger.error(`Daemon socket error: ${error.message}`);
+        this._logger.error(`Daemon socket error: ${error.messages || error.message}`);
     }
 
     /**
@@ -364,14 +401,9 @@ class Daemon extends EventEmitter {
     onClose(id) {
         let client = this.clients.get(id);
         if (client) {
-            this._logger.debug('daemon', `Client disconnected`);
-            if (client.socket) {
-                if (!client.socket.destroyed)
-                    client.socket.destroy();
-                client.socket = null;
-                client.wrapper.destroy();
-                client.wrapper = null;
-            }
+            this._logger.debug('daemon', `Client disconnected ${id}`);
+            client.socket.destroy();
+            client.wrapper.destroy();
             this.clients.delete(id);
         }
     }

@@ -58,7 +58,7 @@ class Install {
                 process.exit(0);
             })
             .catch(error => {
-                return this.error(error.message);
+                return this.error(error);
             });
     }
 
@@ -72,10 +72,10 @@ class Install {
                 let configDir;
                 if (os.platform() === 'freebsd') {
                     configDir = '/usr/local/etc/bhid';
-                    this._app.debug(`Platform: FreeBSD`);
+                    this._app.debug(`Platform: FreeBSD`).catch(() => { /* do nothing */ });
                 } else {
                     configDir = '/etc/bhid';
-                    this._app.debug(`Platform: Linux`);
+                    this._app.debug(`Platform: Linux`).catch(() => { /* do nothing */ });
                 }
 
                 try {
@@ -84,7 +84,7 @@ class Install {
                     try {
                         fs.mkdirSync(configDir, 0o750);
                     } catch (error) {
-                        throw new Error(`Could not create ${configDir}`);
+                        return this.error(`Could not create ${configDir}`);
                     }
                 }
                 try {
@@ -93,7 +93,7 @@ class Install {
                     try {
                         fs.mkdirSync(path.join(configDir, 'id'), 0o750);
                     } catch (error) {
-                        throw new Error(`Could not create ${path.join(configDir, 'id')}`);
+                        return this.error(`Could not create ${path.join(configDir, 'id')}`);
                     }
                 }
                 try {
@@ -102,7 +102,7 @@ class Install {
                     try {
                         fs.mkdirSync(path.join(configDir, 'peers'), 0o755);
                     } catch (error) {
-                        throw new Error(`Could not create ${path.join(configDir, 'peers')}`);
+                        return this.error(`Could not create ${path.join(configDir, 'peers')}`);
                     }
                 }
                 try {
@@ -111,7 +111,7 @@ class Install {
                     try {
                         fs.mkdirSync(path.join(configDir, 'certs'), 0o755);
                     } catch (error) {
-                        throw new Error(`Could not create ${path.join(configDir, 'certs')}`);
+                        return this.error(`Could not create ${path.join(configDir, 'certs')}`);
                     }
                 }
                 try {
@@ -120,7 +120,7 @@ class Install {
                     try {
                         fs.mkdirSync('/var/run/bhid', 0o755);
                     } catch (error) {
-                        throw new Error(`Could not create /var/run/bhid`);
+                        return this.error(`Could not create /var/run/bhid`);
                     }
                 }
                 try {
@@ -129,24 +129,24 @@ class Install {
                     try {
                         fs.mkdirSync('/var/log/bhid', 0o755);
                     } catch (error) {
-                        throw new Error(`Could not create /var/log/bhid`);
+                        return this.error(`Could not create /var/log/bhid`);
                     }
                 }
 
                 try {
-                    this._app.debug('Creating default config');
+                    this._app.debug('Creating default config').catch(() => { /* do nothing */ });
                     fs.accessSync(path.join(configDir, 'bhid.conf'), fs.constants.F_OK);
                 } catch (error) {
                     try {
                         let config = fs.readFileSync(path.join(__dirname, '..', 'bhid.conf'), { encoding: 'utf8'});
                         fs.writeFileSync(path.join(configDir, 'bhid.conf'), config, { mode: 0o640 });
                     } catch (error) {
-                        throw new Error(`Could not create bhid.conf`);
+                        return this.error(`Could not create bhid.conf`);
                     }
                 }
                 try {
                     fs.accessSync('/etc/systemd/system', fs.constants.F_OK);
-                    this._app.debug('Creating systemd service');
+                    this._app.debug('Creating systemd service').catch(() => { /* do nothing */ });
                     let service = fs.readFileSync(path.join(__dirname, '..', 'systemd.service'), {encoding: 'utf8'});
                     fs.writeFileSync('/etc/systemd/system/bhid.service', service, {mode: 0o644});
                 } catch (error) {
@@ -154,7 +154,7 @@ class Install {
                 }
                 try {
                     fs.accessSync('/etc/init.d', fs.constants.F_OK);
-                    this._app.debug('Creating sysvinit service');
+                    this._app.debug('Creating sysvinit service').catch(() => { /* do nothing */ });
                     let service = fs.readFileSync(path.join(__dirname, '..', 'sysvinit.service'), {encoding: 'utf8'});
                     fs.writeFileSync('/etc/init.d/bhid', service, {mode: 0o755});
                 } catch (error) {
@@ -173,7 +173,7 @@ class Install {
                 if (keysExist)
                     return;
 
-                this._app.debug('Creating RSA keys');
+                this._app.debug('Creating RSA keys').catch(() => { /* do nothing */ });
                 return this._runner.exec(
                         'openssl',
                         [
@@ -208,9 +208,9 @@ class Install {
                     })
                     .then(result => {
                         if (result.code !== 0)
-                            throw new Error('Could not create public key');
+                            return this.error('Could not create public key');
                     });
-            })
+            });
     }
 
     /**
@@ -218,7 +218,14 @@ class Install {
      * @param {...*} args
      */
     error(...args) {
-        return this._app.error(...args)
+        return args.reduce(
+                (prev, cur) => {
+                    return prev.then(() => {
+                        return this._app.error(cur.fullStack || cur.stack || cur.message || cur);
+                    });
+                },
+                Promise.resolve()
+            )
             .then(
                 () => {
                     process.exit(1);

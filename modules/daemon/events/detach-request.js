@@ -3,7 +3,7 @@
  * @module daemon/events/detach-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Detach Request event class
@@ -106,7 +106,7 @@ class DetachRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.detachRequest.trackerName, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'DetachRequest.handle()'));
+            this._logger.error(new NError(error, 'DetachRequest.handle()'));
         }
     }
 

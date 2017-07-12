@@ -68,13 +68,13 @@ class Confirm {
             return this._help.helpConfirm(argv);
 
         let token = args.targets[1];
-        let trackerName = args.options['tracker'] || '';
-        let sockName = args.options['socket'];
+        let trackerName = args.options.tracker || '';
+        let sockName = args.options.socket;
 
-        this._app.debug('Loading protocol');
+        this._app.debug('Loading protocol').catch(() => { /* do nothing */ });
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
-                return this.error(error.message);
+                return this.error(error);
 
             try {
                 this.proto = root;
@@ -85,7 +85,7 @@ class Confirm {
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                this._app.debug(`Sending CONFIRM REQUEST`);
+                this._app.debug('Sending CONFIRM REQUEST').catch(() => { /* do nothing */ });
                 let request = this.ConfirmRequest.create({
                     trackerName: trackerName,
                     token: token,
@@ -99,11 +99,11 @@ class Confirm {
                     .then(data => {
                         let message = this.ServerMessage.decode(data);
                         if (message.type !== this.ServerMessage.Type.CONFIRM_RESPONSE)
-                            throw new Error('Invalid reply from daemon');
+                            return this.error('Invalid reply from daemon');
 
                         switch (message.confirmResponse.response) {
                             case this.ConfirmResponse.Result.ACCEPTED:
-                                this._app.debug(`Sending SET TOKEN REQUEST`);
+                                this._app.debug('Sending SET TOKEN REQUEST').catch(() => { /* do nothing */ });
                                 request = this.SetTokenRequest.create({
                                     type: this.SetTokenRequest.Type.MASTER,
                                     token: message.confirmResponse.token,
@@ -117,35 +117,35 @@ class Confirm {
                                     .then(data => {
                                         message = this.ServerMessage.decode(data);
                                         if (message.type !== this.ServerMessage.Type.SET_TOKEN_RESPONSE)
-                                            throw new Error('Invalid reply from daemon');
+                                            return this.error('Invalid reply from daemon');
 
                                         switch (message.setTokenResponse.response) {
                                             case this.SetTokenResponse.Result.ACCEPTED:
                                                 return this._app.info('Master token is saved to ~/.bhid/master.token on this computer and will be used automatically');
                                             case this.SetTokenResponse.Result.REJECTED:
-                                                throw new Error('Set token request rejected');
+                                                return this.error('Set token request rejected');
                                             default:
-                                                throw new Error('Unsupported response from daemon');
+                                                return this.error('Unsupported response from daemon');
                                         }
                                     });
                             case this.ConfirmResponse.Result.REJECTED:
-                                throw new Error('Request rejected');
+                                return this.error('Request rejected');
                             case this.ConfirmResponse.Result.TIMEOUT:
-                                throw new Error('No response from the tracker');
+                                return this.error('No response from the tracker');
                             case this.ConfirmResponse.Result.NO_TRACKER:
-                                throw new Error('Not connected to the tracker');
+                                return this.error('Not connected to the tracker');
                             default:
-                                throw new Error('Unsupported response from daemon');
+                                return this.error('Unsupported response from daemon');
                         }
                     })
                     .then(() => {
                         process.exit(0);
                     })
                     .catch(error => {
-                        return this.error(error.message);
+                        return this.error(error);
                     });
             } catch (error) {
-                return this.error(error.message);
+                return this.error(error);
             }
         });
 
@@ -161,23 +161,25 @@ class Confirm {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] === '/')
+            if (sockName && sockName[0] === '/') {
                 sock = sockName;
-            else
-                sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
+            } else {
+                sockName = sockName ? `.${sockName}` : '';
+                sock = path.join('/var', 'run', this._config.project, this._config.instance + sockName + '.sock');
+            }
 
             let onError = error => {
                 this.error(`Could not connect to daemon: ${error.message}`);
             };
 
             let socket = net.connect(sock, () => {
-                this._app.debug('Connected to daemon');
+                this._app.debug('Connected to daemon').catch(() => { /* do nothing */ });
                 socket.removeListener('error', onError);
-                socket.once('error', error => { this.error(error.message) });
+                socket.once('error', error => { this.error(error); });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    this._app.debug('Got daemon reply');
+                    this._app.debug('Got daemon reply').catch(() => { /* do nothing */ });
                     resolve(data);
                     socket.end();
                 });
@@ -192,7 +194,14 @@ class Confirm {
      * @param {...*} args
      */
     error(...args) {
-        return this._app.error(...args)
+        return args.reduce(
+                (prev, cur) => {
+                    return prev.then(() => {
+                        return this._app.error(cur.fullStack || cur.stack || cur.message || cur);
+                    });
+                },
+                Promise.resolve()
+            )
             .then(
                 () => {
                     process.exit(1);

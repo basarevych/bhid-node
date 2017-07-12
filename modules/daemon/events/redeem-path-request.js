@@ -3,7 +3,7 @@
  * @module daemon/events/redeem-path-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Redeem Path Request event class
@@ -107,7 +107,7 @@ class RedeemPathRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.redeemPathRequest.trackerName, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'RedeemPathRequest.handle()'));
+            this._logger.error(new NError(error, 'RedeemPathRequest.handle()'));
         }
     }
 

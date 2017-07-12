@@ -3,7 +3,7 @@
  * @module daemon/events/update-connections-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Update Connections Request event class
@@ -86,7 +86,7 @@ class UpdateConnectionsRequest {
             else
                 reply(this.daemon.UpdateConnectionsResponse.Result.REJECTED);
         } catch (error) {
-            this._logger.error(new WError(error, 'UpdateConnectionsRequest.handle()'));
+            this._logger.error(new NError(error, 'UpdateConnectionsRequest.handle()'));
         }
     }
 

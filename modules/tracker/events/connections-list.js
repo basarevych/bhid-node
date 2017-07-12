@@ -3,7 +3,7 @@
  * @module tracker/events/connections-list
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Connections List event class

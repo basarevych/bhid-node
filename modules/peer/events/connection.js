@@ -3,7 +3,7 @@
  * @module peer/events/connection
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Connection event class
@@ -68,7 +68,7 @@ class Connection {
             this._logger.debug('connection', `Sending CONNECT REQUEST`);
             this.peer.send(name, sessionId, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'Connection.handle()'));
+            this._logger.error(new NError(error, 'Connection.handle()'));
         }
     }
 

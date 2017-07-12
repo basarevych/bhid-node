@@ -25,10 +25,10 @@ module.exports = {
 
     // Load base classes and services, path names
     autoload: [
-        '!src/services',
-        'commands',
-        'servers',
+        '!arpen/src/services',
         'services',
+        'servers',
+        'commands',
     ],
 
     // Loaded modules
@@ -87,6 +87,7 @@ module.exports = {
             interval: '1d',
             mode: 0o640,
             maxFiles: 3,
+            history: 'bhid.log.history',
         },
     },
 

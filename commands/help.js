@@ -361,7 +361,14 @@ class Help {
      * @param {...*} args
      */
     error(...args) {
-        return this._app.error(...args)
+        return args.reduce(
+                (prev, cur) => {
+                    return prev.then(() => {
+                        return this._app.error(cur.fullStack || cur.stack || cur.message || cur);
+                    });
+                },
+                Promise.resolve()
+            )
             .then(
                 () => {
                     process.exit(1);

@@ -3,7 +3,7 @@
  * @module daemon/events/create-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Create Request event class
@@ -121,7 +121,7 @@ class CreateRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.createRequest.trackerName, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'CreateRequest.handle()'));
+            this._logger.error(new NError(error, 'CreateRequest.handle()'));
         }
     }
 

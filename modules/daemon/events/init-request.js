@@ -3,7 +3,7 @@
  * @module daemon/events/init-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Init Request event class
@@ -104,7 +104,7 @@ class InitRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.initRequest.trackerName, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'InitRequest.handle()'));
+            this._logger.error(new NError(error, 'InitRequest.handle()'));
         }
     }
 

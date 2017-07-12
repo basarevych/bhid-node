@@ -3,7 +3,7 @@
  * @module tracker/events/server-available
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Server Available event class

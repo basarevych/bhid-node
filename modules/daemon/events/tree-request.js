@@ -3,7 +3,7 @@
  * @module daemon/events/tree-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Tree Request event class
@@ -108,7 +108,7 @@ class TreeRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.treeRequest.trackerName, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'TreeRequest.handle()'));
+            this._logger.error(new NError(error, 'TreeRequest.handle()'));
         }
     }
 

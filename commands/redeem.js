@@ -80,10 +80,10 @@ class Redeem {
             return this._help.helpRedeem(argv);
 
         let target = args.targets[1];
-        let trackerName = args.options['tracker'] || '';
-        let server = !!args.options['server'];
-        let client = !!args.options['client'];
-        let sockName = args.options['socket'];
+        let trackerName = args.options.tracker || '';
+        let server = !!args.options.server;
+        let client = !!args.options.client;
+        let sockName = args.options.socket;
 
         if (server && client)
             return this._help.helpRedeem(argv);
@@ -108,10 +108,10 @@ class Redeem {
             }
         }
 
-        this._app.debug('Loading protocol');
+        this._app.debug('Loading protocol').catch(() => { /* do nothing */ });
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
-                return this.error(error.message);
+                return this.error(error);
 
             try {
                 this.proto = root;
@@ -129,7 +129,7 @@ class Redeem {
                 let reqClass, reqType, reqField, resClass, resType, resField, request;
                 switch (type) {
                     case 'master':
-                        this._app.debug(`Sending REDEEM MASTER REQUEST`);
+                        this._app.debug('Sending REDEEM MASTER REQUEST').catch(() => { /* do nothing */ });
                         reqClass = this.RedeemMasterRequest;
                         reqType = this.ClientMessage.Type.REDEEM_MASTER_REQUEST;
                         reqField = 'redeemMasterRequest';
@@ -142,7 +142,7 @@ class Redeem {
                         });
                         break;
                     case 'daemon':
-                        this._app.debug(`Sending REDEEM DAEMON REQUEST`);
+                        this._app.debug('Sending REDEEM DAEMON REQUEST').catch(() => { /* do nothing */ });
                         reqClass = this.RedeemDaemonRequest;
                         reqType = this.ClientMessage.Type.REDEEM_DAEMON_REQUEST;
                         reqField = 'redeemDaemonRequest';
@@ -156,7 +156,7 @@ class Redeem {
                         });
                         break;
                     case 'path':
-                        this._app.debug(`Sending REDEEM PATH REQUEST`);
+                        this._app.debug('Sending REDEEM PATH REQUEST').catch(() => { /* do nothing */ });
                         reqClass = this.RedeemPathRequest;
                         reqType = this.ClientMessage.Type.REDEEM_PATH_REQUEST;
                         reqField = 'redeemPathRequest';
@@ -181,7 +181,7 @@ class Redeem {
                     .then(data => {
                         let message = this.ServerMessage.decode(data);
                         if (message.type !== resType)
-                            throw new Error('Invalid reply from daemon');
+                            return this.error('Invalid reply from daemon');
 
                         switch (message[resField].response) {
                             case resClass.Result.ACCEPTED:
@@ -195,23 +195,23 @@ class Redeem {
                                 }
                                 break;
                             case resClass.Result.REJECTED:
-                                throw new Error('Request rejected');
+                                return this.error('Request rejected');
                             case resClass.Result.TIMEOUT:
-                                throw new Error('No response from the tracker');
+                                return this.error('No response from the tracker');
                             case resClass.Result.NO_TRACKER:
-                                throw new Error('Not connected to the tracker');
+                                return this.error('Not connected to the tracker');
                             default:
-                                throw new Error('Unsupported response from daemon');
+                                return this.error('Unsupported response from daemon');
                         }
                     })
                     .then(() => {
                         process.exit(0);
                     })
                     .catch(error => {
-                        return this.error(error.message);
+                        return this.error(error);
                     });
             } catch (error) {
-                return this.error(error.message);
+                return this.error(error);
             }
         });
 
@@ -227,23 +227,25 @@ class Redeem {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] === '/')
+            if (sockName && sockName[0] === '/') {
                 sock = sockName;
-            else
-                sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
+            } else {
+                sockName = sockName ? `.${sockName}` : '';
+                sock = path.join('/var', 'run', this._config.project, this._config.instance + sockName + '.sock');
+            }
 
             let onError = error => {
                 this.error(`Could not connect to daemon: ${error.message}`);
             };
 
             let socket = net.connect(sock, () => {
-                this._app.debug('Connected to daemon');
+                this._app.debug('Connected to daemon').catch(() => { /* do nothing */ });
                 socket.removeListener('error', onError);
-                socket.once('error', error => { this.error(error.message) });
+                socket.once('error', error => { this.error(error); });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    this._app.debug('Got daemon reply');
+                    this._app.debug('Got daemon reply').catch(() => { /* do nothing */ });
                     resolve(data);
                     socket.end();
                 });
@@ -258,7 +260,14 @@ class Redeem {
      * @param {...*} args
      */
     error(...args) {
-        return this._app.error(...args)
+        return args.reduce(
+                (prev, cur) => {
+                    return prev.then(() => {
+                        return this._app.error(cur.fullStack || cur.stack || cur.message || cur);
+                    });
+                },
+                Promise.resolve()
+            )
             .then(
                 () => {
                     process.exit(1);

@@ -59,7 +59,7 @@ class Start {
 
         return Promise.resolve()
             .then(() => {
-                if (args.options['install'])
+                if (args.options.install)
                     return this._install.install();
             })
             .then(() => {
@@ -69,8 +69,8 @@ class Start {
                 process.exit(rc);
             })
             .catch(error => {
-                return this.error(error.message);
-            })
+                return this.error(error.messages || error.message);
+            });
     }
 
     /**
@@ -81,11 +81,11 @@ class Start {
             .then(result => {
                 return Promise.resolve()
                     .then(() => {
-                        if (result.code !== 0)
+                        if (result.code !== 0 && result.stdout)
                             return this._app.info(result.stdout);
                     })
                     .then(() => {
-                        if (result.code !== 0)
+                        if (result.code !== 0 && result.stderr)
                             return this._app.error(result.stderr);
                     })
                     .then(() => {
@@ -127,7 +127,14 @@ class Start {
      * @param {...*} args
      */
     error(...args) {
-        return this._app.error(...args)
+        return args.reduce(
+                (prev, cur) => {
+                    return prev.then(() => {
+                        return this._app.error(cur.fullStack || cur.stack || cur.message || cur);
+                    });
+                },
+                Promise.resolve()
+            )
             .then(
                 () => {
                     process.exit(1);

@@ -3,7 +3,7 @@
  * @module daemon/events/connections-list-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Connection List Request event class
@@ -103,7 +103,7 @@ class ConnectionsListRequest {
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.connectionsListRequest.trackerName, data);
         } catch (error) {
-            this._logger.error(new WError(error, 'ConnectionsListRequest.handle()'));
+            this._logger.error(new NError(error, 'ConnectionsListRequest.handle()'));
         }
     }
 

@@ -96,7 +96,7 @@ function restart() {
     proc.promise
         .then(result => {
             if (result.code === 0)
-                exit(0);
+                return exit(0);
 
             if (log) {
                 try {
@@ -111,7 +111,10 @@ function restart() {
                 }
             }
 
-            if (result.code === 255 || !config.email.crash.enable)
+            if (result.code === 255)
+                return exit(255);
+
+            if(!config.email.crash.enable)
                 return setTimeout(() => { restart(); }, restartPause);
 
             return emailer.send({
@@ -139,7 +142,7 @@ function restart() {
             }
 
             if (!config.email.crash.enable)
-                exit(1);
+                return exit(1);
 
             return emailer.send({
                     from: config.email.from,

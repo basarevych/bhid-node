@@ -3,7 +3,7 @@
  * @module daemon/events/get-connections-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Get Connections Request event class
@@ -115,7 +115,7 @@ class GetConnectionsRequest {
 
             reply(this.daemon.GetConnectionsResponse.Result.ACCEPTED, activeList, importedList);
         } catch (error) {
-            this._logger.error(new WError(error, 'GetConnectionsRequest.handle()'));
+            this._logger.error(new NError(error, 'GetConnectionsRequest.handle()'));
         }
     }
 

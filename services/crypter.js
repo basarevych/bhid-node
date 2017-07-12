@@ -9,7 +9,7 @@ const uuid = require('uuid');
 const crypto = require('crypto');
 const NodeRSA = require('node-rsa');
 const nacl = require('tweetnacl');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 class Crypter {
     /**
@@ -23,7 +23,14 @@ class Crypter {
         this.privateKey = null;
         this.identity = null;
 
-        this.sessions = new Map();
+        this.sessions = new Map();                      /* id => {
+                                                                id: uuid,
+                                                                connection: 'tracker#user@dom/path',
+                                                                publicKey: Buffer,
+                                                                privateKey: Buffer,
+                                                                peerKey: Buffer,
+                                                           }
+                                                         */
 
         this._app = app;
         this._config = config;
@@ -59,7 +66,7 @@ class Crypter {
      * @type {number}
      */
     static get lookupTimeout() {
-        return 5 * 1000; // ms
+        return 2 * 1000; // ms
     }
 
     /**
@@ -78,16 +85,17 @@ class Crypter {
 
     /**
      * Create session
-     * @param {string} name                     Connection name
-     * @return {string|null}                    Session ID or null
+     * @param {string} id                       Session ID
+     * @param {string} name                     Connection full name
+     * @return {boolean}
      */
-    create(name) {
-        let id = uuid.v1(), keyPair;
+    create(id, name) {
+        let keyPair;
         try {
             keyPair = nacl.box.keyPair();
         } catch (error) {
-            this._logger.error(new WError(error, `Crypter.create(): ${name}`));
-            return null;
+            this._logger.error(new NError(error, `Crypter.create(): ${name}`));
+            return false;
         }
 
         let session = {
@@ -98,7 +106,8 @@ class Crypter {
             peerKey: null,
         };
         this.sessions.set(id, session);
-        return id;
+
+        return true;
     }
 
     /**
@@ -132,9 +141,9 @@ class Crypter {
      * @param {string} tracker                  Tracker to ask for key
      * @param {string} identity                 Peer supplied identity
      * @param {string} buffer                   Buffer
-     * @param {string} signature                Signature
+     * @param {string} signature                Signature of buffer
      * @param {boolean} [strict=false]          Allow identity change
-     * @return {object}                         Returns { verified, name }
+     * @return {Promise}                        Resolves to { verified, name }
      */
     verify(id, tracker, identity, buffer, signature, strict = false) {
         let session = this.sessions.get(id);
@@ -204,7 +213,7 @@ class Crypter {
                             resolve(false);
                         }, this.constructor.lookupTimeout);
                     } catch (error) {
-                        reject(new new WError(error, 'Crypter.verify()'));
+                        reject(new NError(error, 'Crypter.verify()'));
                     }
                 });
             })
@@ -311,11 +320,11 @@ class Crypter {
      * Find and load peer
      * @param {string} tracker                  Tracker name
      * @param {string} identity                 Peer supplied identity
-     * @return {Promise}                        Peer info
+     * @return {Promise}                        Resolves to peer info
      * <code>
      * {
-     *     name: 'user@example.com/daemon-name',
-     *     publicKey: NodeRSA(),
+     *     name: 'user@dom/daemon',
+     *     publicKey: NodeRSA,
      * }
      * </code>
      */
@@ -346,7 +355,7 @@ class Crypter {
                 }
                 resolve(null);
             } catch (error) {
-                reject(new WError(error, 'Crypter._loadPeer()'));
+                reject(new NError(error, 'Crypter._loadPeer()'));
             }
         });
     }

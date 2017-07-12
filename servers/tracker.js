@@ -10,7 +10,7 @@ const uuid = require('uuid');
 const os = require('os');
 const protobuf = require('protobufjs');
 const EventEmitter = require('events');
-const WError = require('verror').WError;
+const NError = require('nerror');
 const SocketWrapper = require('socket-wrapper');
 
 /**
@@ -29,8 +29,22 @@ class Tracker extends EventEmitter {
     constructor(app, config, logger, runner, crypter, connectionsList) {
         super();
 
-        this.servers = new Map();
-        this.default = null;
+        this.servers = new Map();                           /* name => {
+                                                                     name: string, // tracker name
+                                                                     email: null, // tracker reported email
+                                                                     daemonName: null, // tracker reported our name
+                                                                     socket: null,
+                                                                     wrapper: SocketWrapper(socket),
+                                                                     address: string,
+                                                                     port: string,
+                                                                     options: object, // socket options
+                                                                     token: null, // our token for the tracker
+                                                                     connected: false,
+                                                                     registered: false,
+                                                               }
+                                                            */
+
+        this.default = null; // name
 
         this._name = null;
         this._app = app;
@@ -101,7 +115,7 @@ class Tracker extends EventEmitter {
                 this._logger.debug('tracker', 'Loading protocol');
                 protobuf.load(path.join(this._config.base_path, 'proto', 'tracker.proto'), (error, root) => {
                     if (error)
-                        return reject(new WError(error, 'Tracker.init()'));
+                        return reject(new NError(error, 'Tracker.init()'));
 
                     try {
                         this.proto = root;
@@ -150,9 +164,9 @@ class Tracker extends EventEmitter {
                         this.ServerMessage = this.proto.lookup('tracker.ServerMessage');
                         resolve();
                     } catch (error) {
-                        reject(new WError(error, 'Tracker.init()'));
+                        reject(new NError(error, 'Tracker.init()'));
                     }
-                })
+                });
             })
             .then(() => {
                 let configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
@@ -168,7 +182,7 @@ class Tracker extends EventEmitter {
                         continue;
 
                     let tracker = section.substr(0, section.length - this.constructor.trackerSection.length);
-                    let ca = bhidConfig[section]['ca_file'];
+                    let ca = bhidConfig[section].ca_file;
                     if (ca && ca[0] !== '/')
                         ca = path.join(configPath, 'certs', ca);
                     if (ca)
@@ -181,17 +195,22 @@ class Tracker extends EventEmitter {
                         socket: null,
                         wrapper: new SocketWrapper(),
                         address: tracker,
-                        port: bhidConfig[section]['port'] || '42042',
+                        port: bhidConfig[section].port || '42042',
                         options: { ca: ca },
-                        token: bhidConfig[section]['token'] || null,
+                        token: bhidConfig[section].token || null,
                         connected: false,
                         registered: false,
                     };
 
                     this.servers.set(tracker, server);
-                    if (bhidConfig[section]['default'] === 'yes')
+                    if (bhidConfig[section].default === 'yes')
                         this.default = tracker;
                 }
+            })
+            .catch(error => {
+                return new Promise(() => {
+                    this._logger.error(error.messages || error.message, () => { process.exit(255); });
+                })
             });
     }
 
@@ -223,19 +242,66 @@ class Tracker extends EventEmitter {
                 for (let server of this.servers.keys())
                     this._reconnect(server);
                 this._timeoutTimer = setInterval(() => { this._checkTimeout(); }, 500);
+            })
+            .catch(error => {
+                return new Promise(() => {
+                    this._logger.error(error.messages || error.message, () => { process.exit(255); });
+                })
             });
+    }
+
+    /**
+     * Stop the server
+     * @param {string} name                     Config section name
+     * @return {Promise}
+     */
+    stop(name) {
+        if (name !== this._name)
+            return Promise.reject(new Error(`Server ${name} was not properly initialized`));
+
+        if (this._timeoutTimer) {
+            clearInterval(this._timeoutTimer);
+            this._timeoutTimer = null;
+        }
+
+        return new Promise((resolve, reject) => {
+            let counter = 0;
+            let done = () => {
+                if (--counter <= 0)
+                    this._logger.info(`Trackers disconnected`, () => { resolve(); });
+            };
+            try {
+                for (let [ name, tracker ] of this.servers) {
+                    if (!tracker.socket)
+                        continue;
+
+                    if (!tracker.connected) {
+                        tracker.socket.destroy();
+                        continue;
+                    }
+
+                    ++counter;
+                    tracker.socket.once('close', done);
+                    tracker.socket.end();
+                }
+                if (!counter)
+                    done();
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
 
     /**
      * Get server
      * @param {string} name                 Tracker name
-     * @return {string|null}
+     * @return {object|undefined}
      */
     getServer(name) {
         if (!name)
             name = this.default;
         if (!name)
-            return null;
+            return undefined;
 
         return this.servers.get(name);
     }
@@ -261,7 +327,7 @@ class Tracker extends EventEmitter {
     /**
      * Set master token
      * @param {string} token        The token
-     * @return {Promise}            Resolves to success
+     * @return {Promise}            Resolves to true on success
      */
     setMasterToken(token) {
         return Promise.resolve()
@@ -285,7 +351,7 @@ class Tracker extends EventEmitter {
      * Set daemon token for the tracker
      * @param {string} name         Name of the tracker
      * @param {string} token        The token
-     * @return {Promise}            Resolves to success
+     * @return {Promise}            Resolves to true on success
      */
     setDaemonToken(name, token) {
         if (!name)
@@ -366,7 +432,7 @@ class Tracker extends EventEmitter {
 
                     let tracker = section.substr(0, section.length - this.constructor.trackerSection.length);
                     if (tracker === name) {
-                        bhidConfig[section]['token'] = token;
+                        bhidConfig[section].token = token;
                         this._logger.debug('tracker', `Tracker ${name} token updated`);
                         break;
                     }
@@ -400,7 +466,7 @@ class Tracker extends EventEmitter {
         if (!name)
             name = this.default;
         let server = this.servers.get(name);
-        if (!server || !server.socket || !server.wrapper)
+        if (!server || !server.connected)
             return;
 
         if (!data) {
@@ -410,7 +476,7 @@ class Tracker extends EventEmitter {
                 });
                 data = this.ClientMessage.encode(message).finish();
             } catch (error) {
-                this._logger.error(new WError(error, `Tracker.send()`));
+                this._logger.error(new NError(error, `Tracker.send()`));
                 return;
             }
         }
@@ -433,6 +499,23 @@ class Tracker extends EventEmitter {
         if (!connection)
             return;
 
+        if (!connection.server) {
+            let connecting = false;
+            for (let id of connection.sessionIds) {
+                let session = this._peer.sessions.get(id);
+                if (!session || session.closing)
+                    continue;
+                if (session.internal || session.external)
+                    connecting = true;
+                if (session.connected) {
+                    connecting = false;
+                    break;
+                }
+            }
+            if (connecting)
+                return;
+        }
+
         let connected = 0;
         let trackedConnections = this._connectionsList.get(trackerName);
         if (trackedConnections) {
@@ -447,20 +530,17 @@ class Tracker extends EventEmitter {
         try {
             this._logger.debug('tracker', `Sending STATUS of ${connectionName} to ${trackerName}`);
             let addresses = [];
-            if (connection.server && connection.utp) {
-                let utpAddress = connection.utp.address();
-                let interfaces = os.networkInterfaces();
-                for (let iface of Object.keys(interfaces)) {
-                    for (let alias of interfaces[iface]) {
-                        if (alias.internal || [ 'IPv4', 'IPv6' ].indexOf(alias.family) === -1)
-                            continue;
+            let interfaces = os.networkInterfaces();
+            for (let iface of Object.keys(interfaces)) {
+                for (let alias of interfaces[iface]) {
+                    if (alias.internal || [ 'IPv4', 'IPv6' ].indexOf(alias.family) === -1)
+                        continue;
 
-                        addresses.push(this.InternalAddress.create({
-                            family: alias.family,
-                            address: alias.address,
-                            port: utpAddress.port.toString(),
-                        }));
-                    }
+                    addresses.push(this.InternalAddress.create({
+                        family: alias.family,
+                        address: alias.address,
+                        port: this._peer.utp.address().port.toString(),
+                    }));
                 }
             }
             let status = this.Status.create({
@@ -476,7 +556,7 @@ class Tracker extends EventEmitter {
             let buffer = this.ClientMessage.encode(message).finish();
             this.send(trackerName, buffer);
         } catch (error) {
-            this._logger.error(new WError(error, `Tracker.sendStatus()`));
+            this._logger.error(new NError(error, `Tracker.sendStatus()`));
         }
     }
 
@@ -505,7 +585,7 @@ class Tracker extends EventEmitter {
             this.send(trackerName, buffer);
             return id;
         } catch (error) {
-            this._logger.error(new WError(error, `Tracker.sendLookupIdentityRequest()`));
+            this._logger.error(new NError(error, `Tracker.sendLookupIdentityRequest()`));
         }
 
         return null;
@@ -533,7 +613,7 @@ class Tracker extends EventEmitter {
             let buffer = this.ClientMessage.encode(message).finish();
             this.send(trackerName, buffer);
         } catch (error) {
-            this._logger.error(new WError(error, `Tracker.sendPunchRequest()`));
+            this._logger.error(new NError(error, `Tracker.sendPunchRequest()`));
         }
     }
 
@@ -547,9 +627,6 @@ class Tracker extends EventEmitter {
         let server = this.servers.get(name);
         if (!server)
             return false;
-
-        if (!data || !data.length)
-            return true;
 
         let message;
         try {
@@ -623,7 +700,7 @@ class Tracker extends EventEmitter {
                     break;
             }
         } catch (error) {
-            this._logger.error(new WError(error, 'Tracker.onMessage()'));
+            this._logger.error(new NError(error, 'Tracker.onMessage()'));
         }
 
         return true;
@@ -636,7 +713,7 @@ class Tracker extends EventEmitter {
      */
     onError(name, error) {
         if (error.code !== 'ECONNRESET')
-            this._logger.error(`Tracker socket error: ${error.message}`);
+            this._logger.error(`Tracker ${name} socket error: ${error.messages || error.message}`);
     }
 
     /**
@@ -644,6 +721,8 @@ class Tracker extends EventEmitter {
      * @param {string} name                 Tracker name
      */
     onClose(name) {
+        this._timeouts.delete(name);
+
         let server = this.servers.get(name);
         if (!server || !server.socket)
             return;
@@ -651,14 +730,12 @@ class Tracker extends EventEmitter {
         if (server.registered)
             this._logger.info(`Tracker ${name} disconnected`);
 
-        if (!server.socket.destroyed)
-            server.socket.destroy();
+        server.socket.destroy();
         server.socket = null;
         server.wrapper.detach();
         server.connected = false;
         server.registered = false;
 
-        this._timeouts.delete(name);
         setTimeout(() => { this._reconnect(name); }, this.constructor.reconnectPause);
     }
 
@@ -668,11 +745,7 @@ class Tracker extends EventEmitter {
      */
     onTimeout(name) {
         this._logger.debug('tracker', `Tracker ${name} timeout`);
-        let server = this.servers.get(name);
-        if (server && server.socket) {
-            server.socket.destroy();
-            server.wrapper.detach();
-        }
+        this.onClose(name);
     }
 
     /**
@@ -729,7 +802,7 @@ class Tracker extends EventEmitter {
                         }
                     );
 
-                    this.emit('connection', name);
+                    this.emit('connect', name);
                 }
             );
 
@@ -739,12 +812,11 @@ class Tracker extends EventEmitter {
             this._timeouts.set(
                 name,
                 {
-                    send: 0,
-                    receive: Date.now() + this.constructor.connectTimeout,
+                    connect: Date.now() + this.constructor.connectTimeout,
                 }
             );
         } catch (error) {
-            this._logger.error(new WError(error, `Tracker._reconnect(): ${name}`));
+            this._logger.error(new NError(error, `Tracker._reconnect(): ${name}`));
         }
     }
 
@@ -754,18 +826,27 @@ class Tracker extends EventEmitter {
     _checkTimeout() {
         let now = Date.now();
         for (let [ name, timestamp ] of this._timeouts) {
-            if (!name)
-                continue;
-            if (!this.servers.has(name)) {
+            let server = this.servers.get(name);
+            if (!server) {
                 this._timeouts.delete(name);
                 continue;
             }
 
-            if (timestamp.receive !== 0 && now >= timestamp.receive) {
+            if (timestamp.connect && now >= timestamp.connect) {
+                timestamp.connect = 0;
+                if (!server.connected) {
+                    this.onTimeout(name);
+                    continue;
+                }
+            }
+
+            if (timestamp.receive && now >= timestamp.receive) {
                 timestamp.receive = 0;
-                timestamp.send = 0;
                 this.onTimeout(name);
-            } else if (timestamp.send !== 0 && now >= timestamp.send) {
+                continue;
+            }
+
+            if (timestamp.send && now >= timestamp.send) {
                 timestamp.send = 0;
                 this.send(name, null);
             }

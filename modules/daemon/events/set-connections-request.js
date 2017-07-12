@@ -3,7 +3,7 @@
  * @module daemon/events/set-connections-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Set Connections Request event class
@@ -74,7 +74,7 @@ class SetConnectionsRequest {
             else
                 reply(this.daemon.SetConnectionsResponse.Result.REJECTED);
         } catch (error) {
-            this._logger.error(new WError(error, 'SetConnectionsRequest.handle()'));
+            this._logger.error(new NError(error, 'SetConnectionsRequest.handle()'));
         }
     }
 

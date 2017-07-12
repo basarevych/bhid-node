@@ -3,7 +3,7 @@
  * @module daemon/events/set-token-request
  */
 const uuid = require('uuid');
-const WError = require('verror').WError;
+const NError = require('nerror');
 
 /**
  * Set Token Request event class
@@ -72,7 +72,7 @@ class SetTokenRequest {
                 this.daemon.send(id, data);
             })
             .catch (error => {
-                this._logger.error(new WError(error, 'SetTokenRequest.handle()'));
+                this._logger.error(new NError(error, 'SetTokenRequest.handle()'));
             });
     }
 

@@ -2,10 +2,10 @@ syntax = "proto3";
 package daemon;
 
 message ConnectRequest {
-    required string identity = 1;
-    required bytes public_key = 2;
-    required bytes signature = 3;
-    required bool encrypted = 4;
+    string identity = 1;
+    bytes public_key = 2;
+    bytes signature = 3;
+    bool encrypted = 4;
 }
 
 message ConnectResponse {
@@ -13,12 +13,12 @@ message ConnectResponse {
         ACCEPTED = 0;
         REJECTED = 1;
     }
-    required Result response = 1;
+    Result response = 1;
 }
 
 message EncryptedData {
-    required bytes nonce = 1;
-    required bytes payload = 2;
+    bytes nonce = 1;
+    bytes payload = 2;
 }
 
 message InnerMessage {
@@ -27,9 +27,9 @@ message InnerMessage {
         CLOSE = 1;
         DATA = 10;
     }
-    required Type type = 1;
-    required string id = 2;
-    optional bytes data = 3;
+    Type type = 1;
+    string id = 2;
+    bytes data = 3;
 }
 
 message OuterMessage {
@@ -40,9 +40,9 @@ message OuterMessage {
         CONNECT_REQUEST = 30;
         CONNECT_RESPONSE = 31;
     }
-    required Type type = 1;
-    optional bytes message = 2;
-    optional EncryptedData encrypted_message = 3;
-    optional ConnectRequest connect_request = 100;
-    optional ConnectResponse connect_response = 110;
+    Type type = 1;
+    bytes message = 2;
+    EncryptedData encrypted_message = 3;
+    ConnectRequest connect_request = 100;
+    ConnectResponse connect_response = 110;
 }

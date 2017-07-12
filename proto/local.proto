@@ -2,23 +2,23 @@ syntax = "proto3";
 package local;
 
 message ServerConnection {
-    required string name = 1;
-    required string connect_address = 2;
-    required string connect_port = 3;
-    required bool encrypted = 4;
-    required bool fixed = 5;
+    string name = 1;
+    string connect_address = 2;
+    string connect_port = 3;
+    bool encrypted = 4;
+    bool fixed = 5;
     repeated string clients = 6;
-    optional uint32 connected = 7;
+    uint32 connected = 7;
 }
 
 message ClientConnection {
-    required string name = 1;
-    optional string listen_address = 2;
-    optional string listen_port = 3;
-    required bool encrypted = 4;
-    required bool fixed = 5;
-    optional string server = 6;
-    optional uint32 connected = 7;
+    string name = 1;
+    string listen_address = 2;
+    string listen_port = 3;
+    bool encrypted = 4;
+    bool fixed = 5;
+    string server = 6;
+    uint32 connected = 7;
 }
 
 message ConnectionsList {
@@ -27,8 +27,8 @@ message ConnectionsList {
 }
 
 message InitRequest {
-    optional string tracker_name = 1;
-    required string email = 2;
+    string tracker_name = 1;
+    string email = 2;
 }
 
 message InitResponse {
@@ -39,12 +39,12 @@ message InitResponse {
         TIMEOUT = 9000;
         NO_TRACKER = 9010;
     }
-    required Result response = 1;
+    Result response = 1;
 }
 
 message ConfirmRequest {
-    required string tracker_name = 1;
-    required string token = 2;
+    string tracker_name = 1;
+    string token = 2;
 }
 
 message ConfirmResponse {
@@ -54,15 +54,15 @@ message ConfirmResponse {
         TIMEOUT = 9000;
         NO_TRACKER = 9010;
     }
-    required Result response = 1;
-    optional string token = 2;
+    Result response = 1;
+    string token = 2;
 }
 
 message CreateDaemonRequest {
-    required string tracker_name = 1;
-    required string token = 2;
-    optional string daemon_name = 3;
-    optional bool randomize = 4;
+    string tracker_name = 1;
+    string token = 2;
+    string daemon_name = 3;
+    bool randomize = 4;
 }
 
 message CreateDaemonResponse {
@@ -74,9 +74,9 @@ message CreateDaemonResponse {
         TIMEOUT = 9000;
         NO_TRACKER = 9010;
     }
-    required Result response = 1;
-    optional string daemon_name = 2;
-    optional string token = 3;
+    Result response = 1;
+    string daemon_name = 2;
+    string token = 3;
 }
 
 message SetTokenRequest {
@@ -84,9 +84,9 @@ message SetTokenRequest {
         MASTER = 0;
         DAEMON = 1;
     }
-    required Type type = 1;
-    required string token = 2;
-    optional string tracker_name = 3;
+    Type type = 1;
+    string token = 2;
+    string tracker_name = 3;
 }
 
 message SetTokenResponse {
@@ -94,7 +94,7 @@ message SetTokenResponse {
         ACCEPTED = 0;
         REJECTED = 1;
     }
-    required Result response = 1;
+    Result response = 1;
 }
 
 message CreateRequest {
@@ -103,16 +103,16 @@ message CreateRequest {
         CLIENT = 1;
         NOT_CONNECTED = 2;
     }
-    required string tracker_name = 1;
-    required string daemon_name = 2;
-    required string path = 3;
-    required Type type = 4;
-    required bool encrypted = 5;
-    required bool fixed = 6;
-    optional string connect_address = 7;
-    required string connect_port = 8;
-    optional string listen_address = 9;
-    optional string listen_port = 10;
+    string tracker_name = 1;
+    string daemon_name = 2;
+    string path = 3;
+    Type type = 4;
+    bool encrypted = 5;
+    bool fixed = 6;
+    string connect_address = 7;
+    string connect_port = 8;
+    string listen_address = 9;
+    string listen_port = 10;
 }
 
 message CreateResponse {
@@ -125,15 +125,15 @@ message CreateResponse {
         NO_TRACKER = 9010;
         NOT_REGISTERED = 9020;
     }
-    required Result response = 1;
-    optional string server_token = 2;
-    optional string client_token = 3;
-    optional ConnectionsList updates = 4;
+    Result response = 1;
+    string server_token = 2;
+    string client_token = 3;
+    ConnectionsList updates = 4;
 }
 
 message DeleteRequest {
-    required string tracker_name = 1;
-    required string path = 2;
+    string tracker_name = 1;
+    string path = 2;
 }
 
 message DeleteResponse {
@@ -146,12 +146,12 @@ message DeleteResponse {
         NO_TRACKER = 9010;
         NOT_REGISTERED = 9020;
     }
-    required Result response = 1;
+    Result response = 1;
 }
 
 message ImportRequest {
-    required string tracker_name = 1;
-    required string token = 2;
+    string tracker_name = 1;
+    string token = 2;
 }
 
 message ImportResponse {
@@ -162,16 +162,16 @@ message ImportResponse {
         NO_TRACKER = 9010;
         NOT_REGISTERED = 9020;
     }
-    required Result response = 1;
-    optional ConnectionsList updates = 2;
+    Result response = 1;
+    ConnectionsList updates = 2;
 }
 
 message AttachRequest {
-    required string tracker_name = 1;
-    optional string daemon_name = 2;
-    required string path = 3;
-    optional string address_override = 4;
-    optional string port_override = 5;
+    string tracker_name = 1;
+    string daemon_name = 2;
+    string path = 3;
+    string address_override = 4;
+    string port_override = 5;
 }
 
 message AttachResponse {
@@ -185,14 +185,14 @@ message AttachResponse {
         NO_TRACKER = 9010;
         NOT_REGISTERED = 9020;
     }
-    required Result response = 1;
-    optional ConnectionsList updates = 2;
+    Result response = 1;
+    ConnectionsList updates = 2;
 }
 
 message DetachRequest {
-    required string tracker_name = 1;
-    optional string daemon_name = 2;
-    required string path = 3;
+    string tracker_name = 1;
+    string daemon_name = 2;
+    string path = 3;
 }
 
 message DetachResponse {
@@ -206,13 +206,13 @@ message DetachResponse {
         NO_TRACKER = 9010;
         NOT_REGISTERED = 9020;
     }
-    required Result response = 1;
+    Result response = 1;
 }
 
 message TreeRequest {
-    required string tracker_name = 1;
-    required string daemon_name = 2;
-    optional string path = 3;
+    string tracker_name = 1;
+    string daemon_name = 2;
+    string path = 3;
 }
 
 message Tree {
@@ -222,18 +222,18 @@ message Tree {
         NOT_CONNECTED = 2;
     }
     repeated Tree tree = 1;
-    required bool connection = 2;
-    required Type type = 3;
-    required string name = 4;
-    required string path = 5;
-    optional uint32 servers_number = 6;
-    optional string connect_address = 7;
-    optional string connect_port = 8;
-    optional uint32 clients_number = 9;
-    optional string listen_address = 10;
-    optional string listen_port = 11;
-    optional bool encrypted = 12;
-    optional bool fixed = 13;
+    bool connection = 2;
+    Type type = 3;
+    string name = 4;
+    string path = 5;
+    uint32 servers_number = 6;
+    string connect_address = 7;
+    string connect_port = 8;
+    uint32 clients_number = 9;
+    string listen_address = 10;
+    string listen_port = 11;
+    bool encrypted = 12;
+    bool fixed = 13;
 }
 
 message TreeResponse {
@@ -246,12 +246,12 @@ message TreeResponse {
         NO_TRACKER = 9010;
         NOT_REGISTERED = 9020;
     }
-    required Result response = 1;
-    optional Tree tree = 2;
+    Result response = 1;
+    Tree tree = 2;
 }
 
 message ConnectionsListRequest {
-    required string tracker_name = 1;
+    string tracker_name = 1;
 }
 
 message ConnectionsListResponse {
@@ -262,13 +262,13 @@ message ConnectionsListResponse {
         NO_TRACKER = 9010;
         NOT_REGISTERED = 9020;
     }
-    required Result response = 1;
-    optional ConnectionsList list = 2;
+    Result response = 1;
+    ConnectionsList list = 2;
 }
 
 message SetConnectionsRequest {
-    required string tracker_name = 1;
-    required ConnectionsList list = 2;
+    string tracker_name = 1;
+    ConnectionsList list = 2;
 }
 
 message SetConnectionsResponse {
@@ -276,11 +276,11 @@ message SetConnectionsResponse {
         ACCEPTED = 0;
         REJECTED = 1;
     }
-    required Result response = 1;
+    Result response = 1;
 }
 
 message GetConnectionsRequest {
-    required string tracker_name = 1;
+    string tracker_name = 1;
 }
 
 message GetConnectionsResponse {
@@ -290,15 +290,15 @@ message GetConnectionsResponse {
         NO_TRACKER = 9010;
         NOT_REGISTERED = 9020;
     }
-    required Result response = 1;
-    optional ConnectionsList active_list = 2;
-    optional ConnectionsList imported_list = 3;
+    Result response = 1;
+    ConnectionsList active_list = 2;
+    ConnectionsList imported_list = 3;
 }
 
 message ImportConnectionsRequest {
-    required string tracker_name = 1;
-    required string token = 2;
-    required ConnectionsList list = 3;
+    string tracker_name = 1;
+    string token = 2;
+    ConnectionsList list = 3;
 }
 
 message ImportConnectionsResponse {
@@ -306,12 +306,12 @@ message ImportConnectionsResponse {
         ACCEPTED = 0;
         REJECTED = 1;
     }
-    required Result response = 1;
+    Result response = 1;
 }
 
 message UpdateConnectionsRequest {
-    required string tracker_name = 1;
-    required ConnectionsList list = 2;
+    string tracker_name = 1;
+    ConnectionsList list = 2;
 }
 
 message UpdateConnectionsResponse {
@@ -319,12 +319,12 @@ message UpdateConnectionsResponse {
         ACCEPTED = 0;
         REJECTED = 1;
     }
-    required Result response = 1;
+    Result response = 1;
 }
 
 message RedeemMasterRequest {
-    required string tracker_name = 1;
-    required string email = 2;
+    string tracker_name = 1;
+    string email = 2;
 }
 
 message RedeemMasterResponse {
@@ -334,13 +334,13 @@ message RedeemMasterResponse {
         TIMEOUT = 9000;
         NO_TRACKER = 9010;
     }
-    required Result response = 1;
+    Result response = 1;
 }
 
 message RedeemDaemonRequest {
-    required string tracker_name = 1;
-    required string token = 2;
-    required string daemon_name = 3;
+    string tracker_name = 1;
+    string token = 2;
+    string daemon_name = 3;
 }
 
 message RedeemDaemonResponse {
@@ -350,8 +350,8 @@ message RedeemDaemonResponse {
         TIMEOUT = 9000;
         NO_TRACKER = 9010;
     }
-    required Result response = 1;
-    optional string token = 2;
+    Result response = 1;
+    string token = 2;
 }
 
 message RedeemPathRequest {
@@ -359,10 +359,10 @@ message RedeemPathRequest {
         SERVER = 0;
         CLIENT = 1;
     }
-    required string tracker_name = 1;
-    required string token = 2;
-    required string path = 3;
-    required Type type = 4;
+    string tracker_name = 1;
+    string token = 2;
+    string path = 3;
+    Type type = 4;
 }
 
 message RedeemPathResponse {
@@ -372,8 +372,8 @@ message RedeemPathResponse {
         TIMEOUT = 9000;
         NO_TRACKER = 9010;
     }
-    required Result response = 1;
-    optional string token = 2;
+    Result response = 1;
+    string token = 2;
 }
 
 message ClientMessage {
@@ -397,25 +397,25 @@ message ClientMessage {
         REDEEM_DAEMON_REQUEST = 121;
         REDEEM_PATH_REQUEST = 122;
     }
-    required Type type = 1;
-    optional InitRequest init_request = 100;
-    optional ConfirmRequest confirm_request = 110;
-    optional CreateDaemonRequest create_daemon_request = 200;
-    optional SetTokenRequest set_token_request = 300;
-    optional CreateRequest create_request = 400;
-    optional DeleteRequest delete_request = 500;
-    optional ImportRequest import_request = 600;
-    optional AttachRequest attach_request = 700;
-    optional DetachRequest detach_request = 800;
-    optional TreeRequest tree_request = 900;
-    optional ConnectionsListRequest connections_list_request = 1000;
-    optional SetConnectionsRequest set_connections_request = 1100;
-    optional GetConnectionsRequest get_connections_request = 1110;
-    optional ImportConnectionsRequest import_connections_request = 1200;
-    optional UpdateConnectionsRequest update_connections_request = 1210;
-    optional RedeemMasterRequest redeem_master_request = 1300;
-    optional RedeemDaemonRequest redeem_daemon_request = 1310;
-    optional RedeemPathRequest redeem_path_request = 1320;
+    Type type = 1;
+    InitRequest init_request = 100;
+    ConfirmRequest confirm_request = 110;
+    CreateDaemonRequest create_daemon_request = 200;
+    SetTokenRequest set_token_request = 300;
+    CreateRequest create_request = 400;
+    DeleteRequest delete_request = 500;
+    ImportRequest import_request = 600;
+    AttachRequest attach_request = 700;
+    DetachRequest detach_request = 800;
+    TreeRequest tree_request = 900;
+    ConnectionsListRequest connections_list_request = 1000;
+    SetConnectionsRequest set_connections_request = 1100;
+    GetConnectionsRequest get_connections_request = 1110;
+    ImportConnectionsRequest import_connections_request = 1200;
+    UpdateConnectionsRequest update_connections_request = 1210;
+    RedeemMasterRequest redeem_master_request = 1300;
+    RedeemDaemonRequest redeem_daemon_request = 1310;
+    RedeemPathRequest redeem_path_request = 1320;
 }
 
 message ServerMessage {
@@ -439,23 +439,23 @@ message ServerMessage {
         REDEEM_DAEMON_RESPONSE = 121;
         REDEEM_PATH_RESPONSE = 122;
     }
-    required Type type = 1;
-    optional InitResponse init_response = 100;
-    optional ConfirmResponse confirm_response = 110;
-    optional CreateDaemonResponse create_daemon_response = 200;
-    optional SetTokenResponse set_token_response = 300;
-    optional CreateResponse create_response = 400;
-    optional DeleteResponse delete_response = 500;
-    optional ImportResponse import_response = 600;
-    optional AttachResponse attach_response = 700;
-    optional DetachResponse detach_response = 800;
-    optional TreeResponse tree_response = 900;
-    optional ConnectionsListResponse connections_list_response = 1000;
-    optional SetConnectionsResponse set_connections_response = 1100;
-    optional GetConnectionsResponse get_connections_response = 1110;
-    optional ImportConnectionsResponse import_connections_response = 1200;
-    optional UpdateConnectionsResponse update_connections_response = 1210;
-    optional RedeemMasterResponse redeem_master_response = 1300;
-    optional RedeemDaemonResponse redeem_daemon_response = 1310;
-    optional RedeemPathResponse redeem_path_response = 1320;
+    Type type = 1;
+    InitResponse init_response = 100;
+    ConfirmResponse confirm_response = 110;
+    CreateDaemonResponse create_daemon_response = 200;
+    SetTokenResponse set_token_response = 300;
+    CreateResponse create_response = 400;
+    DeleteResponse delete_response = 500;
+    ImportResponse import_response = 600;
+    AttachResponse attach_response = 700;
+    DetachResponse detach_response = 800;
+    TreeResponse tree_response = 900;
+    ConnectionsListResponse connections_list_response = 1000;
+    SetConnectionsResponse set_connections_response = 1100;
+    GetConnectionsResponse get_connections_response = 1110;
+    ImportConnectionsResponse import_connections_response = 1200;
+    UpdateConnectionsResponse update_connections_response = 1210;
+    RedeemMasterResponse redeem_master_response = 1300;
+    RedeemDaemonResponse redeem_daemon_response = 1310;
+    RedeemPathResponse redeem_path_response = 1320;
 }

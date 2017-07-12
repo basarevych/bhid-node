@@ -68,13 +68,13 @@ class Detach {
             return this._help.helpDetach(argv);
 
         let dpath = args.targets[1];
-        let trackerName = args.options['tracker'] || '';
-        let sockName = args.options['socket'];
+        let trackerName = args.options.tracker || '';
+        let sockName = args.options.socket;
 
-        this._app.debug('Loading protocol');
+        this._app.debug('Loading protocol').catch(() => { /* do nothing */ });
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
-                return this.error(error.message);
+                return this.error(error);
 
             try {
                 this.proto = root;
@@ -83,7 +83,7 @@ class Detach {
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
                 this.ServerMessage = this.proto.lookup('local.ServerMessage');
 
-                this._app.debug(`Sending DETACH REQUEST`);
+                this._app.debug('Sending DETACH REQUEST').catch(() => { /* do nothing */ });
                 let request = this.DetachRequest.create({
                     trackerName: trackerName,
                     path: dpath,
@@ -97,37 +97,37 @@ class Detach {
                     .then(data => {
                         let message = this.ServerMessage.decode(data);
                         if (message.type !== this.ServerMessage.Type.DETACH_RESPONSE)
-                            throw new Error('Invalid reply from daemon');
+                            return this.error('Invalid reply from daemon');
 
                         switch (message.detachResponse.response) {
                             case this.DetachResponse.Result.ACCEPTED:
                                 return;
                             case this.DetachResponse.Result.REJECTED:
-                                throw new Error('Request rejected');
+                                return this.error('Request rejected');
                             case this.DetachResponse.Result.INVALID_PATH:
-                                throw new Error('Invalid path');
+                                return this.error('Invalid path');
                             case this.DetachResponse.Result.PATH_NOT_FOUND:
-                                throw new Error('Path not found');
+                                return this.error('Path not found');
                             case this.DetachResponse.Result.NOT_ATTACHED:
-                                throw new Error('Not attached');
+                                return this.error('Not attached');
                             case this.DetachResponse.Result.TIMEOUT:
-                                throw new Error('No response from the tracker');
+                                return this.error('No response from the tracker');
                             case this.DetachResponse.Result.NO_TRACKER:
-                                throw new Error('Not connected to the tracker');
+                                return this.error('Not connected to the tracker');
                             case this.DetachResponse.Result.NOT_REGISTERED:
-                                throw new Error('Not registered with the tracker');
+                                return this.error('Not registered with the tracker');
                             default:
-                                throw new Error('Unsupported response from daemon');
+                                return this.error('Unsupported response from daemon');
                         }
                     })
                     .then(() => {
                         process.exit(0);
                     })
                     .catch(error => {
-                        return this.error(error.message);
+                        return this.error(error);
                     });
             } catch (error) {
-                return this.error(error.message);
+                return this.error(error);
             }
         });
 
@@ -143,23 +143,25 @@ class Detach {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] === '/')
+            if (sockName && sockName[0] === '/') {
                 sock = sockName;
-            else
-                sock = path.join('/var', 'run', this._config.project, this._config.instance + (sockName || '') + '.sock');
+            } else {
+                sockName = sockName ? `.${sockName}` : '';
+                sock = path.join('/var', 'run', this._config.project, this._config.instance + sockName + '.sock');
+            }
 
             let onError = error => {
                 this.error(`Could not connect to daemon: ${error.message}`);
             };
 
             let socket = net.connect(sock, () => {
-                this._app.debug('Connected to daemon');
+                this._app.debug('Connected to daemon').catch(() => { /* do nothing */ });
                 socket.removeListener('error', onError);
-                socket.once('error', error => { this.error(error.message) });
+                socket.once('error', error => { this.error(error); });
 
                 let wrapper = new SocketWrapper(socket);
                 wrapper.on('receive', data => {
-                    this._app.debug('Got daemon reply');
+                    this._app.debug('Got daemon reply').catch(() => { /* do nothing */ });
                     resolve(data);
                     socket.end();
                 });
@@ -174,7 +176,14 @@ class Detach {
      * @param {...*} args
      */
     error(...args) {
-        return this._app.error(...args)
+        return args.reduce(
+                (prev, cur) => {
+                    return prev.then(() => {
+                        return this._app.error(cur.fullStack || cur.stack || cur.message || cur);
+                    });
+                },
+                Promise.resolve()
+            )
             .then(
                 () => {
                     process.exit(1);
