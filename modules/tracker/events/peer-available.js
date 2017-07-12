@@ -51,15 +51,16 @@ class PeerAvailable {
             return;
 
         if (connection.server) {
-            this._logger.debug('peer-available', `Punching ${name}: ${message.peerAvailable.externalAddress}:${message.peerAvailable.externalPort}`);
-            connection.utp.punch(
+            this._logger.debug('peer-available', `Punching ${connectionName}: ${message.peerAvailable.externalAddress}:${message.peerAvailable.externalPort}`);
+            this.peer.utp.punch(
                 this.peer.constructor.punchingAttempts,
                 message.peerAvailable.externalPort,
                 message.peerAvailable.externalAddress
             );
         } else {
             this.peer.connect(
-                connectionName,
+                name,
+                message.peerAvailable.connectionName,
                 'external',
                 [
                     {

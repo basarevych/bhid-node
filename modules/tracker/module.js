@@ -10,12 +10,24 @@
 class Tracker {
     /**
      * Create the module
-     * @param {App} app             The application
-     * @param {object} config       Configuration
+     * @param {App} app                             The application
+     * @param {object} config                       Configuration
+     * @param {Connect} connect                     Connect event handler
+     * @param {Registered} registered               Registered event handler
+     * @param {ServerAvailable} serverAvailable     ServerAvailable event handler
+     * @param {AddressRequest} addressRequest       AddressRequest event handler
+     * @param {PeerAvailable} peerAvailable         PeerAvailable event handler
+     * @param {ConnectionsList} connectionsList     ConnectionsList event handler
      */
-    constructor(app, config) {
+    constructor(app, config, connect, registered, serverAvailable, addressRequest, peerAvailable, connectionsList) {
         this._app = app;
         this._config = config;
+        this._connect = connect;
+        this._registered = registered;
+        this._serverAvailable = serverAvailable;
+        this._addressRequest = addressRequest;
+        this._peerAvailable = peerAvailable;
+        this._connectionsList = connectionsList;
     }
 
     /**
@@ -31,7 +43,16 @@ class Tracker {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config' ];
+        return [
+            'app',
+            'config',
+            'modules.tracker.events.connect',
+            'modules.tracker.events.registered',
+            'modules.tracker.events.serverAvailable',
+            'modules.tracker.events.addressRequest',
+            'modules.tracker.events.peerAvailable',
+            'modules.tracker.events.connectionsList',
+        ];
     }
 
     /**
@@ -53,24 +74,13 @@ class Tracker {
 
         let server = this._app.get('servers').get('tracker');
 
-        let connection = this._app.get('modules.tracker.events.connection');
-        server.on('connection', connection.handle.bind(connection));
-        server.on('token', connection.handle.bind(connection));
-
-        let registration = this._app.get('modules.tracker.events.registration');
-        server.on('registration', registration.handle.bind(registration));
-
-        let serverAvailable = this._app.get('modules.tracker.events.serverAvailable');
-        server.on('server_available', serverAvailable.handle.bind(serverAvailable));
-
-        let addressRequest = this._app.get('modules.tracker.events.addressRequest');
-        server.on('address_request', addressRequest.handle.bind(addressRequest));
-
-        let peerAvailable = this._app.get('modules.tracker.events.peerAvailable');
-        server.on('peer_available', peerAvailable.handle.bind(peerAvailable));
-
-        let connectionsList = this._app.get('modules.tracker.events.connectionsList');
-        server.on('connections_list', connectionsList.handle.bind(connectionsList));
+        server.on('connect', this._connect.handle.bind(this._connect));
+        server.on('token', this._connect.handle.bind(this._connect));
+        server.on('registered', this._registered.handle.bind(this._registered));
+        server.on('server_available', this._serverAvailable.handle.bind(this._serverAvailable));
+        server.on('address_request', this._addressRequest.handle.bind(this._addressRequest));
+        server.on('peer_available', this._peerAvailable.handle.bind(this._peerAvailable));
+        server.on('connections_list', this._connectionsList.handle.bind(this._connectionsList));
 
         return Promise.resolve();
     }

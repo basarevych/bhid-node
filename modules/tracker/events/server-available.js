@@ -52,23 +52,18 @@ class ServerAvailable {
 
         this._logger.debug('server-available', `Got SERVER AVAILABLE for ${connectionName}`);
 
-        let success = true;
-        if (connection.peers.length === 0) {
-            success = false;
-            let trackedConnections = this._connectionsList.get(name);
-            if (trackedConnections) {
-                let clientConnection = trackedConnections.clientConnections.get(message.serverAvailable.connectionName);
-                if (clientConnection) {
+        let trackedConnections = this._connectionsList.get(name);
+        if (trackedConnections) {
+            let clientConnection = trackedConnections.clientConnections.get(message.serverAvailable.connectionName);
+            if (clientConnection) {
+                if (!clientConnection.server || (!connection.fixed && clientConnection.server !== message.serverAvailable.daemonName)) {
                     clientConnection.server = message.serverAvailable.daemonName;
                     this._connectionsList.update(name, message.serverAvailable.connectionName, false, clientConnection, false);
                     this._connectionsList.save();
-                    success = true;
                 }
+                this.peer.connect(name, message.serverAvailable.connectionName, 'internal', message.serverAvailable.internalAddresses);
             }
         }
-
-        if (success)
-            this.peer.connect(connectionName, 'internal', message.serverAvailable.internalAddresses);
     }
 
     /**

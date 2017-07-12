@@ -10,12 +10,22 @@
 class Peer {
     /**
      * Create the module
-     * @param {App} app             The application
-     * @param {object} config       Configuration
+     * @param {App} app                             The application
+     * @param {object} config                       Configuration
+     * @param {Connect} connect                     Connect event handler
+     * @param {ConnectRequest} connectRequest       ConnectRequest event handler
+     * @param {ConnectResponse} connectResponse     ConnectResponse event handler
+     * @param {Established} established             Established event handler
+     * @param {Data} data                           Data event handler
      */
-    constructor(app, config) {
+    constructor(app, config, connect, connectRequest, connectResponse, established, data) {
         this._app = app;
         this._config = config;
+        this._connect = connect;
+        this._connectRequest = connectRequest;
+        this._connectResponse = connectResponse;
+        this._established = established;
+        this._data = data;
     }
 
     /**
@@ -31,7 +41,15 @@ class Peer {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config' ];
+        return [
+            'app',
+            'config',
+            'modules.peer.events.connect',
+            'modules.peer.events.connectRequest',
+            'modules.peer.events.connectResponse',
+            'modules.peer.events.established',
+            'modules.peer.events.data',
+        ];
     }
 
     /**
@@ -53,20 +71,11 @@ class Peer {
 
         let server = this._app.get('servers').get('peer');
 
-        let connection = this._app.get('modules.peer.events.connection');
-        server.on('connection', connection.handle.bind(connection));
-
-        let connectRequest = this._app.get('modules.peer.events.connectRequest');
-        server.on('connect_request', connectRequest.handle.bind(connectRequest));
-
-        let connectResponse = this._app.get('modules.peer.events.connectResponse');
-        server.on('connect_response', connectResponse.handle.bind(connectResponse));
-
-        let established = this._app.get('modules.peer.events.established');
-        server.on('established', established.handle.bind(established));
-
-        let data = this._app.get('modules.peer.events.data');
-        server.on('data', data.handle.bind(data));
+        server.on('connect', this._connect.handle.bind(this._connect));
+        server.on('connect_request', this._connectRequest.handle.bind(this._connectRequest));
+        server.on('connect_response', this._connectResponse.handle.bind(this._connectResponse));
+        server.on('established', this._established.handle.bind(this._established));
+        server.on('data', this._data.handle.bind(this._data));
 
         return Promise.resolve();
     }

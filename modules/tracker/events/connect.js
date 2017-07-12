@@ -1,14 +1,14 @@
 /**
- * Connection event
- * @module tracker/events/connection
+ * Connect event
+ * @module tracker/events/connect
  */
 const uuid = require('uuid');
 const NError = require('nerror');
 
 /**
- * Connection event class
+ * Connect event class
  */
-class Connection {
+class Connect {
     /**
      * Create service
      * @param {App} app                         The application
@@ -24,11 +24,11 @@ class Connection {
     }
 
     /**
-     * Service name is 'modules.tracker.events.connection'
+     * Service name is 'modules.tracker.events.connect'
      * @type {string}
      */
     static get provides() {
-        return 'modules.tracker.events.connection';
+        return 'modules.tracker.events.connect';
     }
 
     /**
@@ -48,12 +48,12 @@ class Connection {
         if (!server || !server.token)
             return;
 
-        this._logger.debug('connection', `${name} connected - registering`);
+        this._logger.debug('connect', `${name} connected - registering`);
         try {
             let msgId = uuid.v1();
 
             let onResponse = (name, response) => {
-                if (response.messageId != msgId)
+                if (response.messageId !== msgId)
                     return;
 
                 this.tracker.removeListener('register_daemon_response', onResponse);
@@ -64,7 +64,7 @@ class Connection {
                         server.registered = true;
                         server.email = response.registerDaemonResponse.email;
                         server.daemonName = response.registerDaemonResponse.name;
-                        this.tracker.emit('registration', name);
+                        this.tracker.emit('registered', name);
                         break;
                     case this.tracker.RegisterDaemonResponse.Result.REJECTED:
                         this.tracker._logger.error(`Tracker ${name} refused to register this daemon`);
@@ -88,7 +88,7 @@ class Connection {
             let data = this.tracker.ClientMessage.encode(msg).finish();
             this.tracker.send(name, data);
         } catch (error) {
-            this._logger.error(new NError(error, 'Connection.handle()'));
+            this._logger.error(new NError(error, 'Connect.handle()'));
         }
     }
 
@@ -115,4 +115,4 @@ class Connection {
     }
 }
 
-module.exports = Connection;
+module.exports = Connect;

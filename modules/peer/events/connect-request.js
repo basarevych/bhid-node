@@ -41,17 +41,19 @@ class ConnectRequest {
 
     /**
      * Event handler
-     * @param {string} name                     Connection name
      * @param {string} sessionId                Session ID
      * @param {object} message                  The message
      */
-    handle(name, sessionId, message) {
-        let connection = this.peer.connections.get(name);
-        if (!connection)
-            return;
-
+    handle(sessionId, message) {
         let session = this.peer.sessions.get(sessionId);
         if (!session)
+            return;
+
+        if (session.name && session.name !== message.connectRequest.connectionName)
+            return;
+
+        let connection = this.peer.connections.get(message.connectRequest.connectionName);
+        if (!connection)
             return;
 
         this._crypter.verify(
@@ -66,12 +68,21 @@ class ConnectRequest {
                 session.verified = result.verified;
 
                 if (session.verified) {
+                    if (!session.name) {
+                        session.name = connection.name;
+                        connection.sessionIds.add(sessionId);
+                    }
+
                     let cryptSession = this._crypter.sessions.get(sessionId);
                     cryptSession.peerKey = new Uint8Array(Buffer.from(message.connectRequest.publicKey, 'base64'));
                     cryptSession.peerName = result.name;
-                    this._logger.info(`Peer for ${name} authenticated as ${result.name} (${session.socket.address().address}:${session.socket.address().port})`);
+                    this._logger.info(
+                        `Peer for ${message.connectRequest.connectionName} authenticated as ${result.name} (${session.socket.address().address}:${session.socket.address().port})`
+                    );
                 } else {
-                    this._logger.info(`Peer for ${name} rejected: ${session.socket.address().address}:${session.socket.address().port}`);
+                    this._logger.info(
+                        `Peer for ${message.connectRequest.connectionName} rejected (${session.socket.address().address}:${session.socket.address().port})`
+                    );
                 }
 
                 let response = this.peer.ConnectResponse.create({
@@ -88,7 +99,9 @@ class ConnectRequest {
 
                 if (session.verified && session.accepted && !session.established) {
                     session.established = true;
-                    this.peer.emit('established', name, sessionId);
+                    this.peer.emit('established', sessionId);
+                } else if (connection.server) {
+                    this.peer.sendConnectRequest(sessionId);
                 }
             })
             .catch(error => {

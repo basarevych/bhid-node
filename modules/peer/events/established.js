@@ -41,36 +41,25 @@ class Established {
 
     /**
      * Event handler
-     * @param {string} name                     Connection name
      * @param {string} sessionId                Session ID
      */
-    handle(name, sessionId) {
-        let connection = this.peer.connections.get(name);
-        if (!connection)
-            return;
-
+    handle(sessionId) {
         let session = this.peer.sessions.get(sessionId);
         if (!session)
             return;
 
-        if (!connection.server && connection.sessionId)
+        let connection = this.peer.connections.get(session.name);
+        if (!connection)
             return;
 
-        let parts = name.split('#');
-        if (parts.length !== 2)
-            return;
+        let [ tracker, connectionName ] = session.name.split('#');
 
         try {
-            if (connection.server) {
-                this.front.openServer(name, sessionId, connection.connectAddress, connection.connectPort);
-            } else {
-                connection.sessionId = sessionId;
-                this.peer.dropExtra(name);
-                this.front.openClient(name, sessionId, connection.listenAddress, connection.listenPort);
-            }
+            if (connection.server)
+                this.front.openServer(session.name, sessionId, connection.connectAddress, connection.connectPort);
+            else
+                this.front.openClient(session.name, sessionId, connection.listenAddress, connection.listenPort);
 
-            let tracker = parts[0];
-            let connectionName = parts[1];
             let trackedConnections = this._connectionsList.get(tracker);
             if (trackedConnections) {
                 let connected;
@@ -85,7 +74,7 @@ class Established {
                     this.tracker.sendStatus(tracker, connectionName);
             }
         } catch (error) {
-            this._logger.error(new NError(error, `ConnectRequest.handle()`));
+            this._logger.error(new NError(error, `Established.handle()`));
         }
     }
 

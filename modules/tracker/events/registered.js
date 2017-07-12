@@ -1,14 +1,14 @@
 /**
- * Registration event
- * @module tracker/events/registration
+ * Registered event
+ * @module tracker/events/registered
  */
 const uuid = require('uuid');
 const NError = require('nerror');
 
 /**
- * Registration event class
+ * Registered event class
  */
-class Registration {
+class Registered {
     /**
      * Create service
      * @param {App} app                             The application
@@ -24,11 +24,11 @@ class Registration {
     }
 
     /**
-     * Service name is 'modules.tracker.events.registration'
+     * Service name is 'modules.tracker.events.registered'
      * @type {string}
      */
     static get provides() {
-        return 'modules.tracker.events.registration';
+        return 'modules.tracker.events.registered';
     }
 
     /**
@@ -48,18 +48,15 @@ class Registration {
         if (!server)
             return;
 
-        for (let [ tracker, connections ] of this._connectionsList.getAll()) {
-            if (tracker !== name)
-                continue;
+        let trackedConnections = this._connectionsList.get(name);
+        if (!trackedConnections)
+            return;
 
-            let merged = new Map([ ...connections.serverConnections, ...connections.clientConnections ]);
-            for (let [ connectionName, connection ] of merged) {
-                let info = this.peer.connections.get(tracker + '#' + connection.name);
-                if (!info)
-                    continue;
-
-                this.tracker.sendStatus(tracker, connection.name);
-            }
+        let merged = new Map([ ...trackedConnections.serverConnections, ...trackedConnections.clientConnections ]);
+        for (let connectionName of merged.keys()) {
+            let info = this.peer.connections.get(name + '#' + connectionName);
+            if (info)
+                this.tracker.sendStatus(name, connectionName);
         }
     }
 
@@ -86,4 +83,4 @@ class Registration {
     }
 }
 
-module.exports = Registration;
+module.exports = Registered;

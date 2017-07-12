@@ -302,7 +302,7 @@ class Peer extends EventEmitter {
                         session.socket.end();
                         session.wrapper.detach();
                     } else {
-                        session.socket.destroy();
+                        this.onClose(id);
                     }
                 }
                 this.utp.close();
@@ -447,8 +447,7 @@ class Peer extends EventEmitter {
                             let other = this.sessions.get(id);
                             if (other) {
                                 other.closing = true;
-                                other.socket.end();
-                                other.wrapper.detach();
+                                this.onClose(id);
                             }
                         }
 
@@ -585,6 +584,42 @@ class Peer extends EventEmitter {
         }
 
         session.wrapper.send(data);
+    }
+
+    /**
+     * Send request for establishing connection
+     * @param {string} sessionId                Session ID
+     */
+    sendConnectRequest(sessionId) {
+        let session = this.peer.sessions.get(sessionId);
+        if (!session)
+            return;
+
+        let connection = this.peer.connections.get(session.name);
+        if (!connection)
+            return;
+
+        let cryptSession = this._crypter.sessions.get(sessionId);
+        if (!cryptSession)
+            return;
+
+        try {
+            let request = this.ConnectRequest.create({
+                connectionName: connection.name,
+                identity: this._crypter.identity,
+                publicKey: cryptSession.publicKey,
+                signature: this._crypter.sign(cryptSession.publicKey),
+                encrypted: connection.encrypted,
+            });
+            let msg = this.OuterMessage.create({
+                type: this.OuterMessage.Type.CONNECT_REQUEST,
+                connectRequest: request,
+            });
+            let data = this.OuterMessage.encode(msg).finish();
+            this.send(sessionId, data);
+        } catch (error) {
+            this._logger.error(new NError(error, 'Peer.sendConnectRequest()'));
+        }
     }
 
     /**

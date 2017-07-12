@@ -39,34 +39,33 @@ class ConnectResponse {
 
     /**
      * Event handler
-     * @param {string} name                     Connection name
      * @param {string} sessionId                Session ID
      * @param {object} message                  The message
      */
-    handle(name, sessionId, message) {
-        let connection = this.peer.connections.get(name);
-        if (!connection)
-            return;
-
+    handle(sessionId, message) {
         let session = this.peer.sessions.get(sessionId);
         if (!session)
             return;
 
+        let connection = this.peer.connections.get(session.name);
+        if (!connection)
+            return;
+
         session.accepted = (message.connectResponse.response === this.peer.ConnectResponse.Result.ACCEPTED);
         if (!session.accepted) {
-            this._logger.info(`Peer of ${name} rejected our connection request: ${session.socket.remoteAddress}:${session.socket.remotePort}`);
+            this._logger.info(`Peer of ${session.name} rejected our connection request (${session.socket.remoteAddress}:${session.socket.remotePort})`);
             setTimeout(() => {
                 let reply = this.peer.OuterMessage.create({
                     type: this.peer.OuterMessage.Type.BYE,
                 });
                 let buffer = this.peer.OuterMessage.encode(reply).finish();
-                this.peer.send(name, sessionId, buffer, true);
+                this.peer.send(sessionId, buffer, true);
             }, 3000);
         }
 
         if (session.verified && session.accepted && !session.established) {
             session.established = true;
-            this.peer.emit('established', name, sessionId);
+            this.peer.emit('established', sessionId);
         }
     }
 

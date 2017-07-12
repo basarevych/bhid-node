@@ -41,17 +41,16 @@ class Data {
 
     /**
      * Event handler
-     * @param {string} name                     Connection name
      * @param {string} sessionId                Session ID
      * @param {object} message                  The message
      */
-    handle(name, sessionId, message) {
-        let connection = this.peer.connections.get(name);
-        if (!connection)
-            return;
-
+    handle(sessionId, message) {
         let session = this.peer.sessions.get(sessionId);
         if (!session)
+            return;
+
+        let connection = this.peer.connections.get(session.name);
+        if (!connection)
             return;
 
         let data;
@@ -62,7 +61,7 @@ class Data {
 
         if (!data) {
             if (connection.encrypted)
-                this._logger.error(`Could not decrypt message for ${name}`);
+                this._logger.error(`Could not decrypt message for ${session.name}`);
             session.socket.end();
             session.wrapper.detach();
             return;
@@ -72,20 +71,20 @@ class Data {
         try {
             innerMessage = this.peer.InnerMessage.decode(data);
         } catch (error) {
-            this._logger.error(`Peer of ${name} inner protocol error: ${error.message}`);
+            this._logger.error(`Peer of ${session.name} inner protocol error: ${error.message}`);
             return;
         }
 
         try {
             switch (innerMessage.type) {
                 case this.peer.InnerMessage.Type.OPEN:
-                    this.front.connect(name, sessionId, innerMessage.id);
+                    this.front.connect(session.name, sessionId, innerMessage.id);
                     break;
                 case this.peer.InnerMessage.Type.DATA:
-                    this.front.relay(name, sessionId, innerMessage.id, innerMessage.data);
+                    this.front.relay(session.name, sessionId, innerMessage.id, innerMessage.data);
                     break;
                 case this.peer.InnerMessage.Type.CLOSE:
-                    this.front.disconnect(name, sessionId, innerMessage.id);
+                    this.front.disconnect(session.name, sessionId, innerMessage.id);
                     break;
             }
         } catch (error) {

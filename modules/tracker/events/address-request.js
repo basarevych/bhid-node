@@ -64,24 +64,12 @@ class AddressRequest {
                 addressResponse: response,
             });
             let data = this.tracker.ClientMessage.encode(msg).finish();
-            if (connection.server && connection.utp) {
-                this._logger.debug('address-request', `Sending ADDRESS RESPONSE to ${connection.tracker}`);
-                connection.utp.getUdpSocket().send(
-                    data,
-                    tracker.socket.remotePort,
-                    tracker.socket.remoteAddress
-                );
-            } else if (!connection.internal && !connection.external) {
-                this.peer.createSession(connectionName, sessionId => {
-                    this._logger.debug('address-request', `Sending ADDRESS RESPONSE to ${connection.tracker}`);
-                    let session = this.peer.sessions.get(sessionId);
-                    session.utp.getUdpSocket().send(
-                        data,
-                        tracker.socket.remotePort,
-                        tracker.socket.remoteAddress
-                    );
-                });
-            }
+            this._logger.debug('address-request', `Sending ADDRESS RESPONSE to ${connection.tracker}`);
+            this.peer.utp.getUdpSocket().send(
+                data,
+                tracker.socket.remotePort,
+                tracker.socket.remoteAddress
+            );
         } catch (error) {
             this._logger.error(new NError(error, 'AddressRequest.handle()'));
         }

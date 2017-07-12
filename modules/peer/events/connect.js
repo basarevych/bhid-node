@@ -1,14 +1,14 @@
 /**
- * Connection event
- * @module peer/events/connection
+ * Connect event
+ * @module peer/events/connect
  */
 const uuid = require('uuid');
 const NError = require('nerror');
 
 /**
- * Connection event class
+ * Connect event class
  */
-class Connection {
+class Connect {
     /**
      * Create service
      * @param {App} app                         The application
@@ -24,11 +24,11 @@ class Connection {
     }
 
     /**
-     * Service name is 'modules.peer.events.connection'
+     * Service name is 'modules.peer.events.connect'
      * @type {string}
      */
     static get provides() {
-        return 'modules.peer.events.connection';
+        return 'modules.peer.events.connect';
     }
 
     /**
@@ -41,35 +41,10 @@ class Connection {
 
     /**
      * Event handler
-     * @param {string} name                     Connection name
      * @param {string} sessionId                Session ID
      */
-    handle(name, sessionId) {
-        let connection = this.peer.connections.get(name);
-        if (!connection)
-            return;
-
-        let cryptSession = this._crypter.sessions.get(sessionId);
-        if (!cryptSession)
-            return;
-
-        try {
-            let request = this.peer.ConnectRequest.create({
-                identity: this._crypter.identity,
-                publicKey: cryptSession.publicKey,
-                signature: this._crypter.sign(cryptSession.publicKey),
-                encrypted: connection.encrypted,
-            });
-            let msg = this.peer.OuterMessage.create({
-                type: this.peer.OuterMessage.Type.CONNECT_REQUEST,
-                connectRequest: request,
-            });
-            let data = this.peer.OuterMessage.encode(msg).finish();
-            this._logger.debug('connection', `Sending CONNECT REQUEST`);
-            this.peer.send(name, sessionId, data);
-        } catch (error) {
-            this._logger.error(new NError(error, 'Connection.handle()'));
-        }
+    handle(sessionId) {
+        this.peer.sendConnectRequest(sessionId);
     }
 
     /**
@@ -95,4 +70,4 @@ class Connection {
     }
 }
 
-module.exports = Connection;
+module.exports = Connect;

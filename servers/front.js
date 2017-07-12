@@ -149,15 +149,23 @@ class Front extends EventEmitter {
                 for (let [ name, connection ] of this.connections) {
                     if (connection.server) {
                         for (let [ id, target ] of connection.targets) {
-                            counter++;
-                            target.socket.once('close', done);
-                            target.socket.end();
+                            if (target.connected) {
+                                counter++;
+                                target.socket.once('close', done);
+                                target.socket.end();
+                            } else {
+                                this.onClose(name, id);
+                            }
                         }
                     } else {
                         for (let [ id, client ] of connection.clients) {
-                            counter++;
-                            client.socket.once('close', done);
-                            client.socket.end();
+                            if (client.connected) {
+                                counter++;
+                                client.socket.once('close', done);
+                                client.socket.end();
+                            } else {
+                                this.onClose(name, id);
+                            }
                         }
                         connection.tcp.close();
                     }
@@ -446,9 +454,13 @@ class Front extends EventEmitter {
         this._logger.debug('front', `Closing front for ${name}`);
         if (connection.server) {
             for (let [ id, info ] of connection.targets) {
-                if ((!tunnelId || info.tunnelId === tunnelId) && info.connected) {
-                    info.socket.end();
-                    info.connected = false;
+                if ((!tunnelId || info.tunnelId === tunnelId)) {
+                    if (info.connected) {
+                        info.socket.end();
+                        info.connected = false;
+                    } else {
+                        this.onClose(name, id);
+                    }
                 }
             }
             if (!tunnelId)
@@ -458,6 +470,8 @@ class Front extends EventEmitter {
                 if (info.connected) {
                     info.socket.end();
                     info.connected = false;
+                } else {
+                    this.onClose(name, id);
                 }
             }
             connection.tcp.close();
