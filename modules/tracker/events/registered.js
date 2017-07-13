@@ -48,6 +48,8 @@ class Registered {
         if (!server)
             return;
 
+        this._logger.info(`Registered with ${server.name} as ${server.daemonName} (${server.email})`);
+
         let trackedConnections = this._connectionsList.get(name);
         if (!trackedConnections)
             return;

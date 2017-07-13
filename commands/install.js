@@ -16,11 +16,13 @@ class Install {
      * @param {App} app                 The application
      * @param {object} config           Configuration
      * @param {Runner} runner           Runner service
+     * @param {Ini} ini                 Ini service
      */
-    constructor(app, config, runner) {
+    constructor(app, config, runner, ini) {
         this._app = app;
         this._config = config;
         this._runner = runner;
+        this._ini = ini;
     }
 
     /**
@@ -36,7 +38,7 @@ class Install {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'runner' ];
+        return [ 'app', 'config', 'runner', 'ini' ];
     }
 
     /**
@@ -133,9 +135,11 @@ class Install {
                     }
                 }
 
+                let configExists = false;
                 try {
                     this._app.debug('Creating default config').catch(() => { /* do nothing */ });
                     fs.accessSync(path.join(configDir, 'bhid.conf'), fs.constants.F_OK);
+                    configExists = true;
                 } catch (error) {
                     try {
                         let config = fs.readFileSync(path.join(__dirname, '..', 'bhid.conf'), { encoding: 'utf8'});
@@ -144,6 +148,17 @@ class Install {
                         return this.error(`Could not create bhid.conf`);
                     }
                 }
+                if (configExists) {
+                    let contents = fs.readFileSync(path.join(configDir, 'bhid.conf'), { encoding: 'utf8' });
+                    for (let line of contents.split('\n')) {
+                        if (/^\s*\[.+\]\s*$/.test(line) && line.indexOf('\\') !== -1) {
+                            let config = this._ini.parse(contents, { simple: false }); // escaped to unescaped
+                            fs.writeFileSync(path.join(configDir, 'bhid.conf'), this._ini.stringify(config, { simple: true }), { mode: 0o640 });
+                            break;
+                        }
+                    }
+                }
+
                 try {
                     fs.accessSync('/etc/systemd/system', fs.constants.F_OK);
                     this._app.debug('Creating systemd service').catch(() => { /* do nothing */ });
