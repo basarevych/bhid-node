@@ -6,7 +6,6 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const uuid = require('uuid');
-const ini = require('ini');
 const UtpNode = require('utp-punch');
 const protobuf = require('protobufjs');
 const EventEmitter = require('events');
@@ -22,10 +21,11 @@ class Peer extends EventEmitter {
      * @param {App} app                             Application
      * @param {object} config                       Configuration
      * @param {Logger} logger                       Logger service
+     * @param {Ini} ini                             Ini service
      * @param {Crypter} crypter                     Crypter service
      * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger, crypter, connectionsList) {
+    constructor(app, config, logger, ini, crypter, connectionsList) {
         super();
 
         this.connections = new Map();                       /* full name => {
@@ -75,6 +75,7 @@ class Peer extends EventEmitter {
         this._app = app;
         this._config = config;
         this._logger = logger;
+        this._ini = ini;
         this._crypter = crypter;
         this._connectionsList = connectionsList;
         this._timeouts = new Map();
@@ -93,7 +94,7 @@ class Peer extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'crypter', 'connectionsList' ];
+        return [ 'app', 'config', 'logger', 'ini', 'crypter', 'connectionsList' ];
     }
 
     /**
@@ -188,7 +189,7 @@ class Peer extends EventEmitter {
                     throw new Error('Could not read bhid.conf');
                 }
 
-                let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
+                let bhidConfig = this._ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
 
                 if (bhidConfig.daemon && bhidConfig.daemon.port) {
                     this._utpPort = parseInt(bhidConfig.daemon.port);

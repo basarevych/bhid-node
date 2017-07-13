@@ -5,7 +5,6 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const ini = require('ini');
 const NError = require('nerror');
 
 class ConnectionsList {
@@ -14,8 +13,9 @@ class ConnectionsList {
      * @param {App} app                     Application
      * @param {object} config               Configuration
      * @param {Logger} logger               Logger service
+     * @param {Ini} ini                     Ini service
      */
-    constructor(app, config, logger) {
+    constructor(app, config, logger, ini) {
         this._list = new Map();                         // tracker name => { serverConnections: Map, clientConnections: Map }
         this._imports = new Map();                      // tracker name => { serverConnections: Map, clientConnections: Map }
 
@@ -45,6 +45,7 @@ class ConnectionsList {
         this._app = app;
         this._config = config;
         this._logger = logger;
+        this._ini = ini;
     }
 
     /**
@@ -60,7 +61,7 @@ class ConnectionsList {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger' ];
+        return [ 'app', 'config', 'logger', 'ini' ];
     }
 
     /**
@@ -132,7 +133,7 @@ class ConnectionsList {
             }
 
             this._list.clear();
-            let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
+            let bhidConfig = this._ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
             let openedConnections = new Set();
             for (let section of Object.keys(bhidConfig)) {
                 if (section.endsWith(this.constructor.serverSection)) {
@@ -394,7 +395,7 @@ class ConnectionsList {
                 throw new Error('Could not update bhid.conf');
             }
 
-            let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
+            let bhidConfig = this._ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
             let output = {};
             for (let section of Object.keys(bhidConfig)) {
                 if (!section.endsWith(this.constructor.serverSection) &&
@@ -425,7 +426,7 @@ class ConnectionsList {
                 }
             }
 
-            fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(output));
+            fs.writeFileSync(path.join(configPath, 'bhid.conf'), this._ini.stringify(output));
         } catch (error) {
             this._logger.error(new NError(error, 'ConnectionsList.save()'));
             return false;

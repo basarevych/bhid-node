@@ -1,13 +1,13 @@
 /**
  * Repo-saved application configuration
  */
-const path = require('path');
-const fs = require('fs');
 const os = require('os');
-const ini = require('ini');
+const fs = require('fs');
+const Ini = require('arpen/src/services/ini');
 
 let userConfig;
 try {
+    let ini = new Ini();
     userConfig = ini.parse(fs.readFileSync(os.platform() === 'freebsd' ? '/usr/local/etc/bhid/bhid.conf' : '/etc/bhid/bhid.conf', 'utf8'));
 } catch (error) {
     userConfig = {};

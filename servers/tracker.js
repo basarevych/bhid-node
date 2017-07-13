@@ -4,7 +4,6 @@
  */
 const path = require('path');
 const fs = require('fs');
-const ini = require('ini');
 const tls = require('tls');
 const uuid = require('uuid');
 const os = require('os');
@@ -23,10 +22,11 @@ class Tracker extends EventEmitter {
      * @param {object} config                       Configuration
      * @param {Logger} logger                       Logger service
      * @param {Runner} runner                       Runner service
+     * @param {Ini} ini                             Ini service
      * @param {Crypter} crypter                     Crypter service
      * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger, runner, crypter, connectionsList) {
+    constructor(app, config, logger, runner, ini, crypter, connectionsList) {
         super();
 
         this.servers = new Map();                           /* name => {
@@ -51,6 +51,7 @@ class Tracker extends EventEmitter {
         this._config = config;
         this._logger = logger;
         this._runner = runner;
+        this._ini = ini;
         this._crypter = crypter;
         this._connectionsList = connectionsList;
         this._timeouts = new Map();
@@ -69,7 +70,7 @@ class Tracker extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'runner', 'crypter', 'connectionsList' ];
+        return [ 'app', 'config', 'logger', 'runner', 'ini', 'crypter', 'connectionsList' ];
     }
 
     /**
@@ -176,7 +177,7 @@ class Tracker extends EventEmitter {
                     throw new Error('Could not read bhid.conf');
                 }
 
-                let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
+                let bhidConfig = this._ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
                 for (let section of Object.keys(bhidConfig)) {
                     if (!section.endsWith(this.constructor.trackerSection))
                         continue;
@@ -425,7 +426,7 @@ class Tracker extends EventEmitter {
                 if (!this._connectionsList.save())
                     throw new Error('Could not clear connections');
 
-                let bhidConfig = ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
+                let bhidConfig = this._ini.parse(fs.readFileSync(path.join(configPath, 'bhid.conf'), 'utf8'));
                 for (let section of Object.keys(bhidConfig)) {
                     if (!section.endsWith(this.constructor.trackerSection))
                         continue;
@@ -438,7 +439,7 @@ class Tracker extends EventEmitter {
                     }
                 }
 
-                fs.writeFileSync(path.join(configPath, 'bhid.conf'), ini.stringify(bhidConfig));
+                fs.writeFileSync(path.join(configPath, 'bhid.conf'), this._ini.stringify(bhidConfig));
                 server.token = token;
 
                 server.socket.end();
