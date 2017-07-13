@@ -213,7 +213,7 @@ class Peer extends EventEmitter {
             .catch(error => {
                 return new Promise(() => {
                     this._logger.error(error.messages || error.message, () => { process.exit(255); });
-                })
+                });
             });
     }
 
@@ -270,7 +270,7 @@ class Peer extends EventEmitter {
             .catch(error => {
                 return new Promise(() => {
                     this._logger.error(error.messages || error.message, () => { process.exit(255); });
-                })
+                });
             });
     }
 
