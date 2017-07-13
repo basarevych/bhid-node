@@ -150,13 +150,17 @@ class Install {
                 }
                 if (configExists) {
                     let contents = fs.readFileSync(path.join(configDir, 'bhid.conf'), { encoding: 'utf8' });
+                    let parsed = [], needsConverting = false;
                     for (let line of contents.split('\n')) {
-                        if (/^\s*\[.+\]\s*$/.test(line) && line.indexOf('\\') !== -1) {
-                            let config = this._ini.parse(contents, { simple: false }); // escaped to unescaped
-                            fs.writeFileSync(path.join(configDir, 'bhid.conf'), this._ini.stringify(config, { simple: true }), { mode: 0o640 });
-                            break;
+                        if (/^\s*\[.+\]\s*/.test(line)) {
+                            if (line.indexOf('\\') !== -1)
+                                needsConverting = true;
+                            line = line.replace(/\\\./g, '.').replace(/\\#/g, '#').replace(/\\;/g, ';');
                         }
+                        parsed.push(line);
                     }
+                    if (needsConverting)
+                        fs.writeFileSync(path.join(configDir, 'bhid.conf'), this._ini.stringify(this._ini.parse(parsed.join('\n'))), { mode: 0o640 });
                 }
 
                 try {
