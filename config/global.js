@@ -87,7 +87,7 @@ module.exports = {
             interval: '1d',
             mode: 0o640,
             maxFiles: 3,
-            history: 'bhid.log.history',
+            history: '/var/log/bhid/bhid.log.history',
         },
     },
 
