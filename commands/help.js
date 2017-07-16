@@ -77,7 +77,7 @@ class Help {
                 '\tdelete\t\tDelete a connection\n' +
                 '\timport\t\tImport a token\n' +
                 '\tattach\t\tMake the daemon a server or a client of a connection\n' +
-                '\tdetach\tDetach the daemon from given connection\n' +
+                '\tdetach\t\tDetach the daemon from given connection\n' +
                 '\ttree\t\tPrint user tree\n' +
                 '\tlist\t\tPrint current connections\n' +
                 '\tload\t\tLoad current connection configuration from tracker\n' +
