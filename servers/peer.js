@@ -592,11 +592,11 @@ class Peer extends EventEmitter {
      * @param {string} sessionId                Session ID
      */
     sendConnectRequest(sessionId) {
-        let session = this.peer.sessions.get(sessionId);
+        let session = this.sessions.get(sessionId);
         if (!session)
             return;
 
-        let connection = this.peer.connections.get(session.name);
+        let connection = this.connections.get(session.name);
         if (!connection)
             return;
 
