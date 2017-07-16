@@ -56,6 +56,14 @@ class ConnectRequest {
         if (!connection)
             return;
 
+        if (!session.name) {
+            session.name = connection.name;
+            connection.sessionIds.add(sessionId);
+            let cryptSession = this._crypter.sessions.get(sessionId);
+            if (cryptSession)
+                cryptSession.connection = connection.name;
+        }
+
         this._crypter.verify(
                 sessionId,
                 connection.tracker,
@@ -68,11 +76,6 @@ class ConnectRequest {
                 session.verified = result.verified;
 
                 if (session.verified) {
-                    if (!session.name) {
-                        session.name = connection.name;
-                        connection.sessionIds.add(sessionId);
-                    }
-
                     let cryptSession = this._crypter.sessions.get(sessionId);
                     cryptSession.peerKey = new Uint8Array(Buffer.from(message.connectRequest.publicKey, 'base64'));
                     cryptSession.peerName = result.name;
@@ -95,13 +98,15 @@ class ConnectRequest {
                 let buffer = this.peer.OuterMessage.encode(reply).finish();
 
                 this._logger.debug('connect-request', session.verified ? 'Sending ACCEPT' : 'Sending REJECT');
-                this.peer.send(name, sessionId, buffer);
+                this.peer.send(sessionId, buffer);
 
-                if (session.verified && session.accepted && !session.established) {
-                    session.established = true;
-                    this.peer.emit('established', sessionId);
-                } else if (connection.server) {
-                    this.peer.sendConnectRequest(sessionId);
+                if (session.verified) {
+                    if (session.accepted && !session.established) {
+                        session.established = true;
+                        this.peer.emit('established', sessionId);
+                    } else if (connection.server) {
+                        this.peer.sendConnectRequest(sessionId);
+                    }
                 }
             })
             .catch(error => {

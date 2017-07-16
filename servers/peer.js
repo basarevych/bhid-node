@@ -667,6 +667,7 @@ class Peer extends EventEmitter {
      * @param {object} socket                   Client socket
      */
     onConnection(socket) {
+        this._logger.debug('peer', `Incoming daemon socket from ${socket.address().address}:${socket.address().port}`);
         let session = this.createSession(null, socket);
         session.connected = true;
 
