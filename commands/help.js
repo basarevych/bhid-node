@@ -183,8 +183,8 @@ class Help {
                 'Usage:\tbhidctl create <path> <connect-addr> [<listen-addr>] [-s|-c] [-e] [-f] [-t <tracker>]\n\n' +
                 '\tCreate a new connection. If -s is set then the daemon is configured as server of this connection,\n' +
                 '\tor as client when -c is set. If -e is set then connection is encrypted. If -f is set then\n' +
-                '\tconnection is fixed (clients list is saved and unknown clients will not be accepted until next\n' +
-                '\t"load" command run on server).\n\n' +
+                '\tconnection is fixed (clients list is saved and unknown clients will not be accepted by a daemon\n' +
+                '\tuntil next "load" command run on the daemon).\n\n' +
                 '\t<connect-addr> and <listen-addr> are written in the form of address:port or just /path/to/unix/socket'
             )
             .then(() => {

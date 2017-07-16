@@ -155,19 +155,25 @@ class Tree {
         };
         if (tree.connection) {
             obj.label += '\n' +
-                (tree.type === this.Tree.Type.CLIENT ? '[' : '') +
-                tree.clientsNumber +
-                (tree.type === this.Tree.Type.CLIENT ? ']' : '') +
-                ' on ' + (tree.listenAddress ?
+                (tree.type === this.Tree.Type.SERVER ? '[*] ' : '[ ] ') +
+                tree.serversNumber + ' server(s) online for ' +
+                (tree.connectAddress ?
+                    tree.connectAddress + ':' : '') + tree.connectPort;
+            obj.label += '\n' +
+                (tree.type === this.Tree.Type.CLIENT ? '[*] ' : '[ ] ') +
+                tree.clientsNumber + ' client(s) online on ' +
+                (tree.listenAddress ?
                     tree.listenAddress + ':' :
                     ((tree.listenPort && tree.listenPort[0] === '/') ? '' : '*:')) +
-                (tree.listenPort || '*') + ' --> ' +
-                (tree.type === this.Tree.Type.SERVER ? '[' : '') +
-                tree.serversNumber +
-                (tree.type === this.Tree.Type.SERVER ? ']' : '') +
-                ' on ' + (tree.connectAddress ? tree.connectAddress + ':' : '') + tree.connectPort +
-                (tree.encrypted ? ', encrypted' : '') +
-                (tree.fixed ? ', fixed' : '');
+                (tree.listenPort || '*');
+
+            let props = [];
+            if (tree.encrypted)
+                props.push('encrypted');
+            if (tree.fixed)
+                props.push('fixed');
+            if (props.length)
+                obj.label += '\nConnection is ' + props.join(', ');
         }
         for (let node of tree.tree)
             obj.nodes.push(this.buildTree(node));
