@@ -755,11 +755,15 @@ class Peer extends EventEmitter {
      */
     onClose(sessionId) {
         this._timeouts.delete(sessionId);
+
+        let cryptSession = this._crypter.sessions.get(sessionId);
         this._crypter.destroy(sessionId);
 
         let session = this.sessions.get(sessionId);
         if (!session)
             return;
+
+        this._logger.info(`Peer ${(cryptSession && cryptSession.peerName) || 'unknown'} of ${session.name || 'unknown'} disconnected`);
 
         let address = session.socket.address();
         session.socket.destroy();
@@ -828,7 +832,7 @@ class Peer extends EventEmitter {
         if (!session)
             return;
 
-        this._logger.debug('peer', `Socket timeout for ${session.name}`);
+        this._logger.debug('peer', `Socket timeout for ${(cryptSession && cryptSession.peerName) || 'unknown'} of ${session.name || 'unknown'}`);
         this.onClose(sessionId);
     }
 
