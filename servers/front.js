@@ -77,7 +77,7 @@ class Front extends EventEmitter {
      * @type {number}
      */
     static get connectTimeout() {
-        return 3 * 1000; // ms
+        return 5 * 1000; // ms
     }
 
     /**

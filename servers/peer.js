@@ -110,7 +110,7 @@ class Peer extends EventEmitter {
      * @type {number}
      */
     static get connectTimeout() {
-        return 3 * 1000; // ms
+        return 5 * 1000; // ms
     }
 
     /**
@@ -118,7 +118,7 @@ class Peer extends EventEmitter {
      * @type {number}
      */
     static get establishTimeout() {
-        return 3 * 1000; // ms
+        return 15 * 1000; // ms
     }
 
     /**
@@ -126,7 +126,7 @@ class Peer extends EventEmitter {
      * @type {number}
      */
     static get failureTimeout() {
-        return 5 * 1000; // ms
+        return 10 * 1000; // ms
     }
 
     /**
@@ -134,7 +134,7 @@ class Peer extends EventEmitter {
      * @type {number}
      */
     static get pingTimeout() {
-        return 2 * 1000; // ms
+        return 7 * 1000; // ms
     }
 
     /**
@@ -142,7 +142,7 @@ class Peer extends EventEmitter {
      * @type {number}
      */
     static get pongTimeout() {
-        return 5 * 1000; // ms
+        return 10 * 1000; // ms
     }
 
     /**
