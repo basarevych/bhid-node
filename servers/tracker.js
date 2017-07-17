@@ -728,8 +728,7 @@ class Tracker extends EventEmitter {
         if (!server || !server.socket)
             return;
 
-        if (server.registered)
-            this._logger.info(`Tracker ${name} disconnected`);
+        this._logger.info(`Tracker ${name} disconnected`);
 
         server.socket.destroy();
         server.socket = null;
@@ -755,6 +754,8 @@ class Tracker extends EventEmitter {
      */
     _reconnect(name) {
         let server = this.servers.get(name);
+        if (!server || server.socket)
+            return;
 
         try {
             this._logger.debug('tracker', `Initiating connection to ${name}`);
