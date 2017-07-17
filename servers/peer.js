@@ -746,7 +746,7 @@ class Peer extends EventEmitter {
     onError(sessionId, error) {
         let session = this.sessions.get(sessionId);
         if (session)
-            this._logger.error(`Peer ${session.name} socket error: ${error.messages || error.message}`);
+            this._logger.error(`Peer ${session.name} socket error: ${error.fullStack || error.stack}`);
     }
 
     /**

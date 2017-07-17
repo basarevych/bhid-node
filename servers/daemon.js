@@ -391,7 +391,7 @@ class Daemon extends EventEmitter {
      * @param {Error} error                 Error
      */
     onError(id, error) {
-        this._logger.error(`Daemon socket error: ${error.messages || error.message}`);
+        this._logger.error(`Daemon socket error: ${error.fullStack || error.stack}`);
     }
 
     /**
