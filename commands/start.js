@@ -82,11 +82,7 @@ class Start {
                 return Promise.resolve()
                     .then(() => {
                         if (result.code !== 0 && result.stdout)
-                            return this._app.info(result.stdout);
-                    })
-                    .then(() => {
-                        if (result.code !== 0 && result.stderr)
-                            return this._app.error(result.stderr);
+                            return this._app.info(result.stdout.trim());
                     })
                     .then(() => {
                         return result.code;
