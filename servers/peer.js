@@ -832,6 +832,7 @@ class Peer extends EventEmitter {
         if (!session)
             return;
 
+        let cryptSession = this._crypter.sessions.get(sessionId);
         this._logger.debug('peer', `Socket timeout for ${(cryptSession && cryptSession.peerName) || 'unknown'} of ${session.name || 'unknown'}`);
         this.onClose(sessionId);
     }
