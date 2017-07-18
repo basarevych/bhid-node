@@ -524,6 +524,9 @@ class Peer extends EventEmitter {
         session.socket.on('close', () => {
             this.onClose(sessionId);
         });
+        session.socket.on('end', () => {
+            session.wrapper.detach();
+        });
 
         session.wrapper.on(
             'receive',

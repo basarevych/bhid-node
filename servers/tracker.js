@@ -810,6 +810,7 @@ class Tracker extends EventEmitter {
 
             server.socket.on('error', error => { this.onError(name, error); });
             server.socket.on('close', () => { this.onClose(name); });
+            server.socket.on('end', () => { server.wrapper.detach(); });
 
             this._timeouts.set(
                 name,

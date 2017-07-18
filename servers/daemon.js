@@ -297,6 +297,7 @@ class Daemon extends EventEmitter {
 
         socket.on('error', error => { this.onError(id, error); });
         socket.on('close', () => { this.onClose(id); });
+        socket.on('end', () => { client.wrapper.detach(); });
 
         this.emit('connection', id);
     }
