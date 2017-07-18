@@ -534,7 +534,7 @@ class Front extends EventEmitter {
      * @param {Buffer} data                     Message
      */
     onData(name, sessionId, data) {
-        this._logger.debug('front', `Relaying incoming message from front of ${name}`);
+        this._logger.debug('front', `Relaying ${data.length} bytes from ${name}`);
 
         let connection = this.connections.get(name);
         if (!connection)
