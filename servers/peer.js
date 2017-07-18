@@ -435,12 +435,14 @@ class Peer extends EventEmitter {
 
         let doConnect = (address, port) => {
             try {
-                this._logger.info(`Initiating ${type} connection to ${fullName} (${address}:${port})`);
+                this._logger.info(`Initiating connection to ${type} address of ${fullName} (${address}:${port})`);
                 let session, socket = this.utp.connect(
                     port,
                     address,
                     () => {
+                        this._logger.info(`Connected to ${type} address of ${fullName} (${address}:${port})`);
                         session.connected = true;
+
                         for (let id of connection.sessionIds) {
                             if (id === session.id)
                                 continue;
@@ -459,7 +461,6 @@ class Peer extends EventEmitter {
                             }
                         );
 
-                        this._logger.info(`Connected to ${type} address of ${fullName} (${address}:${port})`);
                         this.emit('connect', session.id);
                     }
                 );
@@ -766,7 +767,10 @@ class Peer extends EventEmitter {
         if (!session)
             return;
 
-        this._logger.info(`Peer ${(cryptSession && cryptSession.peerName) || 'unknown'} of ${session.name || 'unknown'} disconnected`);
+        if (session.established)
+            this._logger.info(`Peer ${(cryptSession && cryptSession.peerName) || 'unknown'} of ${session.name || 'unknown'} disconnected`);
+        else
+            this._logger.debug('peer', `Dropped socket for ${session.name || 'unknown'}`);
 
         let address = session.socket.address();
         session.socket.destroy();
@@ -780,7 +784,6 @@ class Peer extends EventEmitter {
         let [ tracker, connectionName ] = session.name.split('#');
 
         if (session.established) {
-            this._logger.info(`Socket for ${session.name} disconnected`);
             let trackedConnections = this._connectionsList.get(tracker);
             if (trackedConnections) {
                 let serverInfo = trackedConnections.serverConnections.get(connectionName);

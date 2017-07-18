@@ -15,12 +15,14 @@ class Established {
      * @param {object} config                       Configuration
      * @param {Logger} logger                       Logger service
      * @param {ConnectionsList} connectionsList     Connections List service
+     * @param {Crypter} crypter                     Crypter service
      */
-    constructor(app, config, logger, connectionsList) {
+    constructor(app, config, logger, connectionsList, crypter) {
         this._app = app;
         this._config = config;
         this._logger = logger;
         this._connectionsList = connectionsList;
+        this._crypter = crypter;
     }
 
     /**
@@ -36,7 +38,7 @@ class Established {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'connectionsList' ];
+        return [ 'app', 'config', 'logger', 'connectionsList', 'crypter' ];
     }
 
     /**
@@ -44,6 +46,7 @@ class Established {
      * @param {string} sessionId                Session ID
      */
     handle(sessionId) {
+        let cryptSession = this._crypter.sessions.get(sessionId);
         let session = this.peer.sessions.get(sessionId);
         if (!session)
             return;
@@ -51,6 +54,8 @@ class Established {
         let connection = this.peer.connections.get(session.name);
         if (!connection)
             return;
+
+        this._logger.info(`Peer ${(cryptSession && cryptSession.peerName) || 'unknown'} of ${session.name || 'unknown'} connected`);
 
         let [ tracker, connectionName ] = session.name.split('#');
 
