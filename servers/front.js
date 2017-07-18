@@ -376,7 +376,7 @@ class Front extends EventEmitter {
      * @param {Buffer} data                     Message
      */
     relay(name, tunnelId, id, data) {
-        this._logger.debug('front', `Relaying outgoing message to front of ${name}`);
+        this._logger.debug('front', `Relaying ${data.length} bytes to ${name}`);
 
         let connection = this.connections.get(name);
         if (!connection)
