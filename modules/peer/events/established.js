@@ -46,7 +46,6 @@ class Established {
      * @param {string} sessionId                Session ID
      */
     handle(sessionId) {
-        let cryptSession = this._crypter.sessions.get(sessionId);
         let session = this.peer.sessions.get(sessionId);
         if (!session)
             return;
@@ -54,8 +53,6 @@ class Established {
         let connection = this.peer.connections.get(session.name);
         if (!connection)
             return;
-
-        this._logger.info(`Peer ${(cryptSession && cryptSession.peerName) || 'unknown'} of ${session.name || 'unknown'} connected`);
 
         let [ tracker, connectionName ] = session.name.split('#');
 

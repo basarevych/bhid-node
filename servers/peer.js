@@ -440,9 +440,15 @@ class Peer extends EventEmitter {
                     port,
                     address,
                     () => {
-                        this._logger.info(`Connected to ${type} address of ${fullName} (${address}:${port})`);
-                        session.connected = true;
+                        for (let id of connection.sessionIds) {
+                            let existing = this.sessions.get(id);
+                            if (existing && existing.connected)
+                                return;
+                        }
 
+                        this._logger.info(`Connected to ${type} address of ${fullName} (${address}:${port})`);
+
+                        session.connected = true;
                         for (let id of connection.sessionIds) {
                             if (id === session.id)
                                 continue;
@@ -450,7 +456,8 @@ class Peer extends EventEmitter {
                             let other = this.sessions.get(id);
                             if (other) {
                                 other.closing = true;
-                                this.onClose(id);
+                                other.socket.end();
+                                other.wrapper.detach();
                             }
                         }
 
