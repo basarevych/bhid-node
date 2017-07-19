@@ -46,11 +46,11 @@ class ServerAvailable {
      */
     handle(name, message) {
         let connectionName = name + '#' + message.serverAvailable.connectionName;
-        let connection = this.peer.connections.get(connectionName);
-        if (!connection || connection.server)
-            return;
-
         this._logger.debug('server-available', `Got SERVER AVAILABLE for ${connectionName}`);
+
+        let connection = this.peer.connections.get(connectionName);
+        if (!connection || connection.server || !this.peer._utpRunning)
+            return;
 
         let trackedConnections = this._connectionsList.get(name);
         if (trackedConnections) {

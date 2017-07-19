@@ -72,6 +72,7 @@ class Peer extends EventEmitter {
 
         this._name = null;
         this._utpPort = 42049;
+        this._utpRunning = false;
         this._app = app;
         this._config = config;
         this._logger = logger;
@@ -252,6 +253,7 @@ class Peer extends EventEmitter {
                         this.utp.once('listening', () => {
                             this.utp.removeListener('error', onError);
                             this._logger.debug('peer', 'UDP socket started');
+                            this._utpRunning = true;
                             resolve();
                         });
                         this._logger.debug('peer', 'Initiating UDP socket');
@@ -283,32 +285,18 @@ class Peer extends EventEmitter {
         if (name !== this._name)
             return Promise.reject(new Error(`Server ${name} was not properly initialized`));
 
+        this._utpRunning = false;
+
         if (this._timeoutTimer) {
             clearInterval(this._timeoutTimer);
             this._timeoutTimer = null;
         }
 
         return new Promise((resolve, reject) => {
-            let counter = 0;
-            let done = () => {
-                if (--counter <= 0)
-                    this._logger.info(`Peers dropped`, () => { resolve(); });
-            };
             try {
-                for (let [ id, session ] of this.sessions) {
+                for (let [ id, session ] of this.sessions)
                     session.closing = true;
-                    if (session.connected) {
-                        ++counter;
-                        session.socket.once('close', done);
-                        session.socket.end();
-                        session.wrapper.detach();
-                    } else {
-                        this.onClose(id);
-                    }
-                }
-                this.utp.close();
-                if (!counter)
-                    done();
+                this.utp.close(() => { this._logger.info(`Peers dropped`, () => { resolve(); }); });
             } catch (error) {
                 reject(error);
             }

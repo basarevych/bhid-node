@@ -47,7 +47,7 @@ class PeerAvailable {
         this._logger.debug('peer-available', `Got PEER AVAILABLE for ${connectionName}`);
 
         let connection = this.peer.connections.get(connectionName);
-        if (!connection)
+        if (!connection || !this.peer._utpRunning)
             return;
 
         if (connection.server) {
