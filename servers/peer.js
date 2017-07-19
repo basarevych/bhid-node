@@ -763,9 +763,9 @@ class Peer extends EventEmitter {
             return;
 
         if (session.established)
-            this._logger.info(`Peer ${(cryptSession && cryptSession.peerName) || 'unknown'} of ${session.name || 'unknown'} disconnected`);
+            this._logger.info(`Peer ${(cryptSession && cryptSession.peerName) || 'unknown'} of ${session.name || 'unknown'} disconnected (${session.socket.address().address}:${session.socket.address().port})`);
         else
-            this._logger.debug('peer', `Dropped socket for ${session.name || 'unknown'}`);
+            this._logger.debug('peer', `Dropped socket for ${session.name || 'unknown'} from ${session.socket.address().address}:${session.socket.address().port}`);
 
         let address = session.socket.address();
         session.socket.destroy();
