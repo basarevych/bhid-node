@@ -103,7 +103,7 @@ class Peer extends EventEmitter {
      * @type {number}
      */
     static get addressTimeout() {
-        return 10 * 1000; // ms
+        return 5 * 1000; // ms
     }
 
     /**
@@ -119,7 +119,7 @@ class Peer extends EventEmitter {
      * @type {number}
      */
     static get establishTimeout() {
-        return 15 * 1000; // ms
+        return 10 * 1000; // ms
     }
 
     /**
@@ -144,6 +144,14 @@ class Peer extends EventEmitter {
      */
     static get pongTimeout() {
         return 10 * 1000; // ms
+    }
+
+    /**
+     * Close connection timeout
+     * @type {number}
+     */
+    static get closeTimeout() {
+        return 3 * 1000; // ms
     }
 
     /**
@@ -294,8 +302,11 @@ class Peer extends EventEmitter {
 
         return new Promise((resolve, reject) => {
             try {
-                for (let [ id, session ] of this.sessions)
+                for (let [ id, session ] of this.sessions) {
                     session.closing = true;
+                    session.socket.setTimeout(this.constructor.closeTimeout);
+                    session.wrapper.detach();
+                }
                 this.utp.close(() => { this._logger.info(`Peers dropped`, () => { resolve(); }); });
             } catch (error) {
                 reject(error);
@@ -393,14 +404,8 @@ class Peer extends EventEmitter {
             return;
 
         this._logger.debug('peer', `Closing ${fullName}`);
-        for (let id of connection.sessionIds) {
-            let session = this.sessions.get(id);
-            if (session) {
-                session.closing = true;
-                session.socket.end();
-                session.wrapper.detach();
-            }
-        }
+        for (let id of connection.sessionIds)
+            this.end(id);
 
         this._tracker.sendStatus(tracker, name, false);
         this.connections.delete(fullName);
@@ -437,38 +442,26 @@ class Peer extends EventEmitter {
                         this._logger.info(`Connected to ${type} address of ${fullName} (${address}:${port})`);
 
                         session.connected = true;
-                        for (let id of connection.sessionIds) {
-                            if (id === session.id)
-                                continue;
+                        session.socket.setTimeout(this.constructor.pongTimeout);
 
-                            let other = this.sessions.get(id);
-                            if (other) {
-                                other.closing = true;
-                                other.socket.end();
-                                other.wrapper.detach();
-                            }
+                        for (let id of connection.sessionIds) {
+                            if (id !== session.id)
+                                this.end(id);
                         }
 
-                        this._timeouts.set(
-                            session.id,
-                            {
-                                establish: Date.now() + this.constructor.establishTimeout,
-                            }
-                        );
+                        let timeout = this._timeouts.get(session.id);
+                        if (timeout) {
+                            timeout.send = Date.now() + this.constructor.pingTimeout;
+                            timeout.establish = Date.now() + this.constructor.establishTimeout;
+                        }
 
                         this.emit('connect', session.id);
                     }
                 );
 
                 session = this.createSession(fullName, socket);
+                socket.setTimeout(this.constructor.connectTimeout);
                 connection.sessionIds.add(session.id);
-
-                this._timeouts.set(
-                    session.id,
-                    {
-                        connect: Date.now() + this.constructor.connectTimeout,
-                    }
-                );
             } catch (error) {
                 this._logger.error(new NError(error, `Peer.connect(): ${fullName}`));
             }
@@ -523,22 +516,15 @@ class Peer extends EventEmitter {
         session.socket.on('end', () => {
             session.wrapper.detach();
         });
+        session.socket.on('timeout', () => {
+            this.onTimeout(sessionId);
+        });
 
         session.wrapper.on(
             'receive',
             data => {
-                if (!this.onMessage(sessionId, data)) {
-                    session.socket.end();
-                    session.wrapper.detach();
-                }
-            }
-        );
-        session.wrapper.on(
-            'read',
-            data => {
-                let timeout = this._timeouts.get(sessionId);
-                if (timeout)
-                    timeout.receive = Date.now() + this.constructor.pongTimeout;
+                if (!this.onMessage(sessionId, data))
+                    this.end(sessionId, false);
             }
         );
         session.wrapper.on(
@@ -549,6 +535,8 @@ class Peer extends EventEmitter {
                     timeout.send = Date.now() + this.constructor.pingTimeout;
             }
         );
+
+        this._timeouts.set(sessionId, {});
 
         return session;
     }
@@ -578,8 +566,7 @@ class Peer extends EventEmitter {
 
         if (end) {
             session.wrapper.once('flush', () => {
-                session.socket.end();
-                session.wrapper.detach();
+                this.end(sessionId, false);
             });
         }
 
@@ -662,20 +649,37 @@ class Peer extends EventEmitter {
     }
 
     /**
+     * End session
+     * @param {string} sessionId                Session ID
+     * @param {boolean} [closing=true]          Reconnect to server if not closing
+     */
+    end(sessionId, closing = true) {
+        let session = this.sessions.get(sessionId);
+        if (!session)
+            return;
+
+        session.closing = closing;
+        session.socket.setTimeout(this.constructor.closeTimeout);
+        session.socket.end();
+        session.wrapper.detach();
+    }
+
+    /**
      * Incoming connection handler
      * @param {object} socket                   Client socket
      */
     onConnection(socket) {
         this._logger.debug('peer', `Incoming daemon socket from ${socket.address().address}:${socket.address().port}`);
         let session = this.createSession(null, socket);
-        session.connected = true;
 
-        this._timeouts.set(
-            session.id,
-            {
-                establish: Date.now() + this.constructor.establishTimeout,
-            }
-        );
+        session.connected = true;
+        session.socket.setTimeout(this.constructor.pongTimeout);
+
+        let timeout = this._timeouts.get(session.id);
+        if (timeout) {
+            timeout.send = Date.now() + this.constructor.pingTimeout;
+            timeout.establish = Date.now() + this.constructor.establishTimeout;
+        }
 
         this.emit('connection', session.id);
     }
@@ -850,14 +854,6 @@ class Peer extends EventEmitter {
                 continue;
             }
 
-            if (timestamp.connect && now >= timestamp.connect) {
-                timestamp.connect = 0;
-                if (!session.connected) {
-                    this.onTimeout(id);
-                    continue;
-                }
-            }
-
             if (timestamp.establish && now >= timestamp.establish) {
                 timestamp.establish = 0;
                 if (!session.established) {
@@ -874,12 +870,6 @@ class Peer extends EventEmitter {
                     this.send(id, data, true);
                     continue;
                 }
-            }
-
-            if (timestamp.receive && now >= timestamp.receive) {
-                timestamp.receive = 0;
-                this.onTimeout(id);
-                continue;
             }
 
             if (timestamp.send && now >= timestamp.send) {
