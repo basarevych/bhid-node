@@ -79,14 +79,7 @@ class Start {
     launch() {
         return this.exec('daemon')
             .then(result => {
-                return Promise.resolve()
-                    .then(() => {
-                        if (result.code !== 0 && result.stdout)
-                            return this._app.info(result.stdout.trim());
-                    })
-                    .then(() => {
-                        return result.code;
-                    });
+                 return result.code;
             });
     }
     /**
