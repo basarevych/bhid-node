@@ -74,6 +74,14 @@ class Tracker extends EventEmitter {
     }
 
     /**
+     * Connect timeout
+     * @type {number}
+     */
+    static get connectTimeout() {
+        return 5 * 1000; // ms
+    }
+
+    /**
      * Will send keep alive at this interval
      * @type {number}
      */
@@ -277,7 +285,7 @@ class Tracker extends EventEmitter {
                         continue;
 
                     if (!tracker.connected) {
-                        tracker.socket.destroy();
+                        this.onClose(name);
                         continue;
                     }
 
@@ -759,6 +767,7 @@ class Tracker extends EventEmitter {
 
         try {
             this._logger.debug('tracker', `Initiating connection to ${name}`);
+            server.options.timeout = this.constructor.connectTimeout;
             server.socket = tls.connect(
                 server.port,
                 server.address,
@@ -766,6 +775,7 @@ class Tracker extends EventEmitter {
                 () => {
                     this._logger.info(`Connected to tracker ${name}`);
                     server.connected = true;
+                    server.socket.setTimeout(this.constructor.pongTimeout);
 
                     server.wrapper.clear();
                     server.wrapper.attach(server.socket);
@@ -777,14 +787,6 @@ class Tracker extends EventEmitter {
                                 server.socket.end();
                                 server.wrapper.detach();
                             }
-                        }
-                    );
-                    server.wrapper.on(
-                        'read',
-                        data => {
-                            let timeout = this._timeouts.get(name);
-                            if (timeout)
-                                timeout.receive = Date.now() + this.constructor.pongTimeout;
                         }
                     );
                     server.wrapper.on(
@@ -800,7 +802,6 @@ class Tracker extends EventEmitter {
                         name,
                         {
                             send: Date.now() + this.constructor.pingTimeout,
-                            receive: Date.now() + this.constructor.pongTimeout,
                         }
                     );
 
@@ -811,13 +812,7 @@ class Tracker extends EventEmitter {
             server.socket.on('error', error => { this.onError(name, error); });
             server.socket.on('close', () => { this.onClose(name); });
             server.socket.on('end', () => { server.wrapper.detach(); });
-
-            this._timeouts.set(
-                name,
-                {
-                    connect: Date.now() + this.constructor.connectTimeout,
-                }
-            );
+            server.socket.on('timeout', () => { this.onTimeout(name); });
         } catch (error) {
             this._logger.error(new NError(error, `Tracker._reconnect(): ${name}`));
         }
@@ -829,23 +824,8 @@ class Tracker extends EventEmitter {
     _checkTimeout() {
         let now = Date.now();
         for (let [ name, timestamp ] of this._timeouts) {
-            let server = this.servers.get(name);
-            if (!server) {
+            if (!this.servers.has(name)) {
                 this._timeouts.delete(name);
-                continue;
-            }
-
-            if (timestamp.connect && now >= timestamp.connect) {
-                timestamp.connect = 0;
-                if (!server.connected) {
-                    this.onTimeout(name);
-                    continue;
-                }
-            }
-
-            if (timestamp.receive && now >= timestamp.receive) {
-                timestamp.receive = 0;
-                this.onTimeout(name);
                 continue;
             }
 
