@@ -80,11 +80,11 @@ class ConnectRequest {
                     cryptSession.peerKey = new Uint8Array(Buffer.from(message.connectRequest.publicKey, 'base64'));
                     cryptSession.peerName = result.name;
                     this._logger.info(
-                        `Peer for ${message.connectRequest.connectionName} authenticated as ${result.name} (${session.socket.address().address}:${session.socket.address().port})`
+                        `Peer of ${message.connectRequest.connectionName} authenticated as ${result.name} (${session.socket.address().address}:${session.socket.address().port})`
                     );
                 } else {
                     this._logger.info(
-                        `Peer for ${message.connectRequest.connectionName} rejected (${session.socket.address().address}:${session.socket.address().port})`
+                        `Peer of ${message.connectRequest.connectionName} rejected (${session.socket.address().address}:${session.socket.address().port})`
                     );
                 }
 
