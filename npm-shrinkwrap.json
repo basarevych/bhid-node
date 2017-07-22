@@ -309,9 +309,9 @@
       "resolved": "https://registry.npmjs.org/tweetnacl/-/tweetnacl-1.0.0.tgz"
     },
     "utp-punch": {
-      "version": "0.2.6",
-      "from": "utp-punch@>=0.2.6 <0.3.0",
-      "resolved": "https://registry.npmjs.org/utp-punch/-/utp-punch-0.2.6.tgz"
+      "version": "0.2.9",
+      "from": "utp-punch@>=0.2.9 <0.3.0",
+      "resolved": "https://registry.npmjs.org/utp-punch/-/utp-punch-0.2.9.tgz"
     },
     "uuid": {
       "version": "3.1.0",
