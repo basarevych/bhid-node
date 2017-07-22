@@ -678,7 +678,7 @@ class Peer extends EventEmitter {
      * @param {object} socket                   Client socket
      */
     onConnection(socket) {
-        this._logger.debug('peer', `Incoming daemon socket from ${socket.address().address}:${socket.address().port}`);
+        this._logger.debug('peer', `Incoming daemon socket from ${socket.address().address}:${socket.address().port}#${socket.id}`);
         let session = this.createSession(null, socket);
 
         session.connected = true;
@@ -778,7 +778,7 @@ class Peer extends EventEmitter {
         if (session.established)
             this._logger.info(`Peer ${(cryptSession && cryptSession.peerName) || 'unknown'} of ${session.name || 'unknown'} disconnected (${session.socket.address().address}:${session.socket.address().port})`);
         else
-            this._logger.debug('peer', `Dropped socket for ${session.name || 'unknown'} from ${session.socket.address().address}:${session.socket.address().port}`);
+            this._logger.debug('peer', `Dropped socket for ${session.name || 'unknown'} from ${session.socket.address().address}:${session.socket.address().port}#${session.socket.id}`);
 
         session.socket.destroy();
         session.wrapper.destroy();
