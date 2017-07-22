@@ -54,6 +54,9 @@ class Established {
         if (!connection)
             return;
 
+        if (!connection.server)
+            connection.established = true;
+
         let [ tracker, connectionName ] = session.name.split('#');
 
         try {

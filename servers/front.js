@@ -50,6 +50,7 @@ class Front extends EventEmitter {
                                                     */
 
         this._name = null;
+        this._closing = false;
         this._app = app;
         this._config = config;
         this._logger = logger;
@@ -138,6 +139,8 @@ class Front extends EventEmitter {
     stop(name) {
         if (name !== this._name)
             return Promise.reject(new Error(`Server ${name} was not properly initialized`));
+
+        this._closing = true;
 
         return new Promise((resolve, reject) => {
             let counter = 0;
@@ -307,6 +310,9 @@ class Front extends EventEmitter {
      * @param {string} id                       Session ID
      */
     connect(name, tunnelId, id) {
+        if (this._closing)
+            return;
+
         this._logger.debug('front', `Connecting front to ${name}`);
 
         let connection = this.connections.get(name);

@@ -49,7 +49,7 @@ class ServerAvailable {
         this._logger.debug('server-available', `Got SERVER AVAILABLE for ${connectionName}`);
 
         let connection = this.peer.connections.get(connectionName);
-        if (!connection || connection.server || !this.peer._utpRunning)
+        if (!connection || connection.server || this.peer._closing)
             return;
 
         let trackedConnections = this._connectionsList.get(name);

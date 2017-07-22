@@ -54,6 +54,7 @@ class Peer extends EventEmitter {
                                                                     sessionIds: Set,
                                                                     internal: boolean, // connecting/connected to internal address
                                                                     external: boolean, // connecting/connected to external address
+                                                                    successful: boolean, // connected and authenticated
                                                                 }
                                                              */
         this.sessions = new Map();                           /* id => {
@@ -65,14 +66,13 @@ class Peer extends EventEmitter {
                                                                     verified: false, // peer is verified
                                                                     accepted: false, // peer has verified us
                                                                     established: false, // announced as established
-                                                                    closing: false, // do not attempt to reconnect
                                                                 }
                                                              */
         this.utp = null;
 
         this._name = null;
+        this._closing = false;
         this._utpPort = 42049;
-        this._utpRunning = false;
         this._app = app;
         this._config = config;
         this._logger = logger;
@@ -261,7 +261,6 @@ class Peer extends EventEmitter {
                         this.utp.once('listening', () => {
                             this.utp.removeListener('error', onError);
                             this._logger.info(`UDP socket started on ${this._utpPort}`);
-                            this._utpRunning = true;
                             resolve();
                         });
                         this._logger.info('Initiating UDP socket...');
@@ -295,7 +294,7 @@ class Peer extends EventEmitter {
         if (name !== this._name)
             return Promise.reject(new Error(`Server ${name} was not properly initialized`));
 
-        this._utpRunning = false;
+        this._closing = true;
 
         if (this._timeoutTimer) {
             clearInterval(this._timeoutTimer);
@@ -305,7 +304,6 @@ class Peer extends EventEmitter {
         return new Promise((resolve, reject) => {
             try {
                 for (let [ id, session ] of this.sessions) {
-                    session.closing = true;
                     session.socket.setTimeout(this.constructor.closeTimeout);
                     session.wrapper.detach();
                 }
@@ -386,6 +384,7 @@ class Peer extends EventEmitter {
                 sessionIds: new Set(),
                 internal: false,
                 external: false,
+                successful: false,
             };
             this.connections.set(fullName, connection);
             this._tracker.sendStatus(tracker, name);
@@ -421,6 +420,9 @@ class Peer extends EventEmitter {
      * @param {object[]} addresses              Server addresses: [ { address, port } ]
      */
     connect(tracker, name, type, addresses) {
+        if (this._closing)
+            return;
+
         let fullName = tracker + '#' + name;
         let connection = this.connections.get(fullName);
         if (!connection || connection.server || connection.internal || connection.external || !addresses.length)
@@ -437,8 +439,10 @@ class Peer extends EventEmitter {
                     () => {
                         for (let id of connection.sessionIds) {
                             let existing = this.sessions.get(id);
-                            if (existing && existing.connected)
-                                return;
+                            if (existing && existing.connected) {
+                                this.end(session.id);
+                                break;
+                            }
                         }
 
                         this._logger.info(`Connected to ${type} address of ${fullName} (${address}:${port})`);
@@ -504,7 +508,6 @@ class Peer extends EventEmitter {
             verified: false,
             accepted: false,
             established: false,
-            closing: false,
         };
         this.sessions.set(sessionId, session);
         this._crypter.create(sessionId, name);
@@ -526,7 +529,7 @@ class Peer extends EventEmitter {
             'receive',
             data => {
                 if (!this.onMessage(sessionId, data))
-                    this.end(sessionId, false);
+                    this.end(sessionId);
             }
         );
         session.wrapper.on(
@@ -568,7 +571,7 @@ class Peer extends EventEmitter {
 
         if (end) {
             session.wrapper.once('flush', () => {
-                this.end(sessionId, false);
+                this.end(sessionId);
             });
         }
 
@@ -653,14 +656,12 @@ class Peer extends EventEmitter {
     /**
      * End session
      * @param {string} sessionId                Session ID
-     * @param {boolean} [closing=true]          Reconnect to server if not closing
      */
-    end(sessionId, closing = true) {
+    end(sessionId) {
         let session = this.sessions.get(sessionId);
         if (!session)
             return;
 
-        session.closing = closing;
         session.socket.setTimeout(this.constructor.closeTimeout);
         session.socket.end();
         session.wrapper.detach();
@@ -805,15 +806,16 @@ class Peer extends EventEmitter {
         if (connection.server) {
             if (session.established)
                 this._tracker.sendStatus(tracker, connectionName);
-        } else if (!session.closing && connection.sessionIds.size === 0) {
+        } else if (!this._closing && connection.sessionIds.size === 0) {
             let reconnect;
             if (connection.internal)
-                reconnect = session.established ? 'internal' : 'external';
-            else if (connection.external && session.established)
+                reconnect = connection.successful ? 'internal' : 'external';
+            else if (connection.external && connection.successful)
                 reconnect = 'external';
 
             connection.internal = false;
             connection.external = false;
+            connection.successful = false;
 
             if (reconnect === 'external') {
                 setTimeout(

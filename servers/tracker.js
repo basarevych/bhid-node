@@ -47,6 +47,7 @@ class Tracker extends EventEmitter {
         this.default = null; // name
 
         this._name = null;
+        this._closing = false;
         this._app = app;
         this._config = config;
         this._logger = logger;
@@ -268,6 +269,7 @@ class Tracker extends EventEmitter {
         if (name !== this._name)
             return Promise.reject(new Error(`Server ${name} was not properly initialized`));
 
+        this._closing = true;
         if (this._timeoutTimer) {
             clearInterval(this._timeoutTimer);
             this._timeoutTimer = null;
@@ -761,6 +763,9 @@ class Tracker extends EventEmitter {
      * @param {string} name                 Name of the server
      */
     _reconnect(name) {
+        if (this._closing)
+            return;
+
         let server = this.servers.get(name);
         if (!server || server.socket)
             return;
