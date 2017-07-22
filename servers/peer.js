@@ -441,7 +441,7 @@ class Peer extends EventEmitter {
                             let existing = this.sessions.get(id);
                             if (existing && existing.connected) {
                                 this.end(session.id);
-                                break;
+                                return;
                             }
                         }
 
