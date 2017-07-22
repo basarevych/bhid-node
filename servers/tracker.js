@@ -275,6 +275,14 @@ class Tracker extends EventEmitter {
             this._timeoutTimer = null;
         }
 
+        for (let [ name, connection ] of this._peer.connections) {
+            if (!connection.server)
+                continue;
+
+            let [ trackerName, connectionName ] = name.split('#');
+            this.sendStatus(trackerName, connectionName, false);
+        }
+
         return new Promise((resolve, reject) => {
             let counter = 0;
             let done = () => {
