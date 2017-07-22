@@ -61,7 +61,8 @@ class ServerAvailable {
                     this._connectionsList.update(name, message.serverAvailable.connectionName, false, clientConnection, false);
                     this._connectionsList.save();
                 }
-                this.peer.connect(name, message.serverAvailable.connectionName, 'internal', message.serverAvailable.internalAddresses);
+                connection.internal = message.serverAvailable.internalAddresses;
+                this.peer.connect(name, message.serverAvailable.connectionName, 'internal');
             }
         }
     }

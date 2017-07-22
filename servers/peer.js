@@ -52,8 +52,9 @@ class Peer extends EventEmitter {
                                                                     fixed: boolean, // use peers list
                                                                     peers: array, // [ 'tracker#user@dom?daemon' ]
                                                                     sessionIds: Set,
-                                                                    internal: boolean, // connecting/connected to internal address
-                                                                    external: boolean, // connecting/connected to external address
+                                                                    internal: array, // addresses
+                                                                    external: string, // address
+                                                                    trying: string, // null, 'internal' or 'external'
                                                                     successful: boolean, // connected and authenticated
                                                                 }
                                                              */
@@ -382,8 +383,9 @@ class Peer extends EventEmitter {
                 fixed: fixed,
                 peers: peers,
                 sessionIds: new Set(),
-                internal: false,
-                external: false,
+                internal: [],
+                external: null,
+                trying: null,
                 successful: false,
             };
             this.connections.set(fullName, connection);
@@ -417,18 +419,22 @@ class Peer extends EventEmitter {
      * @param {string} tracker                  Tracker name
      * @param {string} name                     Connection name on tracker
      * @param {string} type                     'internal' or 'external'
-     * @param {object[]} addresses              Server addresses: [ { address, port } ]
      */
-    connect(tracker, name, type, addresses) {
+    connect(tracker, name, type) {
         if (this._closing)
             return;
 
         let fullName = tracker + '#' + name;
         let connection = this.connections.get(fullName);
-        if (!connection || connection.server || connection.internal || connection.external || !addresses.length)
+        if (!connection || connection.server || connection.trying)
             return;
 
-        connection[type] = true;
+        if (type === 'internal' && !connection.internal.length)
+            return;
+        if (type === 'external' && !connection.external)
+            return;
+
+        connection.trying = type;
 
         let doConnect = (address, port) => {
             try {
@@ -474,18 +480,18 @@ class Peer extends EventEmitter {
         };
 
         if (type === 'internal') {
-            for (let host of addresses)
+            for (let host of connection.internal)
                 doConnect(host.address, host.port);
         } else if (type === 'external') {
-            let address = addresses[0].address;
-            let port = addresses[0].port;
+            let address = connection.external.address;
+            let port = connection.external.port;
             this._logger.debug('peer', `Punching ${fullName}: ${address}:${port}`);
             this.utp.punch(this.constructor.punchingAttempts, port, address, success => {
                 if (success)
                     return doConnect(address, port);
 
                 this._logger.info(`Could not open NAT of ${name} (${address}:${port})`);
-                connection.external = false;
+                connection.trying = null;
                 setTimeout(() => { this._tracker.sendStatus(tracker, name); }, this.constructor.failureTimeout);
             });
         }
@@ -774,7 +780,6 @@ class Peer extends EventEmitter {
         else
             this._logger.debug('peer', `Dropped socket for ${session.name || 'unknown'} from ${session.socket.address().address}:${session.socket.address().port}`);
 
-        let address = session.socket.address();
         session.socket.destroy();
         session.wrapper.destroy();
 
@@ -808,26 +813,33 @@ class Peer extends EventEmitter {
                 this._tracker.sendStatus(tracker, connectionName);
         } else if (!this._closing && connection.sessionIds.size === 0) {
             let reconnect;
-            if (connection.internal)
+            if (connection.trying === 'internal')
                 reconnect = connection.successful ? 'internal' : 'external';
-            else if (connection.external && connection.successful)
+            else if (connection.trying === 'external' && connection.successful)
                 reconnect = 'external';
 
-            connection.internal = false;
-            connection.external = false;
+            connection.trying = null;
             connection.successful = false;
 
             if (reconnect === 'external') {
                 setTimeout(
                     () => {
-                        if (!connection.internal && !connection.external)
+                        if (!connection.trying)
                             this._tracker.sendStatus(tracker, connectionName);
                     },
                     this.constructor.addressTimeout
                 );
                 this._tracker.sendPunchRequest(tracker, connectionName);
             } else if (reconnect === 'internal') {
-                this.connect(tracker, connectionName, 'internal', [ address ]);
+                this.connect(tracker, connectionName, 'internal');
+            } else {
+                setTimeout(
+                    () => {
+                        if (!connection.trying)
+                            this._tracker.sendStatus(tracker, connectionName);
+                    },
+                    this.constructor.failureTimeout
+                );
             }
         }
     }

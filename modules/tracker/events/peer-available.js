@@ -58,16 +58,15 @@ class PeerAvailable {
                 message.peerAvailable.externalAddress
             );
         } else {
+            connection.external = {
+                address: message.peerAvailable.externalAddress,
+                port: message.peerAvailable.externalPort,
+            };
+
             this.peer.connect(
                 name,
                 message.peerAvailable.connectionName,
-                'external',
-                [
-                    {
-                        address: message.peerAvailable.externalAddress,
-                        port: message.peerAvailable.externalPort,
-                    },
-                ]
+                'external'
             );
         }
     }

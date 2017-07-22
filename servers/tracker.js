@@ -519,14 +519,10 @@ class Tracker extends EventEmitter {
             return;
 
         if (!connection.server) {
-            let connecting = false;
+            let connecting = !!connection.trying;
             for (let id of connection.sessionIds) {
                 let session = this._peer.sessions.get(id);
-                if (!session || session.closing)
-                    continue;
-                if (session.internal || session.external)
-                    connecting = true;
-                if (session.connected) {
+                if (session && session.connected) {
                     connecting = false;
                     break;
                 }
