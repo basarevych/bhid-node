@@ -784,7 +784,7 @@ class Tracker extends EventEmitter {
                 () => {
                     this._logger.info(`Connected to tracker ${name}`);
                     server.connected = true;
-                    server.socket.setTimeout(this.constructor.pongTimeout);
+                    server.socket.setTimeout(0);
 
                     server.wrapper.clear();
                     server.wrapper.attach(server.socket);
@@ -796,6 +796,14 @@ class Tracker extends EventEmitter {
                                 server.socket.end();
                                 server.wrapper.detach();
                             }
+                        }
+                    );
+                    server.wrapper.on(
+                        'read',
+                        data => {
+                            let timeout = this._timeouts.get(name);
+                            if (timeout)
+                                timeout.receive = Date.now() + this.constructor.pongTimeout;
                         }
                     );
                     server.wrapper.on(
@@ -811,6 +819,7 @@ class Tracker extends EventEmitter {
                         name,
                         {
                             send: Date.now() + this.constructor.pingTimeout,
+                            receive: Date.now() + this.constructor.pongTimeout,
                         }
                     );
 
@@ -835,6 +844,12 @@ class Tracker extends EventEmitter {
         for (let [ name, timestamp ] of this._timeouts) {
             if (!this.servers.has(name)) {
                 this._timeouts.delete(name);
+                continue;
+            }
+
+            if (timestamp.receive && now >= timestamp.receive) {
+                timestamp.receive = 0;
+                this.onTimeout(name);
                 continue;
             }
 
