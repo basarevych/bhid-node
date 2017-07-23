@@ -189,11 +189,10 @@ class Front extends EventEmitter {
      * @param {string} port                     Server port
      */
     openServer(name, tunnelId, address, port) {
-        this._logger.debug('front', `Opening front for ${name}`);
+        this._logger.debug('front', `Opening server front for ${name}`);
         let connection = this.connections.get(name);
         if (connection && !connection.server) {
             this.close(name);
-            this.connections.delete(name);
             connection = null;
         }
 
@@ -220,10 +219,10 @@ class Front extends EventEmitter {
      * @param {string} port                     Listen port
      */
     openClient(name, tunnelId, address, port) {
+        this._logger.debug('front', `Opening client front for ${name}`);
         let connection = this.connections.get(name);
         if (connection && connection.server) {
             this.close(name);
-            this.connections.delete(name);
             connection = null;
         }
         if (connection)
@@ -234,7 +233,6 @@ class Front extends EventEmitter {
         if (port === '*')
             port = '';
 
-        this._logger.debug('front', `Opening front for ${name}`);
         connection = {
             name: name,
             server: false,

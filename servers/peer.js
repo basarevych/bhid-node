@@ -807,6 +807,7 @@ class Peer extends EventEmitter {
             return;
 
         connection.sessionIds.delete(sessionId);
+        this._front.close(connection.name, sessionId);
 
         if (connection.server) {
             if (session.established)
@@ -904,6 +905,17 @@ class Peer extends EventEmitter {
             return this._tracker_instance;
         this._tracker_instance = this._app.get('servers').get('tracker');
         return this._tracker_instance;
+    }
+
+    /**
+     * Retrieve front server
+     * @return {Front}
+     */
+    get _front() {
+        if (this._front_instance)
+            return this._front_instance;
+        this._front_instance = this._app.get('servers').get('front');
+        return this._front_instance;
     }
 }
 
