@@ -807,7 +807,9 @@ class Peer extends EventEmitter {
             return;
 
         connection.sessionIds.delete(sessionId);
-        this._front.close(connection.name, sessionId);
+
+        if (session.established)
+            this._front.close(connection.name, sessionId);
 
         if (connection.server) {
             if (session.established)
