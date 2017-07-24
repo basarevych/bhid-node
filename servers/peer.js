@@ -218,8 +218,6 @@ class Peer extends EventEmitter {
                     {
                         timeout: this.constructor.pongTimeout,
                         mtu: mtu || 1000,
-                        bufferSize: 64,
-                        resend: 100,
                     },
                     this.onConnection.bind(this)
                 );
