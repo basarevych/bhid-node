@@ -214,7 +214,15 @@ class Peer extends EventEmitter {
                         throw new Error('Invalid MTU value in config');
                     mtu -= 20;
                 }
-                this.utp = new UtpNode({ timeout: 0, mtu: mtu || 1000 }, this.onConnection.bind(this));
+                this.utp = new UtpNode(
+                    {
+                        timeout: this.constructor.pongTimeout,
+                        mtu: mtu || 1000,
+                        bufferSize: 64,
+                        resend: 100,
+                    },
+                    this.onConnection.bind(this)
+                );
 
                 this.publicKey = fs.readFileSync(path.join(configPath, 'id', 'public.rsa'), 'utf8');
                 this.privateKey = fs.readFileSync(path.join(configPath, 'id', 'private.rsa'), 'utf8');
