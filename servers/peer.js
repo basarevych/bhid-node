@@ -216,7 +216,7 @@ class Peer extends EventEmitter {
                 }
                 this.utp = new UtpNode(
                     {
-                        timeout: this.constructor.pongTimeout,
+                        timeout: 0,
                         mtu: mtu || 1000,
                     },
                     this.onConnection.bind(this)
