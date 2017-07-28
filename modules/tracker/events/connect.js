@@ -2,6 +2,7 @@
  * Connect event
  * @module tracker/events/connect
  */
+const os = require('os');
 const uuid = require('uuid');
 const NError = require('nerror');
 
@@ -79,6 +80,7 @@ class Connect {
                 token: server.token,
                 identity: this._crypter.identity,
                 key: this.peer.publicKey,
+                hostname: os.hostname() || '',
             });
             let msg = this.tracker.ClientMessage.create({
                 type: this.tracker.ClientMessage.Type.REGISTER_DAEMON_REQUEST,

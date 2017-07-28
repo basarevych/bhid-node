@@ -324,6 +324,30 @@ message UpdateConnectionsResponse {
     Result response = 1;
 }
 
+message Daemon {
+    string name = 1;
+    bool online = 2;
+    repeated string hostnames = 3;
+    repeated string external_addresses = 4;
+    repeated string internal_addresses = 5;
+}
+
+message DaemonsListRequest {
+    string tracker_name = 1;
+}
+
+message DaemonsListResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        TIMEOUT = 9000;
+        NO_TRACKER = 9010;
+        NOT_REGISTERED = 9020;
+    }
+    Result response = 1;
+    repeated Daemon list = 2;
+}
+
 message RedeemMasterRequest {
     string tracker_name = 1;
     string email = 2;
@@ -391,6 +415,7 @@ message ClientMessage {
         DETACH_REQUEST = 70;
         TREE_REQUEST = 80;
         CONNECTIONS_LIST_REQUEST = 90;
+        DAEMONS_LIST_REQUEST = 91;
         SET_CONNECTIONS_REQUEST = 100;
         GET_CONNECTIONS_REQUEST = 101;
         IMPORT_CONNECTIONS_REQUEST = 110;
@@ -411,6 +436,7 @@ message ClientMessage {
     DetachRequest detach_request = 800;
     TreeRequest tree_request = 900;
     ConnectionsListRequest connections_list_request = 1000;
+    DaemonsListRequest daemons_list_request = 1010;
     SetConnectionsRequest set_connections_request = 1100;
     GetConnectionsRequest get_connections_request = 1110;
     ImportConnectionsRequest import_connections_request = 1200;
@@ -433,6 +459,7 @@ message ServerMessage {
         DETACH_RESPONSE = 70;
         TREE_RESPONSE = 80;
         CONNECTIONS_LIST_RESPONSE = 90;
+        DAEMONS_LIST_RESPONSE = 91;
         SET_CONNECTIONS_RESPONSE = 100;
         GET_CONNECTIONS_RESPONSE = 101;
         IMPORT_CONNECTIONS_RESPONSE = 110;
@@ -453,6 +480,7 @@ message ServerMessage {
     DetachResponse detach_response = 800;
     TreeResponse tree_response = 900;
     ConnectionsListResponse connections_list_response = 1000;
+    DaemonsListResponse daemons_list_response = 1010;
     SetConnectionsResponse set_connections_response = 1100;
     GetConnectionsResponse get_connections_response = 1110;
     ImportConnectionsResponse import_connections_response = 1200;

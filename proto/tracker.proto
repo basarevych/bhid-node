@@ -72,6 +72,7 @@ message RegisterDaemonRequest {
     string token = 1;
     string identity = 2;
     string key = 3;
+    string hostname = 4;
 }
 
 message RegisterDaemonResponse {
@@ -225,6 +226,26 @@ message ConnectionsListResponse {
     ConnectionsList list = 2;
 }
 
+message Daemon {
+    string name = 1;
+    bool online = 2;
+    repeated string hostnames = 3;
+    repeated string external_addresses = 4;
+    repeated string internal_addresses = 5;
+}
+
+message DaemonsListRequest {
+}
+
+message DaemonsListResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+    }
+    Result response = 1;
+    repeated Daemon list = 2;
+}
+
 message InternalAddress {
     string family = 1;
     string address = 2;
@@ -338,6 +359,7 @@ message ClientMessage {
         DETACH_REQUEST = 90;
         TREE_REQUEST = 100;
         CONNECTIONS_LIST_REQUEST = 110;
+        DAEMONS_LIST_REQUEST = 111;
         LOOKUP_IDENTITY_REQUEST = 120;
         PUNCH_REQUEST = 130;
         ADDRESS_RESPONSE = 140;
@@ -359,6 +381,7 @@ message ClientMessage {
     DetachRequest detach_request = 800;
     TreeRequest tree_request = 900;
     ConnectionsListRequest connections_list_request = 1000;
+    DaemonsListRequest daemons_list_request = 1010;
     LookupIdentityRequest lookup_identity_request = 1100;
     PunchRequest punch_request = 1200;
     AddressResponse address_response = 1300;
@@ -381,6 +404,7 @@ message ServerMessage {
         DETACH_RESPONSE = 80;
         TREE_RESPONSE = 90;
         CONNECTIONS_LIST_RESPONSE = 100;
+        DAEMONS_LIST_RESPONSE = 101;
         CONNECTIONS_LIST = 110;
         SERVER_AVAILABLE = 120;
         LOOKUP_IDENTITY_RESPONSE = 130;
@@ -403,6 +427,7 @@ message ServerMessage {
     DetachResponse detach_response = 800;
     TreeResponse tree_response = 900;
     ConnectionsListResponse connections_list_response = 1000;
+    DaemonsListResponse daemons_list_response = 1010;
     ConnectionsList connections_list = 1100;
     ServerAvailable server_available = 1200;
     LookupIdentityResponse lookupIdentityResponse = 1300;

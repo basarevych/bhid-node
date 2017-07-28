@@ -24,6 +24,7 @@ class Daemon {
      * @param {DetachRequest} detachRequest                         DetachRequest event handler
      * @param {TreeRequest} treeRequest                             TreeRequest event handler
      * @param {ConnectionsListRequest} connectionsListRequest       ConnectionsListRequest event handler
+     * @param {DaemonsListRequest} daemonsListRequest               DaemonsListRequest event handler
      * @param {SetConnectionsRequest} setConnectionsRequest         SetConnectionsRequest event handler
      * @param {GetConnectionsRequest} getConnectionsRequest         GetConnectionsRequest event handler
      * @param {ImportConnectionsRequest} importConnectionsRequest   ImportConnectionsRequest event handler
@@ -33,7 +34,7 @@ class Daemon {
      * @param {RedeemPathRequest} redeemPathRequest                 RedeemPathRequest event handler
      */
     constructor(app, config, logger, initRequest, confirmRequest, createDaemonRequest, setTokenRequest, createRequest,
-        deleteRequest, importRequest, attachRequest, detachRequest, treeRequest, connectionsListRequest,
+        deleteRequest, importRequest, attachRequest, detachRequest, treeRequest, connectionsListRequest, daemonsListRequest,
         setConnectionsRequest, getConnectionsRequest, importConnectionsRequest, updateConnectionsRequest,
         redeemMasterRequest, redeemDaemonRequest, redeemPathRequest
 )
@@ -52,6 +53,7 @@ class Daemon {
         this._detachRequest = detachRequest;
         this._treeRequest = treeRequest;
         this._connectionsListRequest = connectionsListRequest;
+        this._daemonsListRequest = daemonsListRequest;
         this._setConnectionsRequest = setConnectionsRequest;
         this._getConnectionsRequest = getConnectionsRequest;
         this._importConnectionsRequest = importConnectionsRequest;
@@ -89,6 +91,7 @@ class Daemon {
             'modules.daemon.events.detachRequest',
             'modules.daemon.events.treeRequest',
             'modules.daemon.events.connectionsListRequest',
+            'modules.daemon.events.daemonsListRequest',
             'modules.daemon.events.setConnectionsRequest',
             'modules.daemon.events.getConnectionsRequest',
             'modules.daemon.events.importConnectionsRequest',
@@ -129,6 +132,7 @@ class Daemon {
         server.on('detach_request', this._detachRequest.handle.bind(this._detachRequest));
         server.on('tree_request', this._treeRequest.handle.bind(this._treeRequest));
         server.on('connections_list_request', this._connectionsListRequest.handle.bind(this._connectionsListRequest));
+        server.on('daemons_list_request', this._daemonsListRequest.handle.bind(this._daemonsListRequest));
         server.on('set_connections_request', this._setConnectionsRequest.handle.bind(this._setConnectionsRequest));
         server.on('get_connections_request', this._getConnectionsRequest.handle.bind(this._getConnectionsRequest));
         server.on('import_connections_request', this._importConnectionsRequest.handle.bind(this._importConnectionsRequest));
