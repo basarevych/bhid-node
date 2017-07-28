@@ -1,6 +1,6 @@
 /**
- * List command
- * @module commands/list
+ * Connections command
+ * @module commands/connections
  */
 const path = require('path');
 const net = require('net');
@@ -13,7 +13,7 @@ const Table = require('easy-table');
 /**
  * Command class
  */
-class List {
+class Connections {
     /**
      * Create the service
      * @param {App} app                 The application
@@ -25,11 +25,11 @@ class List {
     }
 
     /**
-     * Service name is 'commands.list'
+     * Service name is 'commands.connections'
      * @type {string}
      */
     static get provides() {
-        return 'commands.list';
+        return 'commands.connections';
     }
 
     /**
@@ -74,8 +74,6 @@ class List {
 
             try {
                 this.proto = root;
-                this.ConnectionsListRequest = this.proto.lookup('local.ConnectionsListRequest');
-                this.ConnectionsListResponse = this.proto.lookup('local.ConnectionsListResponse');
                 this.GetConnectionsRequest = this.proto.lookup('local.GetConnectionsRequest');
                 this.GetConnectionsResponse = this.proto.lookup('local.GetConnectionsResponse');
                 this.ClientMessage = this.proto.lookup('local.ClientMessage');
@@ -104,9 +102,9 @@ class List {
                                 );
                             case this.GetConnectionsResponse.Result.REJECTED:
                                 return this.error('Request rejected');
-                            case this.ConnectionsListResponse.Result.NO_TRACKER:
+                            case this.GetConnectionsResponse.Result.NO_TRACKER:
                                 return this.error('Not connected to the tracker');
-                            case this.ConnectionsListResponse.Result.NOT_REGISTERED:
+                            case this.GetConnectionsResponse.Result.NOT_REGISTERED:
                                 return this.error('Not registered with the tracker');
                             default:
                                 return this.error('Unsupported response from daemon');
@@ -254,4 +252,4 @@ class List {
     }
 }
 
-module.exports = List;
+module.exports = Connections;
