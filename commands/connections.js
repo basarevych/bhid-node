@@ -64,6 +64,7 @@ class Connections {
             })
             .run(argv);
 
+        let search = args.targets.length && args.targets[1];
         let trackerName = args.options.tracker || '';
         let sockName = args.options.socket;
 
@@ -98,7 +99,8 @@ class Connections {
                             case this.GetConnectionsResponse.Result.ACCEPTED:
                                 return this.printTable(
                                     message.getConnectionsResponse.activeList,
-                                    message.getConnectionsResponse.importedList
+                                    message.getConnectionsResponse.importedList,
+                                    search || undefined
                                 );
                             case this.GetConnectionsResponse.Result.REJECTED:
                                 return this.error('Request rejected');
@@ -128,8 +130,9 @@ class Connections {
      * Print the table
      * @param {object} activeList
      * @param {object} importedList
+     * @param {string} [search]
      */
-    printTable(activeList, importedList) {
+    printTable(activeList, importedList, search) {
         let counter = 0;
         if (activeList) {
             counter += activeList.serverConnections.length;
@@ -146,6 +149,13 @@ class Connections {
         let table = new Table();
         if (activeList) {
             activeList.serverConnections.forEach(row => {
+                if (search) {
+                    let parts = row.name.split('/');
+                    parts[0] = '';
+                    if (parts.join('/') !== search)
+                        return;
+                }
+
                 table.cell('Name', row.name);
                 table.cell('Status', 'online');
                 table.cell('Type', 'server');
@@ -156,6 +166,13 @@ class Connections {
                 table.newRow();
             });
             activeList.clientConnections.forEach(row => {
+                if (search) {
+                    let parts = row.name.split('/');
+                    parts[0] = '';
+                    if (parts.join('/') !== search)
+                        return;
+                }
+
                 table.cell('Name', row.name);
                 table.cell('Status', row.connected ? 'online' : 'offline');
                 table.cell('Type', 'client');
@@ -168,6 +185,13 @@ class Connections {
         }
         if (importedList) {
             importedList.serverConnections.forEach(row => {
+                if (search) {
+                    let parts = row.name.split('/');
+                    parts[0] = '';
+                    if (parts.join('/') !== search)
+                        return;
+                }
+
                 table.cell('Name', row.name);
                 table.cell('Status', 'imported');
                 table.cell('Type', 'server');
@@ -178,6 +202,13 @@ class Connections {
                 table.newRow();
             });
             importedList.clientConnections.forEach(row => {
+                if (search) {
+                    let parts = row.name.split('/');
+                    parts[0] = '';
+                    if (parts.join('/') !== search)
+                        return;
+                }
+
                 table.cell('Name', row.name);
                 table.cell('Status', 'imported');
                 table.cell('Type', 'client');

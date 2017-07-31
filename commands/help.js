@@ -266,7 +266,7 @@ class Help {
      */
     helpConnections(argv) {
         return this._app.info(
-            'Usage:\tbhidctl connections [-t <tracker>]\n\n' +
+            'Usage:\tbhidctl connections [<path>] [-t <tracker>]\n\n' +
             '\tPrint this daemon connections'
             )
             .then(() => {
