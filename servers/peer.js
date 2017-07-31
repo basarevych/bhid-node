@@ -38,7 +38,7 @@ class Peer extends EventEmitter {
                                                                     connectAddress: string,
                                                                     connectPort: string,
                                                                     encrypted: boolean,
-                                                                    fixed: boolean, // use peers list
+                                                                    fixed: boolean, // use peers list and no identity change
                                                                     peers: array, // [ 'tracker#user@dom?daemon' ]
                                                                     sessionIds: Set,
                                                                } or {
@@ -50,7 +50,7 @@ class Peer extends EventEmitter {
                                                                     listenAddress: string,
                                                                     listenPort: string,
                                                                     encrypted: boolean,
-                                                                    fixed: boolean, // use peers list
+                                                                    fixed: boolean, // use peers list and no identity change
                                                                     peers: array, // [ 'tracker#user@dom?daemon' ]
                                                                     sessionIds: Set,
                                                                     internal: array, // addresses

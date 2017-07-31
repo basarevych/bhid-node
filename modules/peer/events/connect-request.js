@@ -70,7 +70,7 @@ class ConnectRequest {
                 message.connectRequest.identity,
                 message.connectRequest.publicKey,
                 message.connectRequest.signature,
-                !connection.server
+                connection.fixed
             )
             .then(result => {
                 session.verified = result.verified;

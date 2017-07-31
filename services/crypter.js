@@ -142,7 +142,7 @@ class Crypter {
      * @param {string} identity                 Peer supplied identity
      * @param {string} buffer                   Buffer
      * @param {string} signature                Signature of buffer
-     * @param {boolean} [strict=false]          Allow identity change
+     * @param {boolean} [strict=false]          Allow identity change or not
      * @return {Promise}                        Resolves to { verified, name }
      */
     verify(id, tracker, identity, buffer, signature, strict = false) {
@@ -151,71 +151,25 @@ class Crypter {
             return Promise.resolve({ verified: false });
 
         return this._loadPeer(tracker, identity)
-            .then(peer => {
-                if (peer)
-                    return peer;
+            .then(diskPeer => {
+                if (strict && diskPeer)
+                    return diskPeer;
 
-                return new Promise((resolve, reject) => {
-                    try {
-                        let requestId = this._tracker.sendLookupIdentityRequest(tracker, identity);
-                        if (!requestId)
-                            return resolve(false);
+                return this._lookupPeer(tracker, identity)
+                    .then(trackerPeer => {
+                        if (!trackerPeer)
+                            return diskPeer;
 
-                        let onResponse = (name, message) => {
-                            if (message.messageId === requestId) {
-                                this._tracker.removeListener('lookup_identity_response', onResponse);
-
-                                if (message.lookupIdentityResponse.response !== this._tracker.LookupIdentityResponse.Result.FOUND)
-                                    return resolve(false);
-
-                                let peersPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid/peers' : '/etc/bhid/peers');
-                                let exists;
-                                try {
-                                    fs.accessSync(path.join(peersPath, tracker, message.lookupIdentityResponse.name + '.rsa'), fs.constants.F_OK);
-                                    exists = true;
-                                } catch (error) {
-                                    exists = false;
-                                }
-
-                                let success = () => {
-                                    resolve({
-                                        name: message.lookupIdentityResponse.name,
-                                        key: new NodeRSA(message.lookupIdentityResponse.key),
-                                    });
-                                };
-
-                                if (exists) {
-                                    if (strict) {
-                                        this._logger.info(`Possibly forged identity of ${message.lookupIdentityResponse.name} (${tracker})`);
-                                        resolve(false);
-                                    } else {
-                                        success();
-                                    }
-                                } else {
-                                    this._savePeer(tracker, message.lookupIdentityResponse.name, message.lookupIdentityResponse.key)
-                                        .then(
-                                            () => {
-                                                this._logger.info(`Identity of ${message.lookupIdentityResponse.name} (${tracker}) saved`);
-                                            },
-                                            error => {
-                                                this._logger.debug('crypter', `Could not save identity: ${error.message}`);
-                                            }
-                                        )
-                                        .then(() => {
-                                            success();
-                                        });
-                                }
-                            }
-                        };
-                        this._tracker.on('lookup_identity_response', onResponse);
-                        setTimeout(() => {
-                            this._tracker.removeListener('lookup_identity_response', onResponse);
-                            resolve(false);
-                        }, this.constructor.lookupTimeout);
-                    } catch (error) {
-                        reject(new NError(error, 'Crypter.verify()'));
-                    }
-                });
+                        if (!diskPeer || diskPeer.name !== trackerPeer.name || !diskPeer.buffer.equals(trackerPeer.buffer)) {
+                            return this._deletePeer(tracker, diskPeer.name)
+                                .then(() => {
+                                    return this._savePeer(tracker, trackerPeer.name, trackerPeer.buffer)
+                                })
+                                .then(() => {
+                                    return trackerPeer;
+                                });
+                        }
+                    });
             })
             .then(peer => {
                 if (!peer)
@@ -316,6 +270,53 @@ class Crypter {
         return this._peer_instance;
     }
 
+
+    /**
+     * Lookup peer by identity
+     * @param {string} tracker                  Tracker name
+     * @param {string} identity                 Peer identity
+     * @return {Promise}
+     * <code>
+     * {
+     *     name: 'user@dom/daemon',
+     *     key: NodeRSA of public key,
+     *     buffer: key as buffer,
+     * }
+     * </code>
+     */
+    _lookupPeer(tracker, identity) {
+        return new Promise((resolve, reject) => {
+            try {
+                let requestId = this._tracker.sendLookupIdentityRequest(tracker, identity);
+                if (!requestId)
+                    return resolve(null);
+
+                let onResponse = (name, message) => {
+                    if (message.messageId === requestId) {
+                        this._tracker.removeListener('lookup_identity_response', onResponse);
+
+                        if (message.lookupIdentityResponse.response !== this._tracker.LookupIdentityResponse.Result.FOUND)
+                            return resolve(null);
+
+                        this._logger.debug('crypter', `Looked up identity for ${message.lookupIdentityResponse.name}`);
+                        resolve({
+                            name: message.lookupIdentityResponse.name,
+                            key: new NodeRSA(message.lookupIdentityResponse.key),
+                            buffer: Buffer.from(message.lookupIdentityResponse.key),
+                        });
+                    }
+                };
+                this._tracker.on('lookup_identity_response', onResponse);
+                setTimeout(() => {
+                    this._tracker.removeListener('lookup_identity_response', onResponse);
+                    resolve(null);
+                }, this.constructor.lookupTimeout);
+            } catch (error) {
+                reject(new NError(error, 'Crypter._lookupPeer()'));
+            }
+        });
+    }
+
     /**
      * Find and load peer
      * @param {string} tracker                  Tracker name
@@ -324,7 +325,8 @@ class Crypter {
      * <code>
      * {
      *     name: 'user@dom/daemon',
-     *     publicKey: NodeRSA,
+     *     key: NodeRSA of public key,
+     *     buffer: key as buffer,
      * }
      * </code>
      */
@@ -350,6 +352,7 @@ class Crypter {
                         return resolve({
                             name: name,
                             key: new NodeRSA(contents),
+                            buffer: Buffer.from(contents),
                         });
                     }
                 }
@@ -364,7 +367,7 @@ class Crypter {
      * Save peer identity
      * @param {string} tracker                  Tracker name
      * @param {string} name                     Peer name
-     * @param {string} key                      Peer public key
+     * @param {buffer} key                      Peer public key
      * @return {Promise}
      */
     _savePeer(tracker, name, key) {
@@ -388,6 +391,30 @@ class Crypter {
         return new Promise((resolve, reject) => {
             try {
                 fs.writeFileSync(path.join(peersPath, tracker, name + '.rsa'), key);
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * Delete peer identity
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Peer name
+     * @return {Promise}
+     */
+    _deletePeer(tracker, name) {
+        let peersPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid/peers' : '/etc/bhid/peers');
+        try {
+            fs.accessSync(path.join(peersPath, tracker, name + '.rsa'), fs.constants.F_OK);
+        } catch (error) {
+            return Promise.resolve(null);
+        }
+
+        return new Promise((resolve, reject) => {
+            try {
+                fs.unlinkSync(path.join(peersPath, tracker, name + '.rsa'));
                 resolve();
             } catch (error) {
                 reject(error);
