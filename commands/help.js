@@ -266,8 +266,8 @@ class Help {
      */
     helpConnections(argv) {
         return this._app.info(
-            'Usage:\tbhidctl connections [<path>] [-t <tracker>]\n\n' +
-            '\tPrint this daemon connections'
+            'Usage:\tbhidctl connections [<path>] [-n] [-t <tracker>]\n\n' +
+            '\tPrint this daemon connections. Use -n for no-header version.'
             )
             .then(() => {
                 process.exit(0);
@@ -279,8 +279,8 @@ class Help {
      */
     helpDaemons(argv) {
         return this._app.info(
-            'Usage:\tbhidctl daemons [<name>] [-t <tracker>]\n\n' +
-            '\tPrint your daemons list'
+            'Usage:\tbhidctl daemons [<name>] [-n] [-t <tracker>]\n\n' +
+            '\tPrint your daemons list. Use -n for no-header version.'
             )
             .then(() => {
                 process.exit(0);
