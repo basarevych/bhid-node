@@ -160,15 +160,32 @@ class Crypter {
                         if (!trackerPeer)
                             return diskPeer;
 
-                        if (!diskPeer || diskPeer.name !== trackerPeer.name || !diskPeer.buffer.equals(trackerPeer.buffer)) {
-                            return this._deletePeer(tracker, diskPeer.name)
-                                .then(() => {
-                                    return this._savePeer(tracker, trackerPeer.name, trackerPeer.buffer)
-                                })
-                                .then(() => {
-                                    return trackerPeer;
-                                });
+                        let isDifferent = true;
+                        let isProtected = false;
+
+                        if (diskPeer) {
+                            isDifferent = diskPeer.name !== trackerPeer.name || !diskPeer.buffer.equals(trackerPeer.buffer);
+                            for (let connection of this._peer.connections.values()) {
+                                if (connection.fixed && connection.peers.indexOf(tracker + '#' + diskPeer.name) !== -1) {
+                                    isProtected = true;
+                                    break;
+                                }
+                            }
                         }
+
+                        if (!isDifferent)
+                            return trackerPeer;
+
+                        if (isProtected)
+                            return diskPeer;
+
+                        return this._deletePeer(tracker, diskPeer.name)
+                            .then(() => {
+                                return this._savePeer(tracker, trackerPeer.name, trackerPeer.buffer)
+                            })
+                            .then(() => {
+                                return trackerPeer;
+                            });
                     });
             })
             .then(peer => {
