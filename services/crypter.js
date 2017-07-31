@@ -179,7 +179,11 @@ class Crypter {
                         if (isProtected)
                             return diskPeer;
 
-                        return this._deletePeer(tracker, diskPeer.name)
+                        return Promise.resolve()
+                            .then(() => {
+                                if (diskPeer)
+                                    return this._deletePeer(tracker, diskPeer.name);
+                            })
                             .then(() => {
                                 return this._savePeer(tracker, trackerPeer.name, trackerPeer.buffer)
                             })
