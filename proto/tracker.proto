@@ -73,6 +73,7 @@ message RegisterDaemonRequest {
     string identity = 2;
     string key = 3;
     string hostname = 4;
+    string version = 5;
 }
 
 message RegisterDaemonResponse {
@@ -229,9 +230,10 @@ message ConnectionsListResponse {
 message Daemon {
     string name = 1;
     bool online = 2;
-    repeated string hostnames = 3;
-    repeated string external_addresses = 4;
-    repeated string internal_addresses = 5;
+    string version = 3;
+    string hostname = 4;
+    string external_address = 5;
+    repeated string internal_addresses = 6;
 }
 
 message DaemonsListRequest {

@@ -81,6 +81,7 @@ class Connect {
                 identity: this._crypter.identity,
                 key: this.peer.publicKey,
                 hostname: os.hostname() || '',
+                version: this._config.version || '',
             });
             let msg = this.tracker.ClientMessage.create({
                 type: this.tracker.ClientMessage.Type.REGISTER_DAEMON_REQUEST,

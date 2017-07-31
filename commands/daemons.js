@@ -64,6 +64,7 @@ class Daemons {
             })
             .run(argv);
 
+        let search = args.targets.length && args.targets[1];
         let trackerName = args.options.tracker || '';
         let sockName = args.options.socket;
 
@@ -97,7 +98,7 @@ class Daemons {
 
                         switch (message.daemonsListResponse.response) {
                             case this.DaemonsListResponse.Result.ACCEPTED:
-                                return this.printTable(message.daemonsListResponse.list);
+                                return this.printTable(message.daemonsListResponse.list, search || undefined);
                             case this.DaemonsListResponse.Result.REJECTED:
                                 return this.error('Request rejected');
                             case this.DaemonsListResponse.Result.NO_TRACKER:
@@ -125,19 +126,33 @@ class Daemons {
     /**
      * Print the table
      * @param {object} list
+     * @param {string} [search]
      */
-    printTable(list) {
+    printTable(list, search) {
         if (!list.length)
             return this._app.info('No daemons registered');
 
         let table = new Table();
         list.forEach(row => {
+            if (search && search !== row.name)
+                return;
+
             table.cell('Name', row.name);
             table.cell('Status', row.online ? 'online' : 'offline');
-            table.cell('Hostname', row.hostnames.join(' '));
-            table.cell('External IP', row.externalAddresses.join(' '));
-            table.cell('Internal IP', row.internalAddresses.join(' '));
+            table.cell('Version', row.version);
+            table.cell('Hostname', row.hostname);
+            table.cell('External IP', row.externalAddress);
+            table.cell('Internal IP', row.internalAddresses.length ? row.internalAddresses[0] : '');
             table.newRow();
+            for (let i = 1; i < row.internalAddresses.length; i++) {
+                table.cell('Name', '');
+                table.cell('Status', '');
+                table.cell('Version', '');
+                table.cell('Hostname', '');
+                table.cell('External IP', '');
+                table.cell('Internal IP', row.internalAddresses[i]);
+                table.newRow();
+            }
         });
         return this._app.info(table.toString().trim());
     }
