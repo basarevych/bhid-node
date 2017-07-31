@@ -53,6 +53,11 @@ class Connections {
                 type: 'boolean',
             })
             .option({
+                name: 'no-header',
+                short: 'n',
+                type: 'boolean',
+            })
+            .option({
                 name: 'tracker',
                 short: 't',
                 type: 'string',
@@ -65,6 +70,7 @@ class Connections {
             .run(argv);
 
         let search = args.targets.length && args.targets[1];
+        let noHeader = args.options['no-header'] || false;
         let trackerName = args.options.tracker || '';
         let sockName = args.options.socket;
 
@@ -100,6 +106,7 @@ class Connections {
                                 return this.printTable(
                                     message.getConnectionsResponse.activeList,
                                     message.getConnectionsResponse.importedList,
+                                    !noHeader,
                                     search || undefined
                                 );
                             case this.GetConnectionsResponse.Result.REJECTED:
@@ -130,9 +137,10 @@ class Connections {
      * Print the table
      * @param {object} activeList
      * @param {object} importedList
+     * @param {boolean} printHeader
      * @param {string} [search]
      */
-    printTable(activeList, importedList, search) {
+    printTable(activeList, importedList, printHeader, search) {
         let counter = 0;
         if (activeList) {
             counter += activeList.serverConnections.length;
@@ -178,7 +186,7 @@ class Connections {
                 table.cell('Type', 'client');
                 table.cell('Encrypted', row.encrypted ? 'yes' : 'no');
                 table.cell('Fixed', row.fixed ? 'yes' : 'no');
-                table.cell('Address', row.listenAddress == '::' ? '*' : row.listenAddress || '*');
+                table.cell('Address', row.listenAddress === '::' ? '*' : row.listenAddress || '*');
                 table.cell('Port', row.listenPort || '*');
                 table.newRow();
             });
@@ -219,7 +227,12 @@ class Connections {
                 table.newRow();
             });
         }
-        return this._app.info(table.toString().trim());
+
+        let result = table.toString().trim();
+        if (printHeader)
+            return this._app.info(result);
+
+        return this._app.info(result.split('\n').splice(2).join('\n'));
     }
 
     /**

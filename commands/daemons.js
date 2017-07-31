@@ -53,6 +53,11 @@ class Daemons {
                 type: 'boolean',
             })
             .option({
+                name: 'no-header',
+                short: 'n',
+                type: 'boolean',
+            })
+            .option({
                 name: 'tracker',
                 short: 't',
                 type: 'string',
@@ -65,6 +70,7 @@ class Daemons {
             .run(argv);
 
         let search = args.targets.length && args.targets[1];
+        let noHeader = args.options['no-header'] || false;
         let trackerName = args.options.tracker || '';
         let sockName = args.options.socket;
 
@@ -98,7 +104,7 @@ class Daemons {
 
                         switch (message.daemonsListResponse.response) {
                             case this.DaemonsListResponse.Result.ACCEPTED:
-                                return this.printTable(message.daemonsListResponse.list, search || undefined);
+                                return this.printTable(message.daemonsListResponse.list, !noHeader, search || undefined);
                             case this.DaemonsListResponse.Result.REJECTED:
                                 return this.error('Request rejected');
                             case this.DaemonsListResponse.Result.NO_TRACKER:
@@ -126,9 +132,10 @@ class Daemons {
     /**
      * Print the table
      * @param {object} list
+     * @param {boolean} printHeader
      * @param {string} [search]
      */
-    printTable(list, search) {
+    printTable(list, printHeader, search) {
         if (!list.length)
             return this._app.info('No daemons registered');
 
@@ -154,7 +161,12 @@ class Daemons {
                 table.newRow();
             }
         });
-        return this._app.info(table.toString().trim());
+
+        let result = table.toString().trim();
+        if (printHeader)
+            return this._app.info(result);
+
+        return this._app.info(result.split('\n').splice(2).join('\n'));
     }
 
     /**
