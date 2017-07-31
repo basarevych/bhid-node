@@ -79,7 +79,8 @@ class Help {
                 '\tattach\t\tMake the daemon a server or a client of a connection\n' +
                 '\tdetach\t\tDetach the daemon from given connection\n' +
                 '\ttree\t\tPrint user tree\n' +
-                '\tlist\t\tPrint current connections\n' +
+                '\tconnections\tPrint this daemon connections\n' +
+                '\tdaemons\t\tPrint your daemons list\n' +
                 '\tload\t\tLoad current connection configuration from tracker\n' +
                 '\tredeem\t\tRedeem account, daemon or connection token\n' +
                 '\tstart\t\tStart the daemon\n' +
@@ -261,12 +262,25 @@ class Help {
     }
 
     /**
-     * List command
+     * Connections command
      */
-    helpList(argv) {
+    helpConnections(argv) {
         return this._app.info(
-                'Usage:\tbhidctl list [-t <tracker>]\n\n' +
-                '\tPrint current connections'
+            'Usage:\tbhidctl connections [-t <tracker>]\n\n' +
+            '\tPrint this daemon connections'
+            )
+            .then(() => {
+                process.exit(0);
+            });
+    }
+
+    /**
+     * Daemons command
+     */
+    helpDaemons(argv) {
+        return this._app.info(
+            'Usage:\tbhidctl daemons [<name>] [-t <tracker>]\n\n' +
+            '\tPrint your daemons list'
             )
             .then(() => {
                 process.exit(0);
