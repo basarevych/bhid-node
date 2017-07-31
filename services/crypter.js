@@ -194,9 +194,9 @@ class Crypter {
 
                 let connection = this._peer.connections.get(session.connection);
                 if (!connection)
-                    return { verified: false };
+                    return { verified: false, name: peer.name };
                 if (connection.fixed && connection.peers.indexOf(peer.name) === -1)
-                    return { verified: false };
+                    return { verified: false, name: peer.name };
 
                 let hash = crypto.createHash(this._hash);
                 hash.update(buffer);
