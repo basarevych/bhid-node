@@ -15,13 +15,11 @@ class Install {
      * Create the service
      * @param {App} app                 The application
      * @param {object} config           Configuration
-     * @param {Runner} runner           Runner service
      * @param {Ini} ini                 Ini service
      */
-    constructor(app, config, runner, ini) {
+    constructor(app, config, ini) {
         this._app = app;
         this._config = config;
-        this._runner = runner;
         this._ini = ini;
     }
 
@@ -38,7 +36,7 @@ class Install {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'runner', 'ini' ];
+        return [ 'app', 'config', 'ini' ];
     }
 
     /**
@@ -179,56 +177,6 @@ class Install {
                 } catch (error) {
                     // do nothing
                 }
-
-                let keysExist = false;
-                try {
-                    fs.accessSync(path.join(configDir, 'id', 'private.rsa'), fs.constants.F_OK);
-                    fs.accessSync(path.join(configDir, 'id', 'public.rsa'), fs.constants.F_OK);
-                    keysExist = true;
-                } catch (error) {
-                    // do nothing
-                }
-
-                if (keysExist)
-                    return;
-
-                this._app.debug('Creating RSA keys').catch(() => { /* do nothing */ });
-                return this._runner.exec(
-                        'openssl',
-                        [
-                            'genrsa',
-                            '-out', path.join(configDir, 'id', 'private.rsa'),
-                            '2048'
-                        ]
-                    )
-                    .then(result => {
-                        if (result.code !== 0)
-                            throw new Error('Could not create private key');
-
-                        return this._runner.exec(
-                                'openssl',
-                                [
-                                    'rsa',
-                                    '-in', path.join(configDir, 'id', 'private.rsa'),
-                                    '-outform', 'PEM',
-                                    '-pubout',
-                                    '-out', path.join(configDir, 'id', 'public.rsa')
-                                ]
-                            )
-                            .then(result => {
-                                if (result.code !== 0)
-                                    return result;
-
-                                return this._runner.exec('chmod', [ '600', path.join(configDir, 'id', 'private.rsa') ])
-                                    .then(() => {
-                                        return result;
-                                    });
-                            });
-                    })
-                    .then(result => {
-                        if (result.code !== 0)
-                            return this.error('Could not create public key');
-                    });
             });
     }
 

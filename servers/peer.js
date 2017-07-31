@@ -21,11 +21,12 @@ class Peer extends EventEmitter {
      * @param {App} app                             Application
      * @param {object} config                       Configuration
      * @param {Logger} logger                       Logger service
+     * @param {Runner} runner                       Runner service
      * @param {Ini} ini                             Ini service
      * @param {Crypter} crypter                     Crypter service
      * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger, ini, crypter, connectionsList) {
+    constructor(app, config, logger, runner, ini, crypter, connectionsList) {
         super();
 
         this.connections = new Map();                       /* full name => {
@@ -77,6 +78,7 @@ class Peer extends EventEmitter {
         this._app = app;
         this._config = config;
         this._logger = logger;
+        this._runner = runner;
         this._ini = ini;
         this._crypter = crypter;
         this._connectionsList = connectionsList;
@@ -96,7 +98,7 @@ class Peer extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'ini', 'crypter', 'connectionsList' ];
+        return [ 'app', 'config', 'logger', 'runner', 'ini', 'crypter', 'connectionsList' ];
     }
 
     /**
@@ -171,6 +173,7 @@ class Peer extends EventEmitter {
     init(name) {
         this._name = name;
 
+        let configPath;
         return new Promise((resolve, reject) => {
                 this._logger.debug('peer', 'Loading protocol');
                 protobuf.load(path.join(this._config.base_path, 'proto', 'daemon.proto'), (error, root) => {
@@ -192,7 +195,7 @@ class Peer extends EventEmitter {
                 });
             })
             .then(() => {
-                let configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+                configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
                 try {
                     fs.accessSync(path.join(configPath, 'bhid.conf'), fs.constants.F_OK);
                 } catch (error) {
@@ -222,6 +225,57 @@ class Peer extends EventEmitter {
                     this.onConnection.bind(this)
                 );
 
+                let keysExist = false;
+                try {
+                    fs.accessSync(path.join(configPath, 'id', 'private.rsa'), fs.constants.F_OK);
+                    fs.accessSync(path.join(configPath, 'id', 'public.rsa'), fs.constants.F_OK);
+                    keysExist = true;
+                } catch (error) {
+                    // do nothing
+                }
+
+                if (keysExist)
+                    return;
+
+                this._logger.debug('peer', 'Creating RSA keys');
+                return this._runner.exec(
+                        'openssl',
+                        [
+                            'genrsa',
+                            '-out', path.join(configPath, 'id', 'private.rsa'),
+                            '2048'
+                        ]
+                    )
+                    .then(result => {
+                        if (result.code !== 0)
+                            throw new Error('Could not create private key');
+
+                        return this._runner.exec(
+                                'openssl',
+                                [
+                                    'rsa',
+                                    '-in', path.join(configPath, 'id', 'private.rsa'),
+                                    '-outform', 'PEM',
+                                    '-pubout',
+                                    '-out', path.join(configPath, 'id', 'public.rsa')
+                                ]
+                            )
+                            .then(result => {
+                                if (result.code !== 0)
+                                    return result;
+
+                                return this._runner.exec('chmod', ['600', path.join(configPath, 'id', 'private.rsa')])
+                                    .then(() => {
+                                        return result;
+                                    });
+                            });
+                    })
+                    .then(result => {
+                        if (result.code !== 0)
+                            return this.error('Could not create public key');
+                    });
+            })
+            .then(() => {
                 this.publicKey = fs.readFileSync(path.join(configPath, 'id', 'public.rsa'), 'utf8');
                 this.privateKey = fs.readFileSync(path.join(configPath, 'id', 'private.rsa'), 'utf8');
                 this._crypter.init(this.publicKey, this.privateKey);
