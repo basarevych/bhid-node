@@ -80,16 +80,16 @@ class ConnectRequest {
                     cryptSession.peerKey = new Uint8Array(Buffer.from(message.connectRequest.publicKey, 'base64'));
                     cryptSession.peerName = result.name;
                     this._logger.info(
-                        `Peer of ${message.connectRequest.connectionName} authenticated as ${result.name} (${session.socket.address().address}:${session.socket.address().port})`
+                        `Peer ${result.name} of ${message.connectRequest.connectionName} passed identity check (${session.socket.address().address}:${session.socket.address().port})`
                     );
                 } else {
                     if (result.name && connection.fixed && connection.peers.indexOf(result.name) === -1) {
-                        this._logger.info(
-                            `Peer of ${message.connectRequest.connectionName} is not in the fixed list (${result.name}) and rejected (${session.socket.address().address}:${session.socket.address().port})`
+                        this._logger.error(
+                            `Peer ${result.name} of ${message.connectRequest.connectionName} is not in the fixed list and rejected (${session.socket.address().address}:${session.socket.address().port})`
                         );
                     } else {
-                        this._logger.info(
-                            `Peer of ${message.connectRequest.connectionName} is ${result.name ? 'not ' + result.name : 'unknown'} and rejected (${session.socket.address().address}:${session.socket.address().port})`
+                        this._logger.error(
+                            `Peer ${result.name ? result.name : 'unknown'} of ${message.connectRequest.connectionName} failed identity check (${session.socket.address().address}:${session.socket.address().port})`
                         );
                     }
                 }
