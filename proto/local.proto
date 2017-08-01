@@ -314,12 +314,15 @@ message ImportConnectionsResponse {
 message UpdateConnectionsRequest {
     string tracker_name = 1;
     ConnectionsList list = 2;
+    string path = 3;
 }
 
 message UpdateConnectionsResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
+        NO_TRACKER = 9010;
+        NOT_REGISTERED = 9020;
     }
     Result response = 1;
 }
