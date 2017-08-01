@@ -201,7 +201,7 @@ class Create {
                                             process.exit(0);
                                     })
                                     .then(() => {
-                                        return this.update(trackerName, message.createResponse.updates, sockName);
+                                        return this.update(trackerName, cpath, message.createResponse.updates, sockName);
                                     });
                             case this.CreateResponse.Result.REJECTED:
                                 return this.error('Request rejected');
@@ -236,17 +236,19 @@ class Create {
     /**
      * Load the connection
      * @param {string} trackerName                      Name of the tracker
+     * @param {string} acceptPath                       Check path of the list items
      * @param {object} [list]                           List of updated connections
      * @param {string} [sockName]                       Socket name
      * @return {Promise}
      */
-    update(trackerName, list, sockName) {
+    update(trackerName, acceptPath, list, sockName) {
         if (!list)
             return Promise.resolve();
 
         let request = this.UpdateConnectionsRequest.create({
             trackerName: trackerName,
             list: list,
+            path: acceptPath,
         });
         let message = this.ClientMessage.create({
             type: this.ClientMessage.Type.UPDATE_CONNECTIONS_REQUEST,
@@ -264,6 +266,10 @@ class Create {
                         return;
                     case this.UpdateConnectionsResponse.Result.REJECTED:
                         return this.error('Could not start the connection');
+                    case this.UpdateConnectionsResponse.Result.NO_TRACKER:
+                        return this.error('Not connected to the tracker');
+                    case this.UpdateConnectionsResponse.Result.NOT_REGISTERED:
+                        return this.error('Not registered with the tracker');
                     default:
                         return this.error('Unsupported response from daemon');
                 }

@@ -17,11 +17,13 @@ class Attach {
      * @param {App} app                 The application
      * @param {object} config           Configuration
      * @param {Help} help               Help command
+     * @param {Create} create           Create command
      */
-    constructor(app, config, help) {
+    constructor(app, config, help, create) {
         this._app = app;
         this._config = config;
         this._help = help;
+        this._create = create;
     }
 
     /**
@@ -37,7 +39,7 @@ class Attach {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'commands.help' ];
+        return [ 'app', 'config', 'commands.help', 'commands.create' ];
     }
 
     /**
@@ -124,7 +126,7 @@ class Attach {
 
                         switch (message.attachResponse.response) {
                             case this.AttachResponse.Result.ACCEPTED:
-                                return this.update(trackerName, message.attachResponse.updates, sockName);
+                                return this._create.update(trackerName, apath, message.attachResponse.updates, sockName);
                             case this.AttachResponse.Result.REJECTED:
                                 return this.error('Request rejected');
                             case this.AttachResponse.Result.INVALID_PATH:
@@ -155,43 +157,6 @@ class Attach {
         });
 
         return Promise.resolve();
-    }
-
-    /**
-     * Load the connection
-     * @param {string} trackerName                      Name of the tracker
-     * @param {object} [list]                           List of updated connections
-     * @param {string} [sockName]                       Name of socket
-     * @return {Promise}
-     */
-    update(trackerName, list, sockName) {
-        if (!list)
-            return Promise.resolve();
-
-        let request = this.UpdateConnectionsRequest.create({
-            trackerName: trackerName,
-            list: list,
-        });
-        let message = this.ClientMessage.create({
-            type: this.ClientMessage.Type.UPDATE_CONNECTIONS_REQUEST,
-            updateConnectionsRequest: request,
-        });
-        let buffer = this.ClientMessage.encode(message).finish();
-        return this.send(buffer, sockName)
-            .then(data => {
-                let message = this.ServerMessage.decode(data);
-                if (message.type !== this.ServerMessage.Type.UPDATE_CONNECTIONS_RESPONSE)
-                    return this.error('Invalid reply from daemon');
-
-                switch (message.updateConnectionsResponse.response) {
-                    case this.UpdateConnectionsResponse.Result.ACCEPTED:
-                        return;
-                    case this.UpdateConnectionsResponse.Result.REJECTED:
-                        return this.error('Could not start the connection');
-                    default:
-                        return this.error('Unsupported response from daemon');
-                }
-            });
     }
 
     /**

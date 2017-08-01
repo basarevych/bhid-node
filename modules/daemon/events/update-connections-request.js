@@ -64,7 +64,20 @@ class UpdateConnectionsRequest {
                 this.daemon.send(id, data);
             };
 
+            let server = this.tracker.getServer(message.updateConnectionsRequest.trackerName);
+            if (!server || !server.connected)
+                return reply(this.daemon.UpdateConnectionsResponse.Result.NO_TRACKER);
+            if (!server.registered)
+                return reply(this.daemon.UpdateConnectionsResponse.Result.NOT_REGISTERED);
+
+            let acceptPath = message.updateConnectionsRequest.path;
+            if (acceptPath && acceptPath[0] === '/')
+                acceptPath = server.email + acceptPath;
+
             for (let connection of message.updateConnectionsRequest.list.serverConnections) {
+                if (acceptPath && acceptPath !== connection.path)
+                    continue;
+
                 this._connectionsList.update(
                     message.updateConnectionsRequest.trackerName || this.tracker.default,
                     connection.name,
@@ -72,7 +85,11 @@ class UpdateConnectionsRequest {
                     connection
                 );
             }
+
             for (let connection of message.updateConnectionsRequest.list.clientConnections) {
+                if (acceptPath && acceptPath !== connection.path)
+                    continue;
+
                 this._connectionsList.update(
                     message.updateConnectionsRequest.trackerName || this.tracker.default,
                     connection.name,
