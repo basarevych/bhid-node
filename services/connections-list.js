@@ -442,11 +442,9 @@ class ConnectionsList {
      * @param {object} list                 Connections list
      */
     import(trackerName, token, list) {
-        let info = this._imports.get(trackerName);
-        if (!info) {
-            info = { serverConnections: new Map(), clientConnections: new Map() };
-            this._imports.set(trackerName, info);
-        }
+        let info = { serverConnections: new Map(), clientConnections: new Map() };
+        this._imports.set(trackerName, info);
+
         for (let connection of list.serverConnections) {
             connection.token = token;
             info.serverConnections.set(connection.name, connection);

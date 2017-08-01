@@ -201,7 +201,7 @@ class Create {
                                             process.exit(0);
                                     })
                                     .then(() => {
-                                        return this.update(trackerName, cpath, message.createResponse.updates, sockName);
+                                        return this.updateConnections(trackerName, cpath, message.createResponse.updates, sockName);
                                     });
                             case this.CreateResponse.Result.REJECTED:
                                 return this.error('Request rejected');
@@ -241,7 +241,7 @@ class Create {
      * @param {string} [sockName]                       Socket name
      * @return {Promise}
      */
-    update(trackerName, acceptPath, list, sockName) {
+    updateConnections(trackerName, acceptPath, list, sockName) {
         if (!list)
             return Promise.resolve();
 

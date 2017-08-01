@@ -126,7 +126,7 @@ class Attach {
 
                         switch (message.attachResponse.response) {
                             case this.AttachResponse.Result.ACCEPTED:
-                                return this._create.update(trackerName, apath, message.attachResponse.updates, sockName);
+                                return this._create.updateConnections(trackerName, apath, message.attachResponse.updates, sockName);
                             case this.AttachResponse.Result.REJECTED:
                                 return this.error('Request rejected');
                             case this.AttachResponse.Result.INVALID_PATH:
