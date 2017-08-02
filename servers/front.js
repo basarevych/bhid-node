@@ -26,6 +26,7 @@ class Front extends EventEmitter {
                                                             name: 'tracker#user@dom/path',
                                                             address: string, // connect to
                                                             port: string,
+                                                            encrypted: boolean,
                                                             targets: (Map) id => {
                                                                 id: session id (generated on other side),
                                                                 tunnelId: session id of Peer server,
@@ -38,6 +39,7 @@ class Front extends EventEmitter {
                                                             name: 'tracker#user@dom/path',
                                                             address: string, // listen on
                                                             port: string,
+                                                            encrypted: boolean,
                                                             tcp: socket server,
                                                             clients: (Map) id => {
                                                                 id: session id (generated uuid on connect),
@@ -83,6 +85,7 @@ class Front extends EventEmitter {
 
     /**
      * Bind retry pause
+     * @type {number}
      */
     static get bindPause() {
         return 3 * 1000; // ms
@@ -157,7 +160,8 @@ class Front extends EventEmitter {
                                 target.socket.once('close', done);
                                 target.socket.end();
                             } else {
-                                this.onClose(name, id);
+                                let [ tracker, connName ] = name.split('#');
+                                this.onClose(tracker, connName, id);
                             }
                         }
                     } else {
@@ -167,7 +171,8 @@ class Front extends EventEmitter {
                                 client.socket.once('close', done);
                                 client.socket.end();
                             } else {
-                                this.onClose(name, id);
+                                let [ tracker, connName ] = name.split('#');
+                                this.onClose(tracker, connName, id);
                             }
                         }
                         connection.tcp.close();
@@ -183,28 +188,35 @@ class Front extends EventEmitter {
 
     /**
      * Get ready to forward to actual server
-     * @param {string} name                     Connection full name
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Connection name on tracker
      * @param {string} tunnelId                 Tunnel ID
      * @param {string} address                  Server address
      * @param {string} port                     Server port
      */
-    openServer(name, tunnelId, address, port) {
-        this._logger.debug('front', `Opening server front for ${name}`);
-        let connection = this.connections.get(name);
+    openServer(tracker, name, tunnelId, address, port) {
+        let fullName = tracker + '#' + name;
+        let info = this._peer.connections.get(fullName);
+        if (!info)
+            return;
+
+        this._logger.debug('front', `Opening server front for ${fullName}`);
+        let connection = this.connections.get(fullName);
         if (connection && !connection.server) {
-            this.close(name);
+            this.close(tracker, name);
             connection = null;
         }
 
         if (!connection) {
             connection = {
-                name: name,
+                name: fullName,
                 server: true,
                 address: address,
                 port: port,
+                encrypted: info.encrypted,
                 targets: new Map(),
             };
-            this.connections.set(name, connection);
+            this.connections.set(fullName, connection);
         } else {
             connection.address = address;
             connection.port = port;
@@ -213,16 +225,22 @@ class Front extends EventEmitter {
 
     /**
      * Get ready to accept clients
-     * @param {string} name                     Connection full name
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Connection name on tracker
      * @param {string} tunnelId                 Tunnel ID
      * @param {string} address                  Listen address
      * @param {string} port                     Listen port
      */
-    openClient(name, tunnelId, address, port) {
-        this._logger.debug('front', `Opening client front for ${name}`);
-        let connection = this.connections.get(name);
+    openClient(tracker, name, tunnelId, address, port) {
+        let fullName = tracker + '#' + name;
+        let info = this._peer.connections.get(fullName);
+        if (!info)
+            return;
+
+        this._logger.debug('front', `Opening client front for ${fullName}`);
+        let connection = this.connections.get(fullName);
         if (connection && connection.server) {
-            this.close(name);
+            this.close(tracker, name);
             connection = null;
         }
         if (connection)
@@ -234,16 +252,17 @@ class Front extends EventEmitter {
             port = '';
 
         connection = {
-            name: name,
+            name: fullName,
             server: false,
             address: address,
             port: port,
+            encrypted: info.encrypted,
             tcp: null,
             clients: new Map(),
         };
-        this.connections.set(name, connection);
+        this.connections.set(fullName, connection);
 
-        connection.tcp = net.createServer(socket => { this.onConnection(name, tunnelId, socket); });
+        connection.tcp = net.createServer(socket => { this.onConnection(tracker, name, tunnelId, socket); });
         let bind;
         let onError = error => {
             if (error.syscall !== 'listen')
@@ -251,11 +270,11 @@ class Front extends EventEmitter {
 
             switch (error.code) {
                 case 'EACCES':
-                    this._logger.error(`${name}: Could not bind to ${address}:${port}`);
+                    this._logger.error(`${fullName}: Could not bind to ${address}:${port}`);
                     setTimeout(() => { bind(); }, this.constructor.bindPause);
                     break;
                 case 'EADDRINUSE':
-                    this._logger.error(`${name}: port ${address}:${port} is already in use`);
+                    this._logger.error(`${fullName}: port ${address}:${port} is already in use`);
                     setTimeout(() => { bind(); }, this.constructor.bindPause);
                     break;
                 default:
@@ -263,30 +282,29 @@ class Front extends EventEmitter {
             }
         };
         bind = () => {
-            let newCon = this.connections.get(name);
+            let newCon = this.connections.get(fullName);
             if (!newCon || newCon !== connection)
                 return;
 
             connection.tcp.once('error', onError);
 
             let onListening = () => {
-                let newCon = this.connections.get(name);
+                let newCon = this.connections.get(fullName);
                 if (!newCon || newCon !== connection)
                     return;
 
                 connection.address = connection.tcp.address().address;
                 connection.port = connection.tcp.address().port.toString();
 
-                let info = this._peer.connections.get(name);
+                let info = this._peer.connections.get(fullName);
                 if (info) {
                     info.listenAddress = connection.address;
                     info.listenPort = connection.port;
                 }
 
-                let [ tracker, connName ] = connection.name.split('#');
-                this._connectionsList.updatePort(tracker, connName, connection.port);
+                this._connectionsList.updatePort(tracker, name, connection.port);
 
-                this._logger.info(`Ready for connections for ${name} on ${connection.address}:${connection.port}`);
+                this._logger.info(`Ready for connections for ${fullName} on ${connection.address}:${connection.port}`);
                 connection.tcp.removeListener('error', onError);
             };
 
@@ -303,17 +321,19 @@ class Front extends EventEmitter {
 
     /**
      * Connect to server
-     * @param {string} name                     Connection full name
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Connection name on tracker
      * @param {string} tunnelId                 Tunnel ID
      * @param {string} id                       Session ID
      */
-    connect(name, tunnelId, id) {
+    connect(tracker, name, tunnelId, id) {
         if (this._closing)
             return;
 
-        this._logger.debug('front', `Connecting front to ${name}`);
+        let fullName = tracker + '#' + name;
+        this._logger.debug('front', `Connecting front to ${fullName}`);
 
-        let connection = this.connections.get(name);
+        let connection = this.connections.get(fullName);
         if (!connection || !connection.server)
             return;
 
@@ -336,14 +356,14 @@ class Front extends EventEmitter {
                     id: id,
                 });
                 let buffer = this._peer.InnerMessage.encode(message).finish();
-                this._logger.debug('front', `Sending disconnect to ${name} because already connected`);
+                this._logger.debug('front', `Sending disconnect to ${fullName} because already connected`);
                 this._peer.sendInnerMessage(
-                    name,
                     tunnelId,
+                    connection.encrypted,
                     buffer
                 );
             } catch (error) {
-                this._logger.error(new NError(error, `Front.connect(): ${name}`));
+                this._logger.error(new NError(error, `Front.connect(): ${fullName}`));
             }
             return;
         }
@@ -356,7 +376,7 @@ class Front extends EventEmitter {
         info.socket = net.connect(
             options,
             () => {
-                this._logger.debug('front', `Connected front to ${name}`);
+                this._logger.debug('front', `Connected front to ${fullName}`);
                 info.connected = true;
                 info.socket.setTimeout(0);
 
@@ -366,23 +386,25 @@ class Front extends EventEmitter {
             }
         );
 
-        info.socket.on('data', data => { if (!this.onData(name, id, data)) { info.socket.end(); info.connected = false; } });
-        info.socket.on('error', error => { this.onError(name, id, error); });
-        info.socket.on('timeout', () => { this.onTimeout(name, id); });
-        info.socket.on('close', () => { this.onClose(name, id); });
+        info.socket.on('data', data => { if (!this.onData(tracker, name, id, data)) { info.socket.end(); info.connected = false; } });
+        info.socket.on('error', error => { this.onError(tracker, name, id, error); });
+        info.socket.on('timeout', () => { this.onTimeout(tracker, name, id); });
+        info.socket.on('close', () => { this.onClose(tracker, name, id); });
     }
 
     /**
      * Relay data to server or client
-     * @param {string} name                     Connection full name
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Connection name on tracker
      * @param {string} tunnelId                 Tunnel ID
      * @param {string} id                       Session ID
      * @param {Buffer} data                     Message
      */
-    relay(name, tunnelId, id, data) {
-        this._logger.debug('front', `Relaying ${data.length} bytes to ${name}`);
+    relay(tracker, name, tunnelId, id, data) {
+        let fullName = tracker + '#' + name;
+        this._logger.debug('front', `Relaying ${data.length} bytes to ${fullName}`);
 
-        let connection = this.connections.get(name);
+        let connection = this.connections.get(fullName);
         if (!connection)
             return;
 
@@ -399,14 +421,14 @@ class Front extends EventEmitter {
                     id: id,
                 });
                 let buffer = this._peer.InnerMessage.encode(message).finish();
-                this._logger.debug('front', `Sending disconnect to ${name} because not connected`);
+                this._logger.debug('front', `Sending disconnect to ${fullName} because not connected`);
                 this._peer.sendInnerMessage(
-                    name,
                     tunnelId,
+                    connection.encrypted,
                     buffer
                 );
             } catch (error) {
-                this._logger.error(new NError(error, `Front.relay(): ${name}`));
+                this._logger.error(new NError(error, `Front.relay(): ${fullName}`));
             }
             return;
         }
@@ -421,14 +443,16 @@ class Front extends EventEmitter {
 
     /**
      * Disconnect from server or client
-     * @param {string} name                     Connection full name
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Connection name on tracker
      * @param {string} tunnelId                 Tunnel ID
      * @param {string} id                       Session ID
      */
-    disconnect(name, tunnelId, id) {
-        this._logger.debug('front', `Disconnecting front to ${name}`);
+    disconnect(tracker, name, tunnelId, id) {
+        let fullName = tracker + '#' + name;
+        this._logger.debug('front', `Disconnecting front to ${fullName}`);
 
-        let connection = this.connections.get(name);
+        let connection = this.connections.get(fullName);
         if (!connection)
             return;
 
@@ -447,15 +471,17 @@ class Front extends EventEmitter {
 
     /**
      * Close server or client front
-     * @param {string} name                     Connection full name
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Connection name on tracker
      * @param {string} [tunnelId]               Tunnel ID
      */
-    close(name, tunnelId) {
-        let connection = this.connections.get(name);
+    close(tracker, name, tunnelId) {
+        let fullName = tracker + '#' + name;
+        let connection = this.connections.get(fullName);
         if (!connection)
             return;
 
-        this._logger.debug('front', `Closing front for ${name}`);
+        this._logger.debug('front', `Closing front for ${fullName}`);
         if (connection.server) {
             for (let [ id, info ] of connection.targets) {
                 if ((!tunnelId || info.tunnelId === tunnelId)) {
@@ -463,42 +489,44 @@ class Front extends EventEmitter {
                         info.socket.end();
                         info.connected = false;
                     } else {
-                        this.onClose(name, id);
+                        this.onClose(tracker, name, id);
                     }
                 }
             }
             if (!tunnelId)
-                this.connections.delete(name);
+                this.connections.delete(fullName);
         } else {
             for (let [ id, info ] of connection.clients) {
                 if (info.connected) {
                     info.socket.end();
                     info.connected = false;
                 } else {
-                    this.onClose(name, id);
+                    this.onClose(tracker, name, id);
                 }
             }
             connection.tcp.close();
             connection.tcp = null;
-            this._logger.info(`No more connections for ${name} on ${connection.address}:${connection.port}`);
-            this.connections.delete(name);
+            this._logger.info(`No more connections for ${fullName} on ${connection.address}:${connection.port}`);
+            this.connections.delete(fullName);
         }
     }
 
     /**
      * Handle incoming connection
-     * @param {string} name                     Connection full name
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Connection name on tracker
      * @param {string} tunnelId                 Tunnel ID
      * @param {object} socket                   New connection
      */
-    onConnection(name, tunnelId, socket) {
-        let connection = this.connections.get(name);
+    onConnection(tracker, name, tunnelId, socket) {
+        let fullName = tracker + '#' + name;
+        let connection = this.connections.get(fullName);
         if (!connection) {
             socket.end();
             return;
         }
 
-        this._logger.debug('front', `New front connection for ${name}`);
+        this._logger.debug('front', `New front connection for ${fullName}`);
 
         let id = uuid.v1();
         let info = {
@@ -510,9 +538,9 @@ class Front extends EventEmitter {
         };
         connection.clients.set(id, info);
 
-        socket.on('data', data => { if (!this.onData(name, id, data)) { socket.end(); info.connected = false; } });
-        socket.on('error', error => { this.onError(name, id, error); });
-        socket.on('close', () => { this.onClose(name, id); });
+        socket.on('data', data => { if (!this.onData(tracker, name, id, data)) { socket.end(); info.connected = false; } });
+        socket.on('error', error => { this.onError(tracker, name, id, error); });
+        socket.on('close', () => { this.onClose(tracker, name, id); });
 
         try {
             let message = this._peer.InnerMessage.create({
@@ -520,27 +548,29 @@ class Front extends EventEmitter {
                 id: id,
             });
             let buffer = this._peer.InnerMessage.encode(message).finish();
-            this._logger.debug('front', `Sending connect to ${name}`);
+            this._logger.debug('front', `Sending connect to ${fullName}`);
             this._peer.sendInnerMessage(
-                name,
                 tunnelId,
+                connection.encrypted,
                 buffer
             );
         } catch (error) {
-            this._logger.error(new NError(error, `Front.onConnection(): ${name}`));
+            this._logger.error(new NError(error, `Front.onConnection(): ${fullName}`));
         }
     }
 
     /**
      * Socket data handler
-     * @param {string} name                     Connection name
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Connection name on tracker
      * @param {string} sessionId                Session ID
      * @param {Buffer} data                     Message
      */
-    onData(name, sessionId, data) {
-        this._logger.debug('front', `Relaying ${data.length} bytes from ${name}`);
+    onData(tracker, name, sessionId, data) {
+        let fullName = tracker + '#' + name;
+        this._logger.debug('front', `Relaying ${data.length} bytes from ${fullName}`);
 
-        let connection = this.connections.get(name);
+        let connection = this.connections.get(fullName);
         if (!connection)
             return false;
 
@@ -559,14 +589,14 @@ class Front extends EventEmitter {
                 data: data,
             });
             let buffer = this._peer.InnerMessage.encode(message).finish();
-            this._logger.debug('front', `Sending data to ${name}`);
+            this._logger.debug('front', `Sending data to ${fullName}`);
             this._peer.sendInnerMessage(
-                name,
                 info.tunnelId,
+                connection.encrypted,
                 buffer
             );
         } catch (error) {
-            this._logger.error(new NError(error, `Front.onData(): ${name}`));
+            this._logger.error(new NError(error, `Front.onData(): ${fullName}`));
         }
 
         return true;
@@ -574,36 +604,42 @@ class Front extends EventEmitter {
 
     /**
      * Socket error handler
-     * @param {string} name                     Connection name
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Connection name on tracker
      * @param {string} sessionId                Session ID
      * @param {Error} error                     Error
      */
-    onError(name, sessionId, error) {
+    onError(tracker, name, sessionId, error) {
+        let fullName = tracker + '#' + name;
         if (error.code !== 'ECONNRESET')
-            this._logger.error(`Front ${name} socket error: ${error.fullStack || error.stack}`);
+            this._logger.error(`Front ${fullName} socket error: ${error.fullStack || error.stack}`);
     }
 
     /**
      * Socket timeout handler
-     * @param {string} name                     Connection name
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Connection name on tracker
      * @param {string} sessionId                Session ID
      */
-    onTimeout(name, sessionId) {
-        this._logger.debug('front', `Socket timeout for ${name}`);
-        this.onClose(name, sessionId);
+    onTimeout(tracker, name, sessionId) {
+        let fullName = tracker + '#' + name;
+        this._logger.debug('front', `Socket timeout for ${fullName}`);
+        this.onClose(tracker, name, sessionId);
     }
 
     /**
      * Socket termination handler
-     * @param {string} name                     Connection name
+     * @param {string} tracker                  Tracker name
+     * @param {string} name                     Connection name on tracker
      * @param {string} sessionId                Session ID
      */
-    onClose(name, sessionId) {
-        let connection = this.connections.get(name);
+    onClose(tracker, name, sessionId) {
+        let fullName = tracker + '#' + name;
+        let connection = this.connections.get(fullName);
         if (!connection)
             return;
 
-        this._logger.debug('front', `Socket for ${name} disconnected`);
+        this._logger.debug('front', `Socket for ${fullName} disconnected`);
 
         let info;
         if (connection.server) {
@@ -631,14 +667,14 @@ class Front extends EventEmitter {
                 id: sessionId,
             });
             let buffer = this._peer.InnerMessage.encode(message).finish();
-            this._logger.debug('front', `Sending disconnect to ${name} because app has closed the connection`);
+            this._logger.debug('front', `Sending disconnect to ${fullName} because app has closed the connection`);
             this._peer.sendInnerMessage(
-                name,
                 info.tunnelId,
+                connection.encrypted,
                 buffer
             );
         } catch (error) {
-            this._logger.error(new NError(error, `Front.onClose(): ${name}`));
+            this._logger.error(new NError(error, `Front.onClose(): ${fullName}`));
         }
     }
 

@@ -61,9 +61,9 @@ class Established {
 
         try {
             if (connection.server)
-                this.front.openServer(session.name, sessionId, connection.connectAddress, connection.connectPort);
+                this.front.openServer(tracker, connectionName, sessionId, connection.connectAddress, connection.connectPort);
             else
-                this.front.openClient(session.name, sessionId, connection.listenAddress, connection.listenPort);
+                this.front.openClient(tracker, connectionName, sessionId, connection.listenAddress, connection.listenPort);
 
             let trackedConnections = this._connectionsList.get(tracker);
             if (trackedConnections) {

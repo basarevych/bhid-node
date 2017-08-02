@@ -61,6 +61,8 @@ class ConnectionsList {
                 }
                 if (!found) {
                     updated = true;
+                    this.front.close(name, connectionName);
+                    this.peer.close(name, connectionName);
                     this._connectionsList.delete(name, connectionName, true);
                 }
             }
@@ -74,6 +76,8 @@ class ConnectionsList {
                 }
                 if (!found) {
                     updated = true;
+                    this.front.close(name, connectionName);
+                    this.peer.close(name, connectionName);
                     this._connectionsList.delete(name, connectionName, false);
                 }
             }
@@ -102,6 +106,17 @@ class ConnectionsList {
             return this._peer;
         this._peer = this._app.get('servers').get('peer');
         return this._peer;
+    }
+
+    /**
+     * Retrieve front server
+     * @return {Front}
+     */
+    get front() {
+        if (this._front)
+            return this._front;
+        this._front = this._app.get('servers').get('front');
+        return this._front;
     }
 }
 

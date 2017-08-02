@@ -75,16 +75,18 @@ class Data {
             return;
         }
 
+        let [ tracker, connectionName ] = session.name.split('#');
+
         try {
             switch (innerMessage.type) {
                 case this.peer.InnerMessage.Type.OPEN:
-                    this.front.connect(session.name, sessionId, innerMessage.id);
+                    this.front.connect(tracker, connectionName, sessionId, innerMessage.id);
                     break;
                 case this.peer.InnerMessage.Type.DATA:
-                    this.front.relay(session.name, sessionId, innerMessage.id, innerMessage.data);
+                    this.front.relay(tracker, connectionName, sessionId, innerMessage.id, innerMessage.data);
                     break;
                 case this.peer.InnerMessage.Type.CLOSE:
-                    this.front.disconnect(session.name, sessionId, innerMessage.id);
+                    this.front.disconnect(tracker, connectionName, sessionId, innerMessage.id);
                     break;
             }
         } catch (error) {

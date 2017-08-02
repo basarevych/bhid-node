@@ -682,18 +682,14 @@ class Peer extends EventEmitter {
 
     /**
      * Send inner message to a peer
-     * @param {string} name                     Connection full name
      * @param {string} sessionId                Session ID
+     * @param {boolean} encrypted               Encrypted flag
      * @param {*} data                          Message
      */
-    sendInnerMessage(name, sessionId, data) {
-        let connection = this.connections.get(name);
-        if (!connection)
-            return;
-
+    sendInnerMessage(sessionId, encrypted, data) {
         try {
             let message;
-            if (connection.encrypted) {
+            if (encrypted) {
                 let result = this._crypter.encrypt(sessionId, data);
                 if (!result)
                     throw new Error('Could not encrypt');
@@ -715,7 +711,7 @@ class Peer extends EventEmitter {
             let buffer = this.OuterMessage.encode(message).finish();
             this.send(sessionId, buffer);
         } catch (error) {
-            this._logger.error(new NError(error, `Peer.sendInnerMessage(): ${name}`));
+            this._logger.error(new NError(error, `Peer.sendInnerMessage()`));
         }
     }
 
@@ -869,7 +865,7 @@ class Peer extends EventEmitter {
         connection.sessionIds.delete(sessionId);
 
         if (session.established)
-            this._front.close(connection.name, sessionId);
+            this._front.close(tracker, connectionName, sessionId);
 
         if (connection.server) {
             if (session.established)
