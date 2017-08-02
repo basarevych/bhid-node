@@ -75,7 +75,7 @@ class UpdateConnectionsRequest {
                 acceptPath = server.email + acceptPath;
 
             for (let connection of message.updateConnectionsRequest.list.serverConnections) {
-                if (acceptPath && acceptPath !== connection.path)
+                if (acceptPath && acceptPath !== connection.name)
                     continue;
 
                 this._connectionsList.update(
@@ -87,7 +87,7 @@ class UpdateConnectionsRequest {
             }
 
             for (let connection of message.updateConnectionsRequest.list.clientConnections) {
-                if (acceptPath && acceptPath !== connection.path)
+                if (acceptPath && acceptPath !== connection.name)
                     continue;
 
                 this._connectionsList.update(

@@ -71,21 +71,8 @@ class Import {
         let trackerName = args.options.tracker || '';
         let sockName = args.options.socket;
 
-        this._app.debug('Loading protocol').catch(() => { /* do nothing */ });
-        protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
-            if (error)
-                return this.error(error);
-
-            try {
-                this.proto = root;
-                this.ImportRequest = this.proto.lookup('local.ImportRequest');
-                this.ImportResponse = this.proto.lookup('local.ImportResponse');
-                this.ConnectionsList = this.proto.lookup('local.ConnectionsList');
-                this.ImportConnectionsRequest = this.proto.lookup('local.ImportConnectionsRequest');
-                this.ImportConnectionsResponse = this.proto.lookup('local.ImportConnectionsResponse');
-                this.ClientMessage = this.proto.lookup('local.ClientMessage');
-                this.ServerMessage = this.proto.lookup('local.ServerMessage');
-
+        return this.init()
+            .then(() => {
                 this._app.debug('Sending IMPORT REQUEST').catch(() => { /* do nothing */ });
                 let request = this.ImportRequest.create({
                     trackerName: trackerName,
@@ -96,41 +83,36 @@ class Import {
                     importRequest: request,
                 });
                 let buffer = this.ClientMessage.encode(message).finish();
-                this.send(buffer, sockName)
-                    .then(data => {
-                        let message = this.ServerMessage.decode(data);
-                        if (message.type !== this.ServerMessage.Type.IMPORT_RESPONSE)
-                            return this.error('Invalid reply from daemon');
+                return this.send(buffer, sockName);
+            })
+            .then(data => {
+                let message = this.ServerMessage.decode(data);
+                if (message.type !== this.ServerMessage.Type.IMPORT_RESPONSE)
+                    return this.error('Invalid reply from daemon');
 
-                        switch (message.importResponse.response) {
-                            case this.ImportResponse.Result.ACCEPTED:
-                                return this.importConnections(trackerName, token, message.importResponse.updates, sockName);
-                            case this.ImportResponse.Result.REJECTED:
-                                return this.error('Request rejected');
-                            case this.ImportResponse.Result.ALREADY_CONNECTED:
-                                return this.error('Already connected');
-                            case this.ImportResponse.Result.TIMEOUT:
-                                return this.error('No response from the tracker');
-                            case this.ImportResponse.Result.NO_TRACKER:
-                                return this.error('Not connected to the tracker');
-                            case this.ImportResponse.Result.NOT_REGISTERED:
-                                return this.error('Not registered with the tracker');
-                            default:
-                                return this.error('Unsupported response from daemon');
-                        }
-                    })
-                    .then(() => {
-                        process.exit(0);
-                    })
-                    .catch(error => {
-                        return this.error(error);
-                    });
-            } catch (error) {
+                switch (message.importResponse.response) {
+                    case this.ImportResponse.Result.ACCEPTED:
+                        return this.importConnections(trackerName, token, message.importResponse.updates, sockName);
+                    case this.ImportResponse.Result.REJECTED:
+                        return this.error('Request rejected');
+                    case this.ImportResponse.Result.ALREADY_CONNECTED:
+                        return this.error('Already connected');
+                    case this.ImportResponse.Result.TIMEOUT:
+                        return this.error('No response from the tracker');
+                    case this.ImportResponse.Result.NO_TRACKER:
+                        return this.error('Not connected to the tracker');
+                    case this.ImportResponse.Result.NOT_REGISTERED:
+                        return this.error('Not registered with the tracker');
+                    default:
+                        return this.error('Unsupported response from daemon');
+                }
+            })
+            .then(() => {
+                process.exit(0);
+            })
+            .catch(error => {
                 return this.error(error);
-            }
-        });
-
-        return Promise.resolve();
+            });
     }
 
     /**
@@ -144,17 +126,24 @@ class Import {
         if (!list)
             return Promise.resolve();
 
-        let request = this.ImportConnectionsRequest.create({
-            trackerName: trackerName,
-            token: token,
-            list: list,
-        });
-        let message = this.ClientMessage.create({
-            type: this.ClientMessage.Type.IMPORT_CONNECTIONS_REQUEST,
-            importConnectionsRequest: request,
-        });
-        let buffer = this.ClientMessage.encode(message).finish();
-        return this.send(buffer, sockName)
+        return Promise.resolve()
+            .then(() => {
+                if (!this.proto)
+                    return this.init();
+            })
+            .then(() => {
+                let request = this.ImportConnectionsRequest.create({
+                    trackerName: trackerName,
+                    token: token,
+                    list: list,
+                });
+                let message = this.ClientMessage.create({
+                    type: this.ClientMessage.Type.IMPORT_CONNECTIONS_REQUEST,
+                    importConnectionsRequest: request,
+                });
+                let buffer = this.ClientMessage.encode(message).finish();
+                return this.send(buffer, sockName);
+            })
             .then(data => {
                 let message = this.ServerMessage.decode(data);
                 if (message.type !== this.ServerMessage.Type.IMPORT_CONNECTIONS_RESPONSE)
@@ -234,6 +223,34 @@ class Import {
                     process.exit(1);
                 }
             );
+    }
+
+    /**
+     * Initialize the command
+     * @return {Promise}
+     */
+    init() {
+        return new Promise((resolve, reject) => {
+            this._app.debug('Loading protocol').catch(() => { /* do nothing */ });
+            protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
+                if (error)
+                    return this.error(error);
+
+                try {
+                    this.proto = root;
+                    this.ImportRequest = this.proto.lookup('local.ImportRequest');
+                    this.ImportResponse = this.proto.lookup('local.ImportResponse');
+                    this.ConnectionsList = this.proto.lookup('local.ConnectionsList');
+                    this.ImportConnectionsRequest = this.proto.lookup('local.ImportConnectionsRequest');
+                    this.ImportConnectionsResponse = this.proto.lookup('local.ImportConnectionsResponse');
+                    this.ClientMessage = this.proto.lookup('local.ClientMessage');
+                    this.ServerMessage = this.proto.lookup('local.ServerMessage');
+                    resolve();
+                } catch (error) {
+                    this.error(error);
+                }
+            });
+        });
     }
 }
 

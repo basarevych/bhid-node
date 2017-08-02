@@ -140,27 +140,14 @@ class Create {
             return this.error('Master token not found');
         }
 
-        this._app.debug('Loading protocol').catch(() => { /* do nothing */ });
-        protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
-            if (error)
-                return this.error(error);
+        let type = this.CreateRequest.Type.NOT_CONNECTED;
+        if (server)
+            type = this.CreateRequest.Type.SERVER;
+        else if (client)
+            type = this.CreateRequest.Type.CLIENT;
 
-            try {
-                this.proto = root;
-                this.CreateRequest = this.proto.lookup('local.CreateRequest');
-                this.CreateResponse = this.proto.lookup('local.CreateResponse');
-                this.ConnectionsList = this.proto.lookup('local.ConnectionsList');
-                this.UpdateConnectionsRequest = this.proto.lookup('local.UpdateConnectionsRequest');
-                this.UpdateConnectionsResponse = this.proto.lookup('local.UpdateConnectionsResponse');
-                this.ClientMessage = this.proto.lookup('local.ClientMessage');
-                this.ServerMessage = this.proto.lookup('local.ServerMessage');
-
-                let type = this.CreateRequest.Type.NOT_CONNECTED;
-                if (server)
-                    type = this.CreateRequest.Type.SERVER;
-                else if (client)
-                    type = this.CreateRequest.Type.CLIENT;
-
+        return this.init()
+            .then(() => {
                 this._app.debug('Sending CREATE REQUEST').catch(() => { /* do nothing */ });
                 let request = this.CreateRequest.create({
                     trackerName: trackerName,
@@ -179,58 +166,49 @@ class Create {
                     createRequest: request,
                 });
                 let buffer = this.ClientMessage.encode(message).finish();
-                this.send(buffer, sockName)
-                    .then(data => {
-                        let message = this.ServerMessage.decode(data);
-                        if (message.type !== this.ServerMessage.Type.CREATE_RESPONSE)
-                            return this.error('Invalid reply from daemon');
+                return this.send(buffer, sockName);
+            })
+            .then(data => {
+                let message = this.ServerMessage.decode(data);
+                if (message.type !== this.ServerMessage.Type.CREATE_RESPONSE)
+                    return this.error('Invalid reply from daemon');
 
-                        switch (message.createResponse.response) {
-                            case this.CreateResponse.Result.ACCEPTED:
-                                return this._app.info(
-                                        'Server token: ' + message.createResponse.serverToken +
-                                        '\n' +
-                                        'Client token: ' + message.createResponse.clientToken + '\n'
-                                    )
-                                    .then(() => {
-                                        if (type !== this.CreateRequest.Type.NOT_CONNECTED)
-                                            return this._app.info('This daemon is configured as ' + (client ? 'client' : 'server'));
-                                    })
-                                    .then(() => {
-                                        if (type === this.CreateRequest.Type.NOT_CONNECTED)
-                                            process.exit(0);
-                                    })
-                                    .then(() => {
-                                        return this.updateConnections(trackerName, cpath, message.createResponse.updates, sockName);
-                                    });
-                            case this.CreateResponse.Result.REJECTED:
-                                return this.error('Request rejected');
-                            case this.CreateResponse.Result.INVALID_PATH:
-                                return this.error('Invalid path');
-                            case this.CreateResponse.Result.PATH_EXISTS:
-                                return this.error('Path exists');
-                            case this.CreateResponse.Result.TIMEOUT:
-                                return this.error('No response from the tracker');
-                            case this.CreateResponse.Result.NO_TRACKER:
-                                return this.error('Not connected to the tracker');
-                            case this.CreateResponse.Result.NOT_REGISTERED:
-                                return this.error('Not registered with the tracker');
-                            default:
-                                return this.error('Unsupported response from daemon');
-                        }
-                    })
-                    .then(() => {
-                        process.exit(0);
-                    })
-                    .catch(error => {
-                        return this.error(error);
-                    });
-            } catch (error) {
+                switch (message.createResponse.response) {
+                    case this.CreateResponse.Result.ACCEPTED:
+                        return this._app.info(
+                                'Server token: ' + message.createResponse.serverToken + '\n' +
+                                'Client token: ' + message.createResponse.clientToken + '\n'
+                            )
+                            .then(() => {
+                                if (type !== this.CreateRequest.Type.NOT_CONNECTED)
+                                    return this._app.info('This daemon is configured as ' + (client ? 'client' : 'server'));
+                            })
+                            .then(() => {
+                                if (type !== this.CreateRequest.Type.NOT_CONNECTED)
+                                    return this.updateConnections(trackerName, cpath, message.createResponse.updates, sockName);
+                            });
+                    case this.CreateResponse.Result.REJECTED:
+                        return this.error('Request rejected');
+                    case this.CreateResponse.Result.INVALID_PATH:
+                        return this.error('Invalid path');
+                    case this.CreateResponse.Result.PATH_EXISTS:
+                        return this.error('Path exists');
+                    case this.CreateResponse.Result.TIMEOUT:
+                        return this.error('No response from the tracker');
+                    case this.CreateResponse.Result.NO_TRACKER:
+                        return this.error('Not connected to the tracker');
+                    case this.CreateResponse.Result.NOT_REGISTERED:
+                        return this.error('Not registered with the tracker');
+                    default:
+                        return this.error('Unsupported response from daemon');
+                }
+            })
+            .then(() => {
+                process.exit(0);
+            })
+            .catch(error => {
                 return this.error(error);
-            }
-        });
-
-        return Promise.resolve();
+            });
     }
 
     /**
@@ -245,17 +223,24 @@ class Create {
         if (!list)
             return Promise.resolve();
 
-        let request = this.UpdateConnectionsRequest.create({
-            trackerName: trackerName,
-            list: list,
-            path: acceptPath,
-        });
-        let message = this.ClientMessage.create({
-            type: this.ClientMessage.Type.UPDATE_CONNECTIONS_REQUEST,
-            updateConnectionsRequest: request,
-        });
-        let buffer = this.ClientMessage.encode(message).finish();
-        return this.send(buffer, sockName)
+        return Promise.resolve()
+            .then(() => {
+                if (!this.proto)
+                    return this.init();
+            })
+            .then(() => {
+                let request = this.UpdateConnectionsRequest.create({
+                    trackerName: trackerName,
+                    list: list,
+                    path: acceptPath,
+                });
+                let message = this.ClientMessage.create({
+                    type: this.ClientMessage.Type.UPDATE_CONNECTIONS_REQUEST,
+                    updateConnectionsRequest: request,
+                });
+                let buffer = this.ClientMessage.encode(message).finish();
+                return this.send(buffer, sockName)
+            })
             .then(data => {
                 let message = this.ServerMessage.decode(data);
                 if (message.type !== this.ServerMessage.Type.UPDATE_CONNECTIONS_RESPONSE)
@@ -334,6 +319,34 @@ class Create {
                     process.exit(1);
                 }
             );
+    }
+
+    /**
+     * Initialize the command
+     * @return {Promise}
+     */
+    init() {
+        return new Promise((resolve, reject) => {
+            this._app.debug('Loading protocol').catch(() => { /* do nothing */ });
+            protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
+                if (error)
+                    return this.error(error);
+
+                try {
+                    this.proto = root;
+                    this.CreateRequest = this.proto.lookup('local.CreateRequest');
+                    this.CreateResponse = this.proto.lookup('local.CreateResponse');
+                    this.ConnectionsList = this.proto.lookup('local.ConnectionsList');
+                    this.UpdateConnectionsRequest = this.proto.lookup('local.UpdateConnectionsRequest');
+                    this.UpdateConnectionsResponse = this.proto.lookup('local.UpdateConnectionsResponse');
+                    this.ClientMessage = this.proto.lookup('local.ClientMessage');
+                    this.ServerMessage = this.proto.lookup('local.ServerMessage');
+                    resolve();
+                } catch (error) {
+                    this.error(error);
+                }
+            });
+        });
     }
 }
 
