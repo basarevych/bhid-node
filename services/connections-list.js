@@ -156,7 +156,7 @@ class ConnectionsList {
                     };
                     conf.serverConnections.set(connection.name, connection);
 
-                    this._peer.close(tracker + '#' + connection.name);
+                    this._peer.close(tracker, connection.name);
                     this._peer.openServer(
                         tracker,
                         connection.name,
@@ -189,7 +189,7 @@ class ConnectionsList {
                     };
                     conf.clientConnections.set(connection.name, connection);
 
-                    this._peer.close(tracker + '#' + connection.name);
+                    this._peer.close(tracker, connection.name);
                     this._peer.openClient(
                         tracker,
                         connection.name,
@@ -223,9 +223,10 @@ class ConnectionsList {
      * @param {object} list                 Connections list
      */
     set(trackerName, list) {
+        let prefix = trackerName + '#';
         for (let connection of this._peer.connections.keys()) {
-            if (connection.startsWith(trackerName + '#'))
-                this._peer.close(connection);
+            if (connection.startsWith(prefix))
+                this._peer.close(trackerName, connection.slice(prefix.length));
         }
 
         for (let connection of list.serverConnections)
@@ -269,7 +270,7 @@ class ConnectionsList {
     /**
      * Create or update connection. Will delete it from imports also
      * @param {string} trackerName          Tracker name
-     * @param {object} connectionName       Connection short name
+     * @param {string} connectionName       Connection short name
      * @param {boolean} server              Is server connection
      * @param {object} connection           Connection info
      * @param {boolean} [restart=true]      Restart connection
@@ -281,10 +282,12 @@ class ConnectionsList {
             this._list.set(trackerName, conf);
         }
 
-        let connected = 0, found;
+        let connected = 0, found = false;
         for (let [ thisName, thisConnection ] of server ? conf.serverConnections : conf.clientConnections) {
             if (thisName === connectionName) {
-                found = trackerName + '#' + thisName;
+                found = true;
+                if (!restart)
+                    restart = thisConnection.server !== server;
                 if (!restart)
                     connected = thisConnection.connected;
                 break;
@@ -292,7 +295,7 @@ class ConnectionsList {
         }
 
         if (found && restart)
-            this._peer.close(found);
+            this._peer.close(trackerName, connectionName);
 
         connection.connected = connected;
         if (server) {
@@ -361,7 +364,7 @@ class ConnectionsList {
     /**
      * Delete connection
      * @param {string} trackerName          Tracker name
-     * @param {object} connectionName       Connection short name
+     * @param {string} connectionName       Connection short name
      * @param {boolean} server              Is server connection
      */
     delete(trackerName, connectionName, server) {
@@ -371,12 +374,12 @@ class ConnectionsList {
 
         if (server) {
             if (conf.serverConnections.has(connectionName)) {
-                this._peer.close(trackerName + '#' + connectionName);
+                this._peer.close(trackerName, connectionName);
                 conf.serverConnections.delete(connectionName);
             }
         } else {
             if (conf.clientConnections.has(connectionName)) {
-                this._peer.close(trackerName + '#' + connectionName);
+                this._peer.close(trackerName, connectionName);
                 conf.clientConnections.delete(connectionName);
             }
         }
