@@ -178,12 +178,10 @@ class Daemons {
     send(request, sockName) {
         return new Promise((resolve, reject) => {
             let sock;
-            if (sockName && sockName[0] === '/') {
+            if (sockName && sockName[0] === '/')
                 sock = sockName;
-            } else {
-                sockName = sockName ? `.${sockName}` : '';
-                sock = path.join('/var', 'run', this._config.project, this._config.instance + sockName + '.sock');
-            }
+            else
+                sock = path.join('/var', 'run', 'bhid', `daemon${sockName ? '.' + sockName : ''}.sock`);
 
             let onError = error => {
                 this.error(`Could not connect to daemon: ${error.message}`);

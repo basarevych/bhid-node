@@ -165,8 +165,8 @@ class Daemon extends EventEmitter {
             .then(() => {
                 this._logger.debug('daemon', 'Starting the server');
                 return new Promise((resolve, reject) => {
-                    let sockDir = path.join('/var', 'run', this._config.project);
-                    let sockFile = path.join(sockDir, this._config.instance + '.sock');
+                    let sockDir = path.join('/var', 'run', 'bhid');
+                    let sockFile = path.join(sockDir, 'daemon.sock');
                     try {
                         fs.accessSync(sockDir, fs.constants.R_OK | fs.constants.W_OK);
                     } catch (error) {
@@ -207,7 +207,7 @@ class Daemon extends EventEmitter {
 
         return new Promise((resolve, reject) => {
             try {
-                let sock = `/var/run/${this._config.project}/${this._config.instance}.sock`;
+                let sock = `/var/run/bhid/daemon.sock`;
                 this._logger.info(`Daemon is no longer listening on ${sock}`, () => { resolve(); });
             } catch (error) {
                 reject(error);
@@ -254,7 +254,7 @@ class Daemon extends EventEmitter {
      * Server listening event handler
      */
     onListening() {
-        let sock = `/var/run/${this._config.project}/${this._config.instance}.sock`;
+        let sock = `/var/run/bhid/daemon.sock`;
         try {
             fs.chmodSync(sock, 0o600);
         } catch (error) {

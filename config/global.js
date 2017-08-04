@@ -15,7 +15,7 @@ try {
 
 module.exports = {
     // Project name (alphanumeric)
-    project: 'bhid',
+    project: 'interconnect',
 
     // Server instance name (alphanumeric)
     instance: 'daemon',
