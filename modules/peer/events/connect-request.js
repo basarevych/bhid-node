@@ -49,12 +49,25 @@ class ConnectRequest {
         if (!session)
             return;
 
+        let reply = accepted => {
+            let response = this.peer.ConnectResponse.create({
+                response: accepted ? this.peer.ConnectResponse.Result.ACCEPTED : this.peer.ConnectResponse.Result.REJECTED,
+            });
+            let msg = this.peer.OuterMessage.create({
+                type: this.peer.OuterMessage.Type.CONNECT_RESPONSE,
+                connectResponse: response,
+            });
+            let buffer = this.peer.OuterMessage.encode(msg).finish();
+            this._logger.debug('connect-request', accepted ? 'Sending ACCEPT' : 'Sending REJECT');
+            this.peer.send(sessionId, buffer);
+        };
+
         if (session.name && session.name !== message.connectRequest.connectionName)
-            return;
+            return reply(false);
 
         let connection = this.peer.connections.get(message.connectRequest.connectionName);
         if (!connection)
-            return;
+            return reply(false);
 
         if (!session.name) {
             session.name = connection.name;
@@ -94,17 +107,7 @@ class ConnectRequest {
                     }
                 }
 
-                let response = this.peer.ConnectResponse.create({
-                    response: session.verified ? this.peer.ConnectResponse.Result.ACCEPTED : this.peer.ConnectResponse.Result.REJECTED,
-                });
-                let reply = this.peer.OuterMessage.create({
-                    type: this.peer.OuterMessage.Type.CONNECT_RESPONSE,
-                    connectResponse: response,
-                });
-                let buffer = this.peer.OuterMessage.encode(reply).finish();
-
-                this._logger.debug('connect-request', session.verified ? 'Sending ACCEPT' : 'Sending REJECT');
-                this.peer.send(sessionId, buffer);
+                reply(session.verified);
 
                 if (session.verified) {
                     if (session.accepted && !session.established) {

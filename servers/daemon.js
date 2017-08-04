@@ -25,12 +25,7 @@ class Daemon extends EventEmitter {
         super();
 
         this.server = null;                                 // tcp on unix socket
-        this.clients = new Map();                           /* id => {
-                                                                    id: uuid,
-                                                                    socket: socket,
-                                                                    wrapper: SocketWrapper(socket),
-                                                               }
-                                                            */
+        this.clients = new Map();                           // uuid => DaemonClient(uuid)
 
         this._name = null;
         this._listening = false;
@@ -281,11 +276,9 @@ class Daemon extends EventEmitter {
         let id = uuid.v1();
         this._logger.debug('daemon', `New socket ${id}`);
 
-        let client = {
-            id: id,
-            socket: socket,
-            wrapper: new SocketWrapper(socket),
-        };
+        let client = this._app.get('entities.daemonClient', id);
+        client.socket = socket;
+        client.wrapper = new SocketWrapper(socket);
         this.clients.set(id, client);
 
         client.wrapper.on(

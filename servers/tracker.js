@@ -29,22 +29,8 @@ class Tracker extends EventEmitter {
     constructor(app, config, logger, runner, ini, crypter, connectionsList) {
         super();
 
-        this.servers = new Map();                           /* name => {
-                                                                     name: string, // tracker name
-                                                                     email: null, // tracker reported email
-                                                                     daemonName: null, // tracker reported our name
-                                                                     socket: null,
-                                                                     wrapper: SocketWrapper(socket),
-                                                                     address: string,
-                                                                     port: string,
-                                                                     options: object, // socket options
-                                                                     token: null, // our token for the tracker
-                                                                     connected: false,
-                                                                     registered: false,
-                                                               }
-                                                            */
-
-        this.default = null; // name
+        this.servers = new Map();                           // name => TrackerServer(name)
+        this.default = null;                                // name
 
         this._name = null;
         this._closing = false;
@@ -201,21 +187,19 @@ class Tracker extends EventEmitter {
                     if (ca)
                         ca = fs.readFileSync(ca);
 
-                    let server = {
-                        name: tracker,
-                        email: null,
-                        daemonName: null,
-                        socket: null,
-                        wrapper: new SocketWrapper(),
-                        address: tracker,
-                        port: bhidConfig[section].port || '42042',
-                        options: { ca: ca },
-                        token: bhidConfig[section].token || null,
-                        connected: false,
-                        registered: false,
-                    };
-
+                    let server = this._app.get('entities.trackerServer', tracker);
+                    server.email = null;
+                    server.daemonName = null;
+                    server.socket = null;
+                    server.wrapper = new SocketWrapper();
+                    server.address = tracker;
+                    server.port = bhidConfig[section].port || '42042';
+                    server.options = { ca: ca };
+                    server.token = bhidConfig[section].token || null;
+                    server.connected = false;
+                    server.registered = false;
                     this.servers.set(tracker, server);
+
                     if (bhidConfig[section].default === 'yes')
                         this.default = tracker;
                 }
@@ -382,7 +366,7 @@ class Tracker extends EventEmitter {
         if (!server)
             return Promise.resolve(false);
 
-        let configPath, newIdentity = false;
+        let configPath;
         return Promise.resolve()
             .then(() => {
                 configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
@@ -391,50 +375,6 @@ class Tracker extends EventEmitter {
                 } catch (error) {
                     throw new Error('Could not read bhid.conf');
                 }
-
-                this._logger.debug('tracker', 'Creating RSA keys');
-                return this._runner.exec(
-                        'openssl',
-                        [
-                            'genrsa',
-                            '-out', path.join(configPath, 'id', 'private.rsa'),
-                            '2048'
-                        ]
-                    )
-                    .then(result => {
-                        if (result.code !== 0)
-                            throw new Error('Could not create private key');
-
-                        return this._runner.exec(
-                                'openssl',
-                                [
-                                    'rsa',
-                                    '-in', path.join(configPath, 'id', 'private.rsa'),
-                                    '-outform', 'PEM',
-                                    '-pubout',
-                                    '-out', path.join(configPath, 'id', 'public.rsa')
-                                ]
-                            )
-                            .then(result => {
-                                if (result.code !== 0)
-                                    return result;
-
-                                return this._runner.exec('chmod', ['600', path.join(configPath, 'id', 'private.rsa')])
-                                    .then(() => {
-                                        return result;
-                                    });
-                            });
-                    })
-                    .then(result => {
-                        if (result.code !== 0)
-                            throw new Error('Could not create public key');
-
-                        this._peer.publicKey = fs.readFileSync(path.join(configPath, 'id', 'public.rsa'), 'utf8');
-                        this._peer.privateKey = fs.readFileSync(path.join(configPath, 'id', 'private.rsa'), 'utf8');
-                        this._crypter.init(this._peer.publicKey, this._peer.privateKey);
-
-                        newIdentity = true;
-                    });
             })
             .then(() => {
                 this._connectionsList.set(
@@ -470,11 +410,7 @@ class Tracker extends EventEmitter {
                 return true;
             })
             .catch(error => {
-                this._logger.error(`Could not set daemon token: ${error.message}`);
-                if (newIdentity) {
-                    server.socket.end();
-                    server.wrapper.detach();
-                }
+                this._logger.error(`Could not set daemon token: ${error.messages || error.message}`);
                 return false;
             });
     }

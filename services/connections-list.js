@@ -20,27 +20,9 @@ class ConnectionsList {
         this._imports = new Map();                      // tracker name => { serverConnections: Map, clientConnections: Map }
 
                                                         /*
-                                                            serverConnections:
-                                                                name => {
-                                                                    name: 'user@dom/path',
-                                                                    connectAddress: string,
-                                                                    connectPort: string,
-                                                                    encrypted: boolean,
-                                                                    fixed: boolean,
-                                                                    clients: array,
-                                                                    connected: number,
-                                                                }
-                                                             clientConnections:
-                                                                name => {
-                                                                    name: 'user@dom/path',
-                                                                    listenAddress: string,
-                                                                    listenPort: string,
-                                                                    encrypted: boolean,
-                                                                    fixed: boolean,
-                                                                    server: string,
-                                                                    connected: number,
-                                                                }
-                                                         */
+                                                            serverConnections: connection name => ServerConnection(connection name)
+                                                            clientConnections: connection name => ClientConnection(connection name)
+                                                        */
 
         this._app = app;
         this._config = config;
@@ -145,15 +127,13 @@ class ConnectionsList {
                         conf = { serverConnections: new Map(), clientConnections: new Map() };
                         this._list.set(tracker, conf);
                     }
-                    let connection = {
-                        name: section.substring(tracker.length + 1, section.length - this.constructor.serverSection.length),
-                        connectAddress: bhidConfig[section].connect_address,
-                        connectPort: bhidConfig[section].connect_port,
-                        encrypted: bhidConfig[section].encrypted === 'yes',
-                        fixed: bhidConfig[section].fixed === 'yes',
-                        clients: (bhidConfig[section].fixed === 'yes') ? bhidConfig[section].clients : [],
-                        connected: 0,
-                    };
+                    let connection = this._app.get('entities.serverConnection', section.substring(tracker.length + 1, section.length - this.constructor.serverSection.length));
+                    connection.connectAddress = bhidConfig[section].connect_address;
+                    connection.connectPort = bhidConfig[section].connect_port;
+                    connection.encrypted = (bhidConfig[section].encrypted === 'yes');
+                    connection.fixed = (bhidConfig[section].fixed === 'yes');
+                    connection.clients = (bhidConfig[section].fixed === 'yes') ? bhidConfig[section].clients : [];
+                    connection.connected = 0;
                     conf.serverConnections.set(connection.name, connection);
 
                     this._peer.close(tracker, connection.name);
@@ -178,15 +158,13 @@ class ConnectionsList {
                         conf = { serverConnections: new Map(), clientConnections: new Map() };
                         this._list.set(tracker, conf);
                     }
-                    let connection = {
-                        name: section.substring(tracker.length + 1, section.length - this.constructor.clientSection.length),
-                        listenAddress: bhidConfig[section].listen_address,
-                        listenPort: bhidConfig[section].listen_port,
-                        encrypted: bhidConfig[section].encrypted === 'yes',
-                        fixed: bhidConfig[section].fixed === 'yes',
-                        server: bhidConfig[section].server || '',
-                        connected: 0,
-                    };
+                    let connection = this._app.get('entities.clientConnection', section.substring(tracker.length + 1, section.length - this.constructor.clientSection.length));
+                    connection.listenAddress = bhidConfig[section].listen_address;
+                    connection.listenPort = bhidConfig[section].listen_port;
+                    connection.encrypted = (bhidConfig[section].encrypted === 'yes');
+                    connection.fixed = (bhidConfig[section].fixed === 'yes');
+                    connection.server = bhidConfig[section].server || '';
+                    connection.connected = 0;
                     conf.clientConnections.set(connection.name, connection);
 
                     this._peer.close(tracker, connection.name);

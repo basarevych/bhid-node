@@ -29,47 +29,8 @@ class Peer extends EventEmitter {
     constructor(app, config, logger, runner, ini, crypter, connectionsList) {
         super();
 
-        this.connections = new Map();                       /* full name => {
-                                                                    server: true, // we are server
-                                                                    name: 'tracker#user@dom/path',
-                                                                    tracker: string,
-                                                                    registering: boolean, // on tracker
-                                                                    registered: boolean,  // on tracker
-                                                                    connectAddress: string,
-                                                                    connectPort: string,
-                                                                    encrypted: boolean,
-                                                                    fixed: boolean, // use peers list and no identity change
-                                                                    peers: array, // [ 'tracker#user@dom?daemon' ]
-                                                                    sessionIds: Set,
-                                                               } or {
-                                                                    server: false, // we are client
-                                                                    name: 'tracker#user@dom/path',
-                                                                    tracker: string,
-                                                                    registering: boolean, // on tracker
-                                                                    registered: boolean,  // on tracker
-                                                                    listenAddress: string,
-                                                                    listenPort: string,
-                                                                    encrypted: boolean,
-                                                                    fixed: boolean, // use peers list and no identity change
-                                                                    peers: array, // [ 'tracker#user@dom?daemon' ]
-                                                                    sessionIds: Set,
-                                                                    internal: array, // addresses
-                                                                    external: string, // address
-                                                                    trying: string, // null, 'internal' or 'external'
-                                                                    successful: boolean, // connected and authenticated
-                                                                }
-                                                             */
-        this.sessions = new Map();                           /* id => {
-                                                                    id: uuid,
-                                                                    name: 'tracker#user@dom/path',
-                                                                    socket: socket,
-                                                                    wrapper: SocketWrapper(socket),
-                                                                    connected: false, // socket connected
-                                                                    verified: false, // peer is verified
-                                                                    accepted: false, // peer has verified us
-                                                                    established: false, // announced as established
-                                                                }
-                                                             */
+        this.connections = new Map();                       // full name => PeerServerConnection(full name) or PeerClientConnection(full name)
+        this.sessions = new Map();                          // id => PeerSession(id)
         this.utp = null;
 
         this._name = null;
@@ -393,19 +354,15 @@ class Peer extends EventEmitter {
 
         this._logger.debug('peer', `Starting ${fullName}`);
         try {
-            let connection = {
-                server: true,
-                name: fullName,
-                tracker: tracker,
-                registering: false,
-                registered: false,
-                connectAddress: connectAddress,
-                connectPort: connectPort,
-                encrypted: encrypted,
-                fixed: fixed,
-                peers: peers,
-                sessionIds: new Set(),
-            };
+            let connection = this._app.get('entities.peerServerConnection', fullName);
+            connection.tracker = tracker;
+            connection.registering = false;
+            connection.registered = false;
+            connection.connectAddress = connectAddress;
+            connection.connectPort = connectPort;
+            connection.encrypted = encrypted;
+            connection.fixed = fixed;
+            connection.peers = peers;
             this.connections.set(fullName, connection);
             this._tracker.sendStatus(tracker, name);
         } catch (error) {
@@ -431,23 +388,19 @@ class Peer extends EventEmitter {
 
         this._logger.debug('peer', `Starting ${fullName}`);
         try {
-            let connection = {
-                server: false,
-                name: fullName,
-                tracker: tracker,
-                registering: false,
-                registered: false,
-                listenAddress: listenAddress,
-                listenPort: listenPort,
-                encrypted: encrypted,
-                fixed: fixed,
-                peers: peers,
-                sessionIds: new Set(),
-                internal: [],
-                external: null,
-                trying: null,
-                successful: false,
-            };
+            let connection = this._app.get('entities.peerClientConnection', fullName);
+            connection.tracker = tracker;
+            connection.registering = false;
+            connection.registered = false;
+            connection.listenAddress = listenAddress;
+            connection.listenPort = listenPort;
+            connection.encrypted = encrypted;
+            connection.fixed = fixed;
+            connection.peers = peers;
+            connection.internal = [];
+            connection.external = null;
+            connection.trying = null;
+            connection.successful = false;
             this.connections.set(fullName, connection);
             this._tracker.sendStatus(tracker, name);
         } catch (error) {
@@ -565,16 +518,14 @@ class Peer extends EventEmitter {
      */
     createSession(name, socket) {
         let sessionId = uuid.v1();
-        let session = {
-            id: sessionId,
-            name: name,
-            socket: socket,
-            wrapper: new SocketWrapper(socket),
-            connected: false,
-            verified: false,
-            accepted: false,
-            established: false,
-        };
+        let session = this._app.get('entities.peerSession', sessionId);
+        session.name = name;
+        session.socket = socket;
+        session.wrapper = new SocketWrapper(socket);
+        session.connected = false;
+        session.verified = false;
+        session.accepted = false;
+        session.established = false;
         this.sessions.set(sessionId, session);
         this._crypter.create(sessionId, name);
 

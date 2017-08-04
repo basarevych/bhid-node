@@ -23,14 +23,7 @@ class Crypter {
         this.privateKey = null;
         this.identity = null;
 
-        this.sessions = new Map();                      /* id => {
-                                                                id: uuid,
-                                                                connection: 'tracker#user@dom/path',
-                                                                publicKey: Buffer,
-                                                                privateKey: Buffer,
-                                                                peerKey: Buffer,
-                                                           }
-                                                         */
+        this.sessions = new Map();                      // id => CrypterSession(id)
 
         this._app = app;
         this._config = config;
@@ -98,13 +91,11 @@ class Crypter {
             return false;
         }
 
-        let session = {
-            id: id,
-            connection: name,
-            publicKey: keyPair.publicKey,
-            privateKey: keyPair.secretKey,
-            peerKey: null,
-        };
+        let session = this._app.get('entities.crypterSession', id);
+        session.connection = name;
+        session.publicKey = keyPair.publicKey;
+        session.privateKey = keyPair.secretKey;
+        session.peerKey = null;
         this.sessions.set(id, session);
 
         return true;

@@ -21,35 +21,7 @@ class Front extends EventEmitter {
     constructor(app, config, logger, connectionsList) {
         super();
 
-        this.connections = new Map();               /* name => {
-                                                            server: true, // connection to a server app
-                                                            name: 'tracker#user@dom/path',
-                                                            address: string, // connect to
-                                                            port: string,
-                                                            encrypted: boolean,
-                                                            targets: (Map) id => {
-                                                                id: session id (generated on other side),
-                                                                tunnelId: session id of Peer server,
-                                                                socket: actual tcp socket,
-                                                                buffer: array,
-                                                                connected: boolean,
-                                                            },
-                                                       } or {
-                                                            server: false, // connection from a client app
-                                                            name: 'tracker#user@dom/path',
-                                                            address: string, // listen on
-                                                            port: string,
-                                                            encrypted: boolean,
-                                                            tcp: socket server,
-                                                            clients: (Map) id => {
-                                                                id: session id (generated uuid on connect),
-                                                                tunnelId: session id of Peer server,
-                                                                socket: actual tcp socket,
-                                                                buffer: array,
-                                                                connected: boolean,
-                                                            },
-                                                       }
-                                                    */
+        this.connections = new Map();               // name => FrontServerConnection(name) or FrontClientConnection(name)
 
         this._name = null;
         this._closing = false;
@@ -208,14 +180,10 @@ class Front extends EventEmitter {
         }
 
         if (!connection) {
-            connection = {
-                name: fullName,
-                server: true,
-                address: address,
-                port: port,
-                encrypted: info.encrypted,
-                targets: new Map(),
-            };
+            connection = this._app.get('entities.frontServerConnection', fullName);
+            connection.address = address;
+            connection.port = port;
+            connection.encrypted = info.encrypted;
             this.connections.set(fullName, connection);
         } else {
             connection.address = address;
@@ -251,18 +219,13 @@ class Front extends EventEmitter {
         if (port === '*')
             port = '';
 
-        connection = {
-            name: fullName,
-            server: false,
-            address: address,
-            port: port,
-            encrypted: info.encrypted,
-            tcp: null,
-            clients: new Map(),
-        };
+        connection = this._app.get('entities.frontClientConnection', fullName);
+        connection.address = address;
+        connection.port = port;
+        connection.encrypted = info.encrypted;
+        connection.tcp = net.createServer(socket => { this.onConnection(tracker, name, tunnelId, socket); });
         this.connections.set(fullName, connection);
 
-        connection.tcp = net.createServer(socket => { this.onConnection(tracker, name, tunnelId, socket); });
         let bind;
         let onError = error => {
             if (error.syscall !== 'listen')
@@ -339,13 +302,11 @@ class Front extends EventEmitter {
 
         let info = connection.targets.get(id);
         if (!info) {
-            info = {
-                id: id,
-                tunnelId: tunnelId,
-                socket: null,
-                buffer: [],
-                connected: false,
-            };
+            info = this._app.get('entities.frontServerConnectionTarget', id);
+            info.tunnelId = tunnelId;
+            info.socket = null;
+            info.buffer = [];
+            info.connected = false;
             connection.targets.set(id, info);
         }
 
@@ -529,13 +490,11 @@ class Front extends EventEmitter {
         this._logger.debug('front', `New front connection for ${fullName}`);
 
         let id = uuid.v1();
-        let info = {
-            id: id,
-            tunnelId: tunnelId,
-            socket: socket,
-            buffer: [],
-            connected: true,
-        };
+        let info = this._app.get('entities.frontClientConnectionClient', id);
+        info.tunnelId = tunnelId;
+        info.socket = socket;
+        info.buffer = [];
+        info.connected = true;
         connection.clients.set(id, info);
 
         socket.on('data', data => { if (!this.onData(tracker, name, id, data)) { socket.end(); info.connected = false; } });
