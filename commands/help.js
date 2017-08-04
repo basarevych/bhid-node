@@ -71,18 +71,18 @@ class Help {
                 '\tinstall\t\tRegister the program in the system\n' +
                 '\tinit\t\tInitialize the account\n' +
                 '\tconfirm\t\tConfirm email\n' +
+                '\tdaemons\t\tPrint your daemons list\n' +
                 '\tregister\tRegister new daemon\n' +
                 '\tunregister\tDelete a daemon\n' +
                 '\tauth\t\tSet and save token for the daemon\n' +
+                '\tload\t\tLoad current connection configuration from tracker\n' +
+                '\ttree\t\tPrint user tree\n' +
+                '\tconnections\tPrint this daemon connections\n' +
                 '\tcreate\t\tCreate new connection\n' +
                 '\tdelete\t\tDelete a connection\n' +
                 '\timport\t\tImport a token\n' +
                 '\tattach\t\tMake the daemon a server or a client of a connection\n' +
                 '\tdetach\t\tDetach the daemon from given connection\n' +
-                '\ttree\t\tPrint user tree\n' +
-                '\tconnections\tPrint this daemon connections\n' +
-                '\tdaemons\t\tPrint your daemons list\n' +
-                '\tload\t\tLoad current connection configuration from tracker\n' +
                 '\tredeem\t\tRedeem account, daemon or connection token\n' +
                 '\tstart\t\tStart the daemon\n' +
                 '\tstop\t\tStop the daemon\n' +
