@@ -121,6 +121,8 @@ class Tracker extends EventEmitter {
                         this.ConfirmResponse = this.proto.lookup('tracker.ConfirmResponse');
                         this.CreateDaemonRequest = this.proto.lookup('tracker.CreateDaemonRequest');
                         this.CreateDaemonResponse = this.proto.lookup('tracker.CreateDaemonResponse');
+                        this.DeleteDaemonRequest = this.proto.lookup('tracker.DeleteDaemonRequest');
+                        this.DeleteDaemonResponse = this.proto.lookup('tracker.DeleteDaemonResponse');
                         this.RegisterDaemonRequest = this.proto.lookup('tracker.RegisterDaemonRequest');
                         this.RegisterDaemonResponse = this.proto.lookup('tracker.RegisterDaemonResponse');
                         this.CreateRequest = this.proto.lookup('tracker.CreateRequest');
@@ -603,6 +605,9 @@ class Tracker extends EventEmitter {
                     break;
                 case this.ServerMessage.Type.CREATE_DAEMON_RESPONSE:
                     this.emit('create_daemon_response', name, message);
+                    break;
+                case this.ServerMessage.Type.DELETE_DAEMON_RESPONSE:
+                    this.emit('delete_daemon_response', name, message);
                     break;
                 case this.ServerMessage.Type.REGISTER_DAEMON_RESPONSE:
                     this.emit('register_daemon_response', name, message);

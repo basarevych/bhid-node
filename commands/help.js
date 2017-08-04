@@ -72,6 +72,7 @@ class Help {
                 '\tinit\t\tInitialize the account\n' +
                 '\tconfirm\t\tConfirm email\n' +
                 '\tregister\tRegister new daemon\n' +
+                '\tunregister\tDelete a daemon\n' +
                 '\tauth\t\tSet and save token for the daemon\n' +
                 '\tcreate\t\tCreate new connection\n' +
                 '\tdelete\t\tDelete a connection\n' +
@@ -152,11 +153,24 @@ class Help {
      */
     helpRegister(argv) {
         return this._app.info(
-                'Usage:\tbhidctl register [<daemon-name>] [-r] [-a] [-q] [-t <tracker>]\n\n' +
-                '\tCreate new daemon. If name and -r flag are set then random digits to the name\n' +
-                '\tprovided will be appended. Without -r the exact name will be used. If no name\n' +
-                '\tis given it will be random. If -a is set then auth command will be ran.\n' +
-                '\tIf -q is set then only daemon token will be printed with no additional text'
+            'Usage:\tbhidctl register [<daemon-name>] [-r] [-a] [-q] [-t <tracker>]\n\n' +
+            '\tCreate new daemon. If name and -r flag are set then random digits to the name\n' +
+            '\tprovided will be appended. Without -r the exact name will be used. If no name\n' +
+            '\tis given it will be random. If -a is set then auth command will be ran.\n' +
+            '\tIf -q is set then only daemon token will be printed with no additional text'
+            )
+            .then(() => {
+                process.exit(0);
+            });
+    }
+
+    /**
+     * Unregister command
+     */
+    helpUnregister(argv) {
+        return this._app.info(
+            'Usage:\tbhidctl unregister <daemon-name> [-t <tracker>]\n\n' +
+            '\tDelete daemon record from tracker'
             )
             .then(() => {
                 process.exit(0);

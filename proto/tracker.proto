@@ -68,6 +68,20 @@ message CreateDaemonResponse {
     string token = 3;
 }
 
+message DeleteDaemonRequest {
+    string token = 1;
+    string daemon_name = 2;
+}
+
+message DeleteDaemonResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        NOT_FOUND = 10;
+    }
+    Result response = 1;
+}
+
 message RegisterDaemonRequest {
     string token = 1;
     string identity = 2;
@@ -353,6 +367,7 @@ message ClientMessage {
         INIT_REQUEST = 20;
         CONFIRM_REQUEST = 21;
         CREATE_DAEMON_REQUEST = 30;
+        DELETE_DAEMON_REQUEST = 31;
         REGISTER_DAEMON_REQUEST = 40;
         CREATE_REQUEST = 50;
         DELETE_REQUEST = 60;
@@ -375,6 +390,7 @@ message ClientMessage {
     InitRequest init_request = 100;
     ConfirmRequest confirm_request = 110;
     CreateDaemonRequest create_daemon_request = 200;
+    DeleteDaemonRequest delete_daemon_request = 210;
     RegisterDaemonRequest register_daemon_request = 300;
     CreateRequest create_request = 400;
     DeleteRequest delete_request = 500;
@@ -398,6 +414,7 @@ message ServerMessage {
         INIT_RESPONSE = 10;
         CONFIRM_RESPONSE = 11;
         CREATE_DAEMON_RESPONSE = 20;
+        DELETE_DAEMON_RESPONSE = 21;
         REGISTER_DAEMON_RESPONSE = 30;
         CREATE_RESPONSE = 40;
         DELETE_RESPONSE = 50;
@@ -421,6 +438,7 @@ message ServerMessage {
     InitResponse init_response = 100;
     ConfirmResponse confirm_response = 110;
     CreateDaemonResponse create_daemon_response = 200;
+    DeleteDaemonResponse delete_daemon_response = 210;
     RegisterDaemonResponse register_daemon_response = 300;
     CreateResponse create_response = 400;
     DeleteResponse delete_response = 500;

@@ -16,6 +16,7 @@ class Daemon {
      * @param {InitRequest} initRequest                             InitRequest event handler
      * @param {ConfirmRequest} confirmRequest                       ConfirmRequest event handler
      * @param {CreateDaemonRequest} createDaemonRequest             CreateDaemonRequest event handler
+     * @param {DeleteDaemonRequest} deleteDaemonRequest             DeleteDaemonRequest event handler
      * @param {SetTokenRequest} setTokenRequest                     SetTokenRequest event handler
      * @param {CreateRequest} createRequest                         CreateRequest event handler
      * @param {DeleteRequest} deleteRequest                         DeleteRequest event handler
@@ -33,9 +34,9 @@ class Daemon {
      * @param {RedeemDaemonRequest} redeemDaemonRequest             RedeemDaemonRequest event handler
      * @param {RedeemPathRequest} redeemPathRequest                 RedeemPathRequest event handler
      */
-    constructor(app, config, logger, initRequest, confirmRequest, createDaemonRequest, setTokenRequest, createRequest,
-        deleteRequest, importRequest, attachRequest, detachRequest, treeRequest, connectionsListRequest, daemonsListRequest,
-        setConnectionsRequest, getConnectionsRequest, importConnectionsRequest, updateConnectionsRequest,
+    constructor(app, config, logger, initRequest, confirmRequest, createDaemonRequest, deleteDaemonRequest, setTokenRequest,
+        createRequest, deleteRequest, importRequest, attachRequest, detachRequest, treeRequest, connectionsListRequest,
+        daemonsListRequest, setConnectionsRequest, getConnectionsRequest, importConnectionsRequest, updateConnectionsRequest,
         redeemMasterRequest, redeemDaemonRequest, redeemPathRequest
 )
     {
@@ -45,6 +46,7 @@ class Daemon {
         this._initRequest = initRequest;
         this._confirmRequest = confirmRequest;
         this._createDaemonRequest = createDaemonRequest;
+        this._deleteDaemonRequest = deleteDaemonRequest;
         this._setTokenRequest = setTokenRequest;
         this._createRequest = createRequest;
         this._deleteRequest = deleteRequest;
@@ -83,6 +85,7 @@ class Daemon {
             'modules.daemon.events.initRequest',
             'modules.daemon.events.confirmRequest',
             'modules.daemon.events.createDaemonRequest',
+            'modules.daemon.events.deleteDaemonRequest',
             'modules.daemon.events.setTokenRequest',
             'modules.daemon.events.createRequest',
             'modules.daemon.events.deleteRequest',
@@ -124,6 +127,7 @@ class Daemon {
         server.on('init_request', this._initRequest.handle.bind(this._initRequest));
         server.on('confirm_request', this._confirmRequest.handle.bind(this._confirmRequest));
         server.on('create_daemon_request', this._createDaemonRequest.handle.bind(this._createDaemonRequest));
+        server.on('delete_daemon_request', this._deleteDaemonRequest.handle.bind(this._deleteDaemonRequest));
         server.on('set_token_request', this._setTokenRequest.handle.bind(this._setTokenRequest));
         server.on('create_request', this._createRequest.handle.bind(this._createRequest));
         server.on('delete_request', this._deleteRequest.handle.bind(this._deleteRequest));
