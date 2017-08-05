@@ -285,11 +285,9 @@ class Peer extends EventEmitter {
                             this._logger.info(`UDP socket started on ${this._utpPort}`);
                             resolve();
                         });
-                        this._logger.info('Initiating UDP socket...');
-                        this.utp.bind(this._utpPort, () => {
-                            // let stale connections receive their RST
-                            setTimeout(this.utp.listen.bind(this.utp), 3000);
-                        });
+                        this._logger.debug('peer', 'Initiating UDP socket...');
+                        this.utp.bind(this._utpPort);
+                        this.utp.listen();
                     } catch (error) {
                         reject(error);
                     }
