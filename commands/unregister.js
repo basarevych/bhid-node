@@ -73,15 +73,6 @@ class Unregister {
         let trackerName = args.options.tracker || '';
         let sockName = args.options.socket;
 
-        let token;
-        try {
-            token = fs.readFileSync(path.join(os.homedir(), '.bhid', 'master.token'), 'utf8').trim();
-            if (!token)
-                throw new Error('No token');
-        } catch (error) {
-            return this.error('Master token not found');
-        }
-
         this._app.debug('Loading protocol').catch(() => { /* do nothing */ });
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
             if (error)
@@ -97,7 +88,6 @@ class Unregister {
                 this._app.debug('Sending DELETE DAEMON REQUEST').catch(() => { /* do nothing */ });
                 let request = this.DeleteDaemonRequest.create({
                     trackerName: trackerName,
-                    token: token,
                     daemonName: daemonName,
                 });
                 let message = this.ClientMessage.create({

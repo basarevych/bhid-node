@@ -90,23 +90,13 @@ class Redeem {
         if (!server && !client)
             client = true;
 
-        let type, token;
+        let type;
         if (target.indexOf('@') !== -1)
             type = 'master';
         else if (target.indexOf('/') === -1)
             type = 'daemon';
         else
             type = 'path';
-
-        if (type !== 'master') {
-            try {
-                token = fs.readFileSync(path.join(os.homedir(), '.bhid', 'master.token'), 'utf8').trim();
-                if (!token)
-                    throw new Error('No token');
-            } catch (error) {
-                return this.error('Master token not found');
-            }
-        }
 
         this._app.debug('Loading protocol').catch(() => { /* do nothing */ });
         protobuf.load(path.join(this._config.base_path, 'proto', 'local.proto'), (error, root) => {
@@ -151,7 +141,6 @@ class Redeem {
                         resField = 'redeemDaemonResponse';
                         request = reqClass.create({
                             trackerName: trackerName,
-                            token: token,
                             daemonName: target,
                         });
                         break;
@@ -165,7 +154,6 @@ class Redeem {
                         resField = 'redeemPathResponse';
                         request = reqClass.create({
                             trackerName: trackerName,
-                            token: token,
                             path: target,
                             type: server ? reqClass.Type.SERVER : reqClass.Type.CLIENT,
                         });

@@ -48,67 +48,69 @@ class RedeemPathRequest {
             return;
 
         this._logger.debug('redeem-path-request', `Got REDEEM PATH REQUEST`);
-        try {
-            let relayId = uuid.v1();
+        this.tracker.getMasterToken(message.redeemPathRequest.trackerName)
+            .then(masterToken => {
+                let relayId = uuid.v1();
 
-            let timer, onResponse;
-            let reply = (value, token) => {
-                if (timer) {
-                    clearTimeout(timer);
-                    timer = null;
-                }
+                let timer, onResponse;
+                let reply = (value, token) => {
+                    if (timer) {
+                        clearTimeout(timer);
+                        timer = null;
+                    }
 
-                if (onResponse)
-                    this.tracker.removeListener('redeem_path_response', onResponse);
+                    if (onResponse)
+                        this.tracker.removeListener('redeem_path_response', onResponse);
 
-                let reply = this.daemon.RedeemPathResponse.create({
-                    response: value,
-                    token: token,
+                    let reply = this.daemon.RedeemPathResponse.create({
+                        response: value,
+                        token: token,
+                    });
+                    let relay = this.daemon.ServerMessage.create({
+                        type: this.daemon.ServerMessage.Type.REDEEM_PATH_RESPONSE,
+                        redeemPathResponse: reply,
+                    });
+                    let data = this.daemon.ServerMessage.encode(relay).finish();
+                    this._logger.debug('redeem-path-request', `Sending REDEEM PATH RESPONSE`);
+                    this.daemon.send(id, data);
+                };
+
+                let server = this.tracker.getServer(message.redeemPathRequest.trackerName);
+                if (!server || !server.connected)
+                    return reply(this.daemon.RedeemPathResponse.Result.NO_TRACKER);
+
+                onResponse = (name, response) => {
+                    if (response.messageId !== relayId)
+                        return;
+
+                    this._logger.debug('redeem-path-request', `Got REDEEM PATH RESPONSE from tracker`);
+                    reply(response.redeemPathResponse.response, response.redeemPathResponse.token);
+                };
+                this.tracker.on('redeem_path_response', onResponse);
+
+                timer = setTimeout(
+                    () => {
+                        reply(this.daemon.RedeemPathResponse.Result.TIMEOUT);
+                    },
+                    this.daemon.constructor.requestTimeout
+                );
+
+                let request = this.tracker.RedeemPathRequest.create({
+                    token: masterToken,
+                    path: message.redeemPathRequest.path,
+                    type: message.redeemPathRequest.type,
                 });
-                let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.REDEEM_PATH_RESPONSE,
-                    redeemPathResponse: reply,
+                let relay = this.tracker.ClientMessage.create({
+                    type: this.tracker.ClientMessage.Type.REDEEM_PATH_REQUEST,
+                    messageId: relayId,
+                    redeemPathRequest: request,
                 });
-                let data = this.daemon.ServerMessage.encode(relay).finish();
-                this._logger.debug('redeem-path-request', `Sending REDEEM PATH RESPONSE`);
-                this.daemon.send(id, data);
-            };
-
-            let server = this.tracker.getServer(message.redeemPathRequest.trackerName);
-            if (!server || !server.connected)
-                return reply(this.daemon.RedeemPathResponse.Result.NO_TRACKER);
-
-            onResponse = (name, response) => {
-                if (response.messageId !== relayId)
-                    return;
-
-                this._logger.debug('redeem-path-request', `Got REDEEM PATH RESPONSE from tracker`);
-                reply(response.redeemPathResponse.response, response.redeemPathResponse.token);
-            };
-            this.tracker.on('redeem_path_response', onResponse);
-
-            timer = setTimeout(
-                () => {
-                    reply(this.daemon.RedeemPathResponse.Result.TIMEOUT);
-                },
-                this.daemon.constructor.requestTimeout
-            );
-
-            let request = this.tracker.RedeemPathRequest.create({
-                token: message.redeemPathRequest.token,
-                path: message.redeemPathRequest.path,
-                type: message.redeemPathRequest.type,
+                let data = this.tracker.ClientMessage.encode(relay).finish();
+                this.tracker.send(message.redeemPathRequest.trackerName, data);
+            })
+            .catch(error => {
+                this._logger.error(new NError(error, 'RedeemPathRequest.handle()'));
             });
-            let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.REDEEM_PATH_REQUEST,
-                messageId: relayId,
-                redeemPathRequest: request,
-            });
-            let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.redeemPathRequest.trackerName, data);
-        } catch (error) {
-            this._logger.error(new NError(error, 'RedeemPathRequest.handle()'));
-        }
     }
 
     /**

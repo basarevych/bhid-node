@@ -52,7 +52,7 @@ class SetTokenRequest {
             .then(() => {
                 switch (message.setTokenRequest.type) {
                     case this.daemon.SetTokenRequest.Type.MASTER:
-                        return this.tracker.setMasterToken(message.setTokenRequest.token);
+                        return this.tracker.setMasterToken(message.setTokenRequest.trackerName, message.setTokenRequest.token);
                     case this.daemon.SetTokenRequest.Type.DAEMON:
                         return this.tracker.setDaemonToken(message.setTokenRequest.trackerName, message.setTokenRequest.token);
                 }

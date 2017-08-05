@@ -21,12 +21,13 @@ class Tracker extends EventEmitter {
      * @param {App} app                             Application
      * @param {object} config                       Configuration
      * @param {Logger} logger                       Logger service
+     * @param {Filer} filer                         Filer service
      * @param {Runner} runner                       Runner service
      * @param {Ini} ini                             Ini service
      * @param {Crypter} crypter                     Crypter service
      * @param {ConnectionsList} connectionsList     Connections List service
      */
-    constructor(app, config, logger, runner, ini, crypter, connectionsList) {
+    constructor(app, config, logger, filer, runner, ini, crypter, connectionsList) {
         super();
 
         this.servers = new Map();                           // name => TrackerServer(name)
@@ -37,6 +38,7 @@ class Tracker extends EventEmitter {
         this._app = app;
         this._config = config;
         this._logger = logger;
+        this._filer = filer;
         this._runner = runner;
         this._ini = ini;
         this._crypter = crypter;
@@ -57,7 +59,7 @@ class Tracker extends EventEmitter {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'runner', 'ini', 'crypter', 'connectionsList' ];
+        return [ 'app', 'config', 'logger', 'filer', 'runner', 'ini', 'crypter', 'connectionsList' ];
     }
 
     /**
@@ -334,10 +336,14 @@ class Tracker extends EventEmitter {
 
     /**
      * Set master token
+     * @param {string} name         Name of the tracker
      * @param {string} token        The token
      * @return {Promise}            Resolves to true on success
      */
-    setMasterToken(token) {
+    setMasterToken(name, token) {
+        if (!name)
+            name = this.default;
+
         return Promise.resolve()
             .then(() => {
                 let dirPath = path.join(os.homedir(), '.bhid');
@@ -346,12 +352,35 @@ class Tracker extends EventEmitter {
                 } catch (error) {
                     fs.mkdirSync(dirPath, 0o700);
                 }
-                fs.writeFileSync(path.join(dirPath, 'master.token'), token + '\n');
-                return true;
+                return this._filer.lockWrite(path.join(dirPath, `${name}.token`), token + '\n', { mode: 0o600 });
             })
             .catch(error => {
-                this._logger.error(`Could not set master token: ${error.message}`);
+                this._logger.error(`Could not set master token for ${name}: ${error.messages || error.message}`);
                 return false;
+            });
+    }
+
+    /**
+     * Get master token
+     * @param {string} name         Name of the tracker
+     * @return {Promise}            Resolves to token or empty string
+     */
+    getMasterToken(name) {
+        if (!name)
+            name = this.default;
+
+        return Promise.resolve()
+            .then(() => {
+                let dirPath = path.join(os.homedir(), '.bhid');
+                try {
+                    fs.accessSync(dirPath, fs.constants.F_OK);
+                } catch (error) {
+                    fs.mkdirSync(dirPath, 0o700);
+                }
+                return this._filer.lockRead(path.join(dirPath, `${name}.token`));
+            })
+            .catch(() => {
+                return '';
             });
     }
 
@@ -402,13 +431,13 @@ class Tracker extends EventEmitter {
                     }
                 }
 
-                fs.writeFileSync(path.join(configPath, 'bhid.conf'), this._ini.stringify(bhidConfig));
+                return this._filer.lockWrite(path.join(configPath, 'bhid.conf'), this._ini.stringify(bhidConfig));
+            })
+            .then(() => {
                 server.token = token;
-
                 server.socket.end();
                 server.wrapper.detach();
                 this.emit('token', name);
-
                 return true;
             })
             .catch(error => {

@@ -131,15 +131,6 @@ class Create {
             secondPort = '';
         }
 
-        let token;
-        try {
-            token = fs.readFileSync(path.join(os.homedir(), '.bhid', 'master.token'), 'utf8').trim();
-            if (!token)
-                throw new Error('No token');
-        } catch (error) {
-            return this.error('Master token not found');
-        }
-
         let type = this.CreateRequest.Type.NOT_CONNECTED;
         if (server)
             type = this.CreateRequest.Type.SERVER;
@@ -151,7 +142,6 @@ class Create {
                 this._app.debug('Sending CREATE REQUEST').catch(() => { /* do nothing */ });
                 let request = this.CreateRequest.create({
                     trackerName: trackerName,
-                    token: token,
                     path: cpath,
                     type: type,
                     encrypted: encrypted,
@@ -239,7 +229,7 @@ class Create {
                     updateConnectionsRequest: request,
                 });
                 let buffer = this.ClientMessage.encode(message).finish();
-                return this.send(buffer, sockName)
+                return this.send(buffer, sockName);
             })
             .then(data => {
                 let message = this.ServerMessage.decode(data);

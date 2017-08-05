@@ -176,7 +176,7 @@ class Crypter {
                                     return this._deletePeer(tracker, diskPeer.name);
                             })
                             .then(() => {
-                                return this._savePeer(tracker, trackerPeer.name, trackerPeer.buffer)
+                                return this._savePeer(tracker, trackerPeer.name, trackerPeer.buffer);
                             })
                             .then(() => {
                                 return trackerPeer;

@@ -48,67 +48,69 @@ class DeleteRequest {
             return;
 
         this._logger.debug('delete-request', `Got DELETE REQUEST`);
-        try {
-            let relayId = uuid.v1();
+        this.tracker.getMasterToken(message.deleteRequest.trackerName)
+            .then(masterToken => {
+                let relayId = uuid.v1();
 
-            let timer, onResponse;
-            let reply = value => {
-                if (timer) {
-                    clearTimeout(timer);
-                    timer = null;
-                }
+                let timer, onResponse;
+                let reply = value => {
+                    if (timer) {
+                        clearTimeout(timer);
+                        timer = null;
+                    }
 
-                if (onResponse)
-                    this.tracker.removeListener('delete_response', onResponse);
+                    if (onResponse)
+                        this.tracker.removeListener('delete_response', onResponse);
 
-                let reply = this.daemon.DeleteResponse.create({
-                    response: value,
+                    let reply = this.daemon.DeleteResponse.create({
+                        response: value,
+                    });
+                    let relay = this.daemon.ServerMessage.create({
+                        type: this.daemon.ServerMessage.Type.DELETE_RESPONSE,
+                        deleteResponse: reply,
+                    });
+                    let data = this.daemon.ServerMessage.encode(relay).finish();
+                    this._logger.debug('delete-request', `Sending DELETE RESPONSE`);
+                    this.daemon.send(id, data);
+                };
+
+                let server = this.tracker.getServer(message.deleteRequest.trackerName);
+                if (!server || !server.connected)
+                    return reply(this.daemon.DeleteResponse.Result.NO_TRACKER);
+                if (!server.registered)
+                    return reply(this.daemon.DeleteResponse.Result.NOT_REGISTERED);
+
+                onResponse = (name, response) => {
+                    if (response.messageId !== relayId)
+                        return;
+
+                    this._logger.debug('delete-request', `Got DELETE RESPONSE from tracker`);
+                    reply(response.deleteResponse.response);
+                };
+                this.tracker.on('delete_response', onResponse);
+
+                timer = setTimeout(
+                    () => {
+                        reply(this.daemon.DeleteResponse.Result.TIMEOUT);
+                    },
+                    this.daemon.constructor.requestTimeout
+                );
+
+                let request = this.tracker.DeleteRequest.create({
+                    token: masterToken,
+                    path: message.deleteRequest.path,
                 });
-                let relay = this.daemon.ServerMessage.create({
-                    type: this.daemon.ServerMessage.Type.DELETE_RESPONSE,
-                    deleteResponse: reply,
+                let relay = this.tracker.ClientMessage.create({
+                    type: this.tracker.ClientMessage.Type.DELETE_REQUEST,
+                    messageId: relayId,
+                    deleteRequest: request,
                 });
-                let data = this.daemon.ServerMessage.encode(relay).finish();
-                this._logger.debug('delete-request', `Sending DELETE RESPONSE`);
-                this.daemon.send(id, data);
-            };
-
-            let server = this.tracker.getServer(message.deleteRequest.trackerName);
-            if (!server || !server.connected)
-                return reply(this.daemon.DeleteResponse.Result.NO_TRACKER);
-            if (!server.registered)
-                return reply(this.daemon.DeleteResponse.Result.NOT_REGISTERED);
-
-            onResponse = (name, response) => {
-                if (response.messageId !== relayId)
-                    return;
-
-                this._logger.debug('delete-request', `Got DELETE RESPONSE from tracker`);
-                reply(response.deleteResponse.response);
-            };
-            this.tracker.on('delete_response', onResponse);
-
-            timer = setTimeout(
-                () => {
-                    reply(this.daemon.DeleteResponse.Result.TIMEOUT);
-                },
-                this.daemon.constructor.requestTimeout
-            );
-
-            let request = this.tracker.DeleteRequest.create({
-                token: message.deleteRequest.token,
-                path: message.deleteRequest.path,
+                let data = this.tracker.ClientMessage.encode(relay).finish();
+                this.tracker.send(message.deleteRequest.trackerName, data);
+            })
+            .catch(error => {
+                this._logger.error(new NError(error, 'DeleteRequest.handle()'));
             });
-            let relay = this.tracker.ClientMessage.create({
-                type: this.tracker.ClientMessage.Type.DELETE_REQUEST,
-                messageId: relayId,
-                deleteRequest: request,
-            });
-            let data = this.tracker.ClientMessage.encode(relay).finish();
-            this.tracker.send(message.deleteRequest.trackerName, data);
-        } catch (error) {
-            this._logger.error(new NError(error, 'DeleteRequest.handle()'));
-        }
     }
 
     /**

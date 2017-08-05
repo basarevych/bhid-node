@@ -107,6 +107,7 @@ class Confirm {
                                 request = this.SetTokenRequest.create({
                                     type: this.SetTokenRequest.Type.MASTER,
                                     token: message.confirmResponse.token,
+                                    trackerName: trackerName,
                                 });
                                 message = this.ClientMessage.create({
                                     type: this.ClientMessage.Type.SET_TOKEN_REQUEST,
@@ -121,7 +122,7 @@ class Confirm {
 
                                         switch (message.setTokenResponse.response) {
                                             case this.SetTokenResponse.Result.ACCEPTED:
-                                                return this._app.info('Master token is saved to ~/.bhid/master.token on this computer and will be used automatically');
+                                                return this._app.info('New master token has been saved to ~/.bhid directory and will be used automatically');
                                             case this.SetTokenResponse.Result.REJECTED:
                                                 return this.error('Set token request rejected');
                                             default:
