@@ -22,7 +22,9 @@ class Daemon {
      * @param {DeleteRequest} deleteRequest                         DeleteRequest event handler
      * @param {ImportRequest} importRequest                         ImportRequest event handler
      * @param {AttachRequest} attachRequest                         AttachRequest event handler
+     * @param {RemoteAttachRequest} remoteAttachRequest             RemoteAttachRequest event handler
      * @param {DetachRequest} detachRequest                         DetachRequest event handler
+     * @param {RemoteDetachRequest} remoteDetachRequest             RemoteDetachRequest event handler
      * @param {TreeRequest} treeRequest                             TreeRequest event handler
      * @param {ConnectionsListRequest} connectionsListRequest       ConnectionsListRequest event handler
      * @param {DaemonsListRequest} daemonsListRequest               DaemonsListRequest event handler
@@ -35,10 +37,9 @@ class Daemon {
      * @param {RedeemPathRequest} redeemPathRequest                 RedeemPathRequest event handler
      */
     constructor(app, config, logger, initRequest, confirmRequest, createDaemonRequest, deleteDaemonRequest, setTokenRequest,
-        createRequest, deleteRequest, importRequest, attachRequest, detachRequest, treeRequest, connectionsListRequest,
-        daemonsListRequest, setConnectionsRequest, getConnectionsRequest, importConnectionsRequest, updateConnectionsRequest,
-        redeemMasterRequest, redeemDaemonRequest, redeemPathRequest
-)
+        createRequest, deleteRequest, importRequest, attachRequest, remoteAttachRequest, detachRequest, remoteDetachRequest,
+        treeRequest, connectionsListRequest, daemonsListRequest, setConnectionsRequest, getConnectionsRequest,
+        importConnectionsRequest, updateConnectionsRequest, redeemMasterRequest, redeemDaemonRequest, redeemPathRequest)
     {
         this._app = app;
         this._config = config;
@@ -52,7 +53,9 @@ class Daemon {
         this._deleteRequest = deleteRequest;
         this._importRequest = importRequest;
         this._attachRequest = attachRequest;
+        this._remoteAttachRequest = remoteAttachRequest;
         this._detachRequest = detachRequest;
+        this._remoteDetachRequest = remoteDetachRequest;
         this._treeRequest = treeRequest;
         this._connectionsListRequest = connectionsListRequest;
         this._daemonsListRequest = daemonsListRequest;
@@ -91,7 +94,9 @@ class Daemon {
             'modules.daemon.events.deleteRequest',
             'modules.daemon.events.importRequest',
             'modules.daemon.events.attachRequest',
+            'modules.daemon.events.remoteAttachRequest',
             'modules.daemon.events.detachRequest',
+            'modules.daemon.events.remoteDetachRequest',
             'modules.daemon.events.treeRequest',
             'modules.daemon.events.connectionsListRequest',
             'modules.daemon.events.daemonsListRequest',
@@ -133,7 +138,9 @@ class Daemon {
         server.on('delete_request', this._deleteRequest.handle.bind(this._deleteRequest));
         server.on('import_request', this._importRequest.handle.bind(this._importRequest));
         server.on('attach_request', this._attachRequest.handle.bind(this._attachRequest));
+        server.on('remote_attach_request', this._remoteAttachRequest.handle.bind(this._remoteAttachRequest));
         server.on('detach_request', this._detachRequest.handle.bind(this._detachRequest));
+        server.on('remote_detach_request', this._remoteDetachRequest.handle.bind(this._remoteDetachRequest));
         server.on('tree_request', this._treeRequest.handle.bind(this._treeRequest));
         server.on('connections_list_request', this._connectionsListRequest.handle.bind(this._connectionsListRequest));
         server.on('daemons_list_request', this._daemonsListRequest.handle.bind(this._daemonsListRequest));

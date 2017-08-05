@@ -92,8 +92,12 @@ class Daemon extends EventEmitter {
                         this.ImportResponse = this.proto.lookup('local.ImportResponse');
                         this.AttachRequest = this.proto.lookup('local.AttachRequest');
                         this.AttachResponse = this.proto.lookup('local.AttachResponse');
+                        this.RemoteAttachRequest = this.proto.lookup('local.RemoteAttachRequest');
+                        this.RemoteAttachResponse = this.proto.lookup('local.RemoteAttachResponse');
                         this.DetachRequest = this.proto.lookup('local.DetachRequest');
                         this.DetachResponse = this.proto.lookup('local.DetachResponse');
+                        this.RemoteDetachRequest = this.proto.lookup('local.RemoteDetachRequest');
+                        this.RemoteDetachResponse = this.proto.lookup('local.RemoteDetachResponse');
                         this.Tree = this.proto.lookup('local.Tree');
                         this.TreeRequest = this.proto.lookup('local.TreeRequest');
                         this.TreeResponse = this.proto.lookup('local.TreeResponse');
@@ -349,8 +353,14 @@ class Daemon extends EventEmitter {
                 case this.ClientMessage.Type.ATTACH_REQUEST:
                     this.emit('attach_request', id, message);
                     break;
+                case this.ClientMessage.Type.REMOTE_ATTACH_REQUEST:
+                    this.emit('remote_attach_request', id, message);
+                    break;
                 case this.ClientMessage.Type.DETACH_REQUEST:
                     this.emit('detach_request', id, message);
+                    break;
+                case this.ClientMessage.Type.REMOTE_DETACH_REQUEST:
+                    this.emit('remote_detach_request', id, message);
                     break;
                 case this.ClientMessage.Type.TREE_REQUEST:
                     this.emit('tree_request', id, message);

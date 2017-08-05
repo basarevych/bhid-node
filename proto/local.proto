@@ -183,10 +183,9 @@ message ImportResponse {
 
 message AttachRequest {
     string tracker_name = 1;
-    string daemon_name = 2;
-    string path = 3;
-    string address_override = 4;
-    string port_override = 5;
+    string path = 2;
+    string address_override = 3;
+    string port_override = 4;
 }
 
 message AttachResponse {
@@ -204,10 +203,32 @@ message AttachResponse {
     ConnectionsList updates = 2;
 }
 
+message RemoteAttachRequest {
+    string tracker_name = 1;
+    string path = 2;
+    string daemon_name = 3;
+    bool server = 4;
+    string address_override = 5;
+    string port_override = 6;
+}
+
+message RemoteAttachResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        INVALID_PATH = 10;
+        PATH_NOT_FOUND = 11;
+        DAEMON_NOT_FOUND = 12;
+        ALREADY_ATTACHED = 20;
+        TIMEOUT = 9000;
+        NO_TRACKER = 9010;
+    }
+    Result response = 1;
+}
+
 message DetachRequest {
     string tracker_name = 1;
-    string daemon_name = 2;
-    string path = 3;
+    string path = 2;
 }
 
 message DetachResponse {
@@ -220,6 +241,26 @@ message DetachResponse {
         TIMEOUT = 9000;
         NO_TRACKER = 9010;
         NOT_REGISTERED = 9020;
+    }
+    Result response = 1;
+}
+
+message RemoteDetachRequest {
+    string tracker_name = 1;
+    string path = 2;
+    string daemon_name = 3;
+}
+
+message RemoteDetachResponse {
+    enum Result {
+        ACCEPTED = 0;
+        REJECTED = 1;
+        INVALID_PATH = 10;
+        PATH_NOT_FOUND = 11;
+        DAEMON_NOT_FOUND = 12;
+        NOT_ATTACHED = 20;
+        TIMEOUT = 9000;
+        NO_TRACKER = 9010;
     }
     Result response = 1;
 }
@@ -428,7 +469,9 @@ message ClientMessage {
         DELETE_REQUEST = 40;
         IMPORT_REQUEST = 50;
         ATTACH_REQUEST = 60;
+        REMOTE_ATTACH_REQUEST = 61;
         DETACH_REQUEST = 70;
+        REMOTE_DETACH_REQUEST = 71;
         TREE_REQUEST = 80;
         CONNECTIONS_LIST_REQUEST = 90;
         DAEMONS_LIST_REQUEST = 91;
@@ -450,7 +493,9 @@ message ClientMessage {
     DeleteRequest delete_request = 500;
     ImportRequest import_request = 600;
     AttachRequest attach_request = 700;
+    RemoteAttachRequest remote_attach_request = 710;
     DetachRequest detach_request = 800;
+    RemoteDetachRequest remote_detach_request = 810;
     TreeRequest tree_request = 900;
     ConnectionsListRequest connections_list_request = 1000;
     DaemonsListRequest daemons_list_request = 1010;
@@ -474,7 +519,9 @@ message ServerMessage {
         DELETE_RESPONSE = 40;
         IMPORT_RESPONSE = 50;
         ATTACH_RESPONSE = 60;
+        REMOTE_ATTACH_RESPONSE = 61;
         DETACH_RESPONSE = 70;
+        REMOTE_DETACH_RESPONSE = 71;
         TREE_RESPONSE = 80;
         CONNECTIONS_LIST_RESPONSE = 90;
         DAEMONS_LIST_RESPONSE = 91;
@@ -496,7 +543,9 @@ message ServerMessage {
     DeleteResponse delete_response = 500;
     ImportResponse import_response = 600;
     AttachResponse attach_response = 700;
+    RemoteAttachResponse remote_attach_response = 710;
     DetachResponse detach_response = 800;
+    RemoteDetachResponse remote_detach_response = 810;
     TreeResponse tree_response = 900;
     ConnectionsListResponse connections_list_response = 1000;
     DaemonsListResponse daemons_list_response = 1010;

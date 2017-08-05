@@ -135,8 +135,12 @@ class Tracker extends EventEmitter {
                         this.ImportResponse = this.proto.lookup('tracker.ImportResponse');
                         this.AttachRequest = this.proto.lookup('tracker.AttachRequest');
                         this.AttachResponse = this.proto.lookup('tracker.AttachResponse');
+                        this.RemoteAttachRequest = this.proto.lookup('tracker.RemoteAttachRequest');
+                        this.RemoteAttachResponse = this.proto.lookup('tracker.RemoteAttachResponse');
                         this.DetachRequest = this.proto.lookup('tracker.DetachRequest');
                         this.DetachResponse = this.proto.lookup('tracker.DetachResponse');
+                        this.RemoteDetachRequest = this.proto.lookup('tracker.RemoteDetachRequest');
+                        this.RemoteDetachResponse = this.proto.lookup('tracker.RemoteDetachResponse');
                         this.Tree = this.proto.lookup('tracker.Tree');
                         this.TreeRequest = this.proto.lookup('tracker.TreeRequest');
                         this.TreeResponse = this.proto.lookup('tracker.TreeResponse');
@@ -653,8 +657,14 @@ class Tracker extends EventEmitter {
                 case this.ServerMessage.Type.ATTACH_RESPONSE:
                     this.emit('attach_response', name, message);
                     break;
+                case this.ServerMessage.Type.REMOTE_ATTACH_RESPONSE:
+                    this.emit('remote_attach_response', name, message);
+                    break;
                 case this.ServerMessage.Type.DETACH_RESPONSE:
                     this.emit('detach_response', name, message);
+                    break;
+                case this.ServerMessage.Type.REMOTE_DETACH_RESPONSE:
+                    this.emit('remote_detach_response', name, message);
                     break;
                 case this.ServerMessage.Type.TREE_RESPONSE:
                     this.emit('tree_response', name, message);

@@ -81,8 +81,10 @@ class Help {
                 '\tcreate\t\tCreate new connection\n' +
                 '\tdelete\t\tDelete a connection\n' +
                 '\timport\t\tImport a token\n' +
-                '\tattach\t\tMake the daemon a server or a client of a connection\n' +
-                '\tdetach\t\tDetach the daemon from given connection\n' +
+                '\tattach\t\tMake this daemon a server or a client of a connection\n' +
+                '\tdetach\t\tDetach this daemon from given connection\n' +
+                '\trattach\t\tMake any your daemon a server or a client of your connection\n' +
+                '\trdetach\t\tDetach your daemon from given connection\n' +
                 '\tredeem\t\tRedeem account, daemon or connection token\n' +
                 '\tstart\t\tStart the daemon\n' +
                 '\tstop\t\tStop the daemon\n' +
@@ -153,11 +155,12 @@ class Help {
      */
     helpRegister(argv) {
         return this._app.info(
-            'Usage:\tbhidctl register [<daemon-name>] [-r] [-a] [-q] [-t <tracker>]\n\n' +
-            '\tCreate new daemon. If name and -r flag are set then random digits to the name\n' +
-            '\tprovided will be appended. Without -r the exact name will be used. If no name\n' +
-            '\tis given it will be random. If -a is set then auth command will be ran.\n' +
-            '\tIf -q is set then only daemon token will be printed with no additional text'
+                'Usage:\tbhidctl register [<daemon-name>] [-r] [-a] [-q] [-t <tracker>]\n\n' +
+                '\tCreate new daemon. If name and -r flag are set then random digits to the name\n' +
+                '\tprovided will be appended. Without -r the exact name will be used. If no name\n' +
+                '\tis given it will be random. If -a is set then auth command will be ran.\n' +
+                '\tIf -q is set then only daemon token will be printed with no additional text\n\n' +
+                '\tRequires master token'
             )
             .then(() => {
                 process.exit(0);
@@ -169,8 +172,9 @@ class Help {
      */
     helpUnregister(argv) {
         return this._app.info(
-            'Usage:\tbhidctl unregister <daemon-name> [-t <tracker>]\n\n' +
-            '\tDelete daemon record from tracker'
+                'Usage:\tbhidctl unregister <daemon-name> [-t <tracker>]\n\n' +
+                '\tDelete daemon record from tracker\n\n' +
+                '\tRequires master token'
             )
             .then(() => {
                 process.exit(0);
@@ -200,7 +204,8 @@ class Help {
                 '\tor as client when -c is set. If -e is set then connection is encrypted. If -f is set then\n' +
                 '\tconnection is fixed (clients list is saved and unknown clients will not be accepted by a daemon\n' +
                 '\tuntil next "load" command run on the daemon).\n\n' +
-                '\t<connect-addr> and <listen-addr> are written in the form of address:port or just /path/to/unix/socket'
+                '\t<connect-addr> and <listen-addr> are written in the form of address:port or just /path/to/unix/socket\n\n' +
+                '\tRequires master token'
             )
             .then(() => {
                 process.exit(0);
@@ -213,7 +218,8 @@ class Help {
     helpDelete(argv) {
         return this._app.info(
                 'Usage:\tbhidctl delete <path> [-t <tracker>]\n\n' +
-                '\tDelete path recursively with all the connections'
+                '\tDelete path recursively with all the connections\n\n' +
+                '\tRequires master token'
             )
             .then(() => {
                 process.exit(0);
@@ -238,11 +244,29 @@ class Help {
      */
     helpAttach(argv) {
         return this._app.info(
-                'Usage:\tbhidctl attach <path> [<listen-address>] [-t <tracker>]\n\n' +
-                '\tAttach the daemon to the given path imported previously\n' +
+            'Usage:\tbhidctl attach <path> [<listen-address>] [-t <tracker>]\n\n' +
+            '\tAttach the daemon to the given path imported previously\n' +
+            '\tAddress is in the form of <host>:<port>. if <host> is "*" then all interfaces\n' +
+            '\twill be listen on, if <port> is "*" then random port will be used.\n' +
+            '\tFor server connections wildcard is not allowed.'
+            )
+            .then(() => {
+                process.exit(0);
+            });
+    }
+
+    /**
+     * Rattach command
+     */
+    helpRattach(argv) {
+        return this._app.info(
+                'Usage:\tbhidctl rattach <path> <daemon-name> [<listen-address>] [-s] [-t <tracker>]\n\n' +
+                '\tAttach specified daemon to the given path of your connection\n' +
+                '\tUse -s flag for daemon to become a server, it will be client otherwise.\n' +
                 '\tAddress is in the form of <host>:<port>. if <host> is "*" then all interfaces\n' +
                 '\twill be listen on, if <port> is "*" then random port will be used.\n' +
-                '\tFor server connections wildcard is not allowed.'
+                '\tFor server connections wildcard is not allowed.\n\n' +
+                '\tRequires master token'
             )
             .then(() => {
                 process.exit(0);
@@ -256,6 +280,20 @@ class Help {
         return this._app.info(
                 'Usage:\tbhidctl detach <path> [-t <tracker>]\n\n' +
                 '\tDetach the daemon from a connection without deleting the connection on the tracker'
+            )
+            .then(() => {
+                process.exit(0);
+            });
+    }
+
+    /**
+     * Rdetach command
+     */
+    helpRdetach(argv) {
+        return this._app.info(
+                'Usage:\tbhidctl rdetach <path> <daemon-name> [-t <tracker>]\n\n' +
+                '\tDetach specified daemon from a connection without deleting the connection on the tracker\n\n' +
+                '\tRequires master token'
             )
             .then(() => {
                 process.exit(0);
@@ -323,7 +361,8 @@ class Help {
                       '\tbhidctl redeem <daemon-name> [-t <tracker>]\n' +
                       '\tbhidctl redeem <path> [-s|-c] [-t <tracker>]\n\n' +
                 '\tRedeem account, daemon or connection token. If -c is set the client token will be\n' +
-                '\tregenerated (default), or server token if -s is set.'
+                '\tregenerated (default), or server token if -s is set.\n\n' +
+                '\tRedeeming daemon or connection requires master token'
             )
             .then(() => {
                 process.exit(0);
