@@ -77,40 +77,84 @@ class GetConnectionsRequest {
 
             let activeList;
             if (active) {
-                activeList = this.daemon.ConnectionsList.create({
-                    serverConnections: Array.from(active.serverConnections.values()),
-                    clientConnections: Array.from(active.clientConnections.values()),
-                });
-            }
-            let importedList;
-            if (imported) {
-                importedList = this.daemon.ConnectionsList.create({
-                    serverConnections: Array.from(imported.serverConnections.values()),
-                    clientConnections: Array.from(imported.clientConnections.values()),
-                });
+                let serverConnections = [];
+                for (let connection of Array.from(active.serverConnections.values())) {
+                    let data = {
+                        name: connection.name,
+                        connectAddress: connection.connectAddress,
+                        connectPort: connection.connectPort,
+                        encrypted: connection.encrypted,
+                        fixed: connection.fixed,
+                        clients: connection.clients,
+                        connected: connection.connected,
+                    };
+                    let info = this.peer.connections.get(
+                        message.getConnectionsRequest.trackerName || this.tracker.default +
+                        '#' + connection.name
+                    );
+                    if (info) {
+                        data.listenAddress = info.listenAddress || '*';
+                        data.listenPort = info.listenPort || '*';
+                    }
+                    serverConnections.push(this.daemon.ServerConnection.create(data));
+                }
+
+                let clientConnections = [];
+                for (let connection of Array.from(active.clientConnections.values())) {
+                    let data = {
+                        name: connection.name,
+                        listenAddress: connection.listenAddress,
+                        listenPort: connection.listenPort,
+                        encrypted: connection.encrypted,
+                        fixed: connection.fixed,
+                        server: connection.server,
+                        connected: connection.connected,
+                    };
+                    let info = this.peer.connections.get(
+                        message.getConnectionsRequest.trackerName || this.tracker.default +
+                        '#' + connection.name
+                    );
+                    if (info) {
+                        data.listenAddress = info.listenAddress || '*';
+                        data.listenPort = info.listenPort || '*';
+                    }
+                    clientConnections.push(this.daemon.ClientConnection.create(data));
+                }
+
+                activeList = this.daemon.ConnectionsList.create({ serverConnections, clientConnections });
             }
 
-            if (activeList) {
-                for (let connection of activeList.serverConnections) {
-                    let info = this.peer.connections.get(
-                        message.getConnectionsRequest.trackerName || this.tracker.default +
-                        '#' + connection.name
-                    );
-                    if (info) {
-                        connection.listenAddress = info.listenAddress || '*';
-                        connection.listenPort = info.listenPort || '*';
-                    }
+            let importedList;
+            if (imported) {
+                let serverConnections = [];
+                for (let connection of Array.from(imported.serverConnections.values())) {
+                    let data = {
+                        name: connection.name,
+                        connectAddress: connection.connectAddress,
+                        connectPort: connection.connectPort,
+                        encrypted: connection.encrypted,
+                        fixed: connection.fixed,
+                        clients: connection.clients,
+                        connected: connection.connected,
+                    };
+                    serverConnections.push(this.daemon.ServerConnection.create(data));
                 }
-                for (let connection of activeList.clientConnections) {
-                    let info = this.peer.connections.get(
-                        message.getConnectionsRequest.trackerName || this.tracker.default +
-                        '#' + connection.name
-                    );
-                    if (info) {
-                        connection.listenAddress = info.listenAddress || '*';
-                        connection.listenPort = info.listenPort || '*';
-                    }
+
+                let clientConnections = [];
+                for (let connection of Array.from(imported.clientConnections.values())) {
+                    let data = {
+                        name: connection.name,
+                        listenAddress: connection.listenAddress,
+                        listenPort: connection.listenPort,
+                        encrypted: connection.encrypted,
+                        fixed: connection.fixed,
+                        server: connection.server,
+                        connected: connection.connected,
+                    };
+                    clientConnections.push(this.daemon.ClientConnection.create(data));
                 }
+
+                importedList = this.daemon.ConnectionsList.create({ serverConnections, clientConnections });
             }
 
             reply(this.daemon.GetConnectionsResponse.Result.ACCEPTED, activeList, importedList);
