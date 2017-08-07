@@ -3,7 +3,6 @@
  * @module commands/start
  */
 const path = require('path');
-const execFile = require('child_process').execFile;
 const argvParser = require('argv');
 
 /**
@@ -14,11 +13,13 @@ class Start {
      * Create the service
      * @param {App} app                 The application
      * @param {object} config           Configuration
+     * @param {Runner} runner           Runner service
      * @param {Install} install         Install command
      */
-    constructor(app, config, install) {
+    constructor(app, config, runner, install) {
         this._app = app;
         this._config = config;
+        this._runner = runner;
         this._install = install;
     }
 
@@ -35,7 +36,7 @@ class Start {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'commands.install' ];
+        return [ 'app', 'config', 'runner', 'commands.install' ];
     }
 
     /**
@@ -69,7 +70,7 @@ class Start {
                 process.exit(rc);
             })
             .catch(error => {
-                return this.error(error.messages || error.message);
+                return this.error(error);
             });
     }
 
@@ -77,38 +78,14 @@ class Start {
      * Launch the daemon
      */
     launch() {
-        return this.exec('daemon')
+        return this._runner.exec(
+                path.join(__dirname, '..', 'bin', 'daemon'),
+                [],
+                { pipe: process }
+            )
             .then(result => {
-                 return result.code;
+                return result.code;
             });
-    }
-    /**
-     * Execute command echoing output
-     * @param {string} command          Path to command
-     * @param {string[]} [params]       Parameters
-     * @return {Promise}
-     */
-    exec(command, params = []) {
-        return new Promise((resolve, reject) => {
-            try {
-                let proc = execFile(
-                    path.join(__dirname, '..', 'bin', command),
-                    params,
-                    (error, stdout, stderr) => {
-                        resolve({
-                            code: error ? error.code : 0,
-                            stdout: stdout,
-                            stderr: stderr,
-                        });
-                    }
-                );
-                proc.stdout.pipe(process.stdout);
-                proc.stderr.pipe(process.stderr);
-                process.stdin.pipe(proc.stdin);
-            } catch (error) {
-                reject(error);
-            }
-        });
     }
 
     /**
@@ -117,12 +94,12 @@ class Start {
      */
     error(...args) {
         return args.reduce(
-                (prev, cur) => {
-                    return prev.then(() => {
-                        return this._app.error(cur.fullStack || cur.stack || cur.message || cur);
-                    });
-                },
-                Promise.resolve()
+            (prev, cur) => {
+                return prev.then(() => {
+                    return this._app.error(cur.fullStack || cur.stack || cur.message || cur);
+                });
+            },
+            Promise.resolve()
             )
             .then(
                 () => {
