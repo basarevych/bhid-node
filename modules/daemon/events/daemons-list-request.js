@@ -96,9 +96,13 @@ class DaemonsListRequest {
                 this.daemon.constructor.requestTimeout
             );
 
+            let request = this.tracker.DaemonsListRequest.create({
+                path: message.daemonsListRequest.path,
+            });
             let relay = this.tracker.ClientMessage.create({
                 type: this.tracker.ClientMessage.Type.DAEMONS_LIST_REQUEST,
                 messageId: relayId,
+                daemonsListRequest: request,
             });
             let data = this.tracker.ClientMessage.encode(relay).finish();
             this.tracker.send(message.daemonsListRequest.trackerName, data);

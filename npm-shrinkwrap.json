@@ -83,9 +83,9 @@
       "resolved": "https://registry.npmjs.org/argv/-/argv-0.0.2.tgz"
     },
     "arpen": {
-      "version": "0.0.43",
-      "from": "arpen@>=0.0.43 <0.1.0",
-      "resolved": "https://registry.npmjs.org/arpen/-/arpen-0.0.43.tgz"
+      "version": "0.0.44",
+      "from": "arpen@>=0.0.44 <0.1.0",
+      "resolved": "https://registry.npmjs.org/arpen/-/arpen-0.0.44.tgz"
     },
     "asn1": {
       "version": "0.2.3",

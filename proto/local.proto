@@ -384,20 +384,25 @@ message UpdateConnectionsResponse {
 message Daemon {
     string name = 1;
     bool online = 2;
-    string version = 3;
-    string hostname = 4;
-    string external_address = 5;
-    repeated string internal_addresses = 6;
+    bool server = 3;
+    bool client = 4;
+    string version = 5;
+    string hostname = 6;
+    string external_address = 7;
+    repeated string internal_addresses = 8;
 }
 
 message DaemonsListRequest {
     string tracker_name = 1;
+    string path = 2;
 }
 
 message DaemonsListResponse {
     enum Result {
         ACCEPTED = 0;
         REJECTED = 1;
+        INVALID_PATH = 10;
+        PATH_NOT_FOUND = 11;
         TIMEOUT = 9000;
         NO_TRACKER = 9010;
         NOT_REGISTERED = 9020;

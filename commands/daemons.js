@@ -90,6 +90,7 @@ class Daemons {
                 this._app.debug('Sending DAEMONS LIST REQUEST').catch(() => { /* do nothing */ });
                 let request = this.DaemonsListRequest.create({
                     trackerName: trackerName,
+                    path: search || '',
                 });
                 let message = this.ClientMessage.create({
                     type: this.ClientMessage.Type.DAEMONS_LIST_REQUEST,
@@ -104,9 +105,13 @@ class Daemons {
 
                         switch (message.daemonsListResponse.response) {
                             case this.DaemonsListResponse.Result.ACCEPTED:
-                                return this.printTable(message.daemonsListResponse.list, !noHeader, search || undefined);
+                                return this.printTable(message.daemonsListResponse.list, !noHeader, search);
                             case this.DaemonsListResponse.Result.REJECTED:
                                 return this.error('Request rejected');
+                            case this.DaemonsListResponse.Result.INVALID_PATH:
+                                return this.error('Invalid path');
+                            case this.DaemonsListResponse.Result.PATH_NOT_FOUND:
+                                return this.error('Path not found');
                             case this.DaemonsListResponse.Result.NO_TRACKER:
                                 return this.error('Not connected to the tracker');
                             case this.DaemonsListResponse.Result.NOT_REGISTERED:
@@ -141,10 +146,12 @@ class Daemons {
 
         let table = new Table();
         list.forEach(row => {
-            if (search && search !== row.name)
-                return;
-
-            table.cell('Name', row.name);
+            let parts = row.name.split('?');
+            if (search) {
+                table.cell('Type', row.server ? 'server' : (row.client ? 'client' : ''));
+                table.cell('User', parts.length > 1 ? parts[0] : '');
+            }
+            table.cell('Name', parts.length > 1 ? parts[1] : parts[0]);
             table.cell('Status', row.online ? 'online' : 'offline');
             table.cell('Version', row.version);
             table.cell('Hostname', row.hostname);
@@ -152,6 +159,10 @@ class Daemons {
             table.cell('Internal IP', row.internalAddresses.length ? row.internalAddresses[0] : '');
             table.newRow();
             for (let i = 1; i < row.internalAddresses.length; i++) {
+                if (search) {
+                    table.cell('Type', '');
+                    table.cell('User', '');
+                }
                 table.cell('Name', '');
                 table.cell('Status', '');
                 table.cell('Version', '');

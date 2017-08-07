@@ -244,11 +244,11 @@ class Help {
      */
     helpAttach(argv) {
         return this._app.info(
-            'Usage:\tbhidctl attach <path> [<listen-address>] [-t <tracker>]\n\n' +
-            '\tAttach the daemon to the given path imported previously\n' +
-            '\tAddress is in the form of <host>:<port>. if <host> is "*" then all interfaces\n' +
-            '\twill be listen on, if <port> is "*" then random port will be used.\n' +
-            '\tFor server connections wildcard is not allowed.'
+                'Usage:\tbhidctl attach <path> [<listen-address>] [-t <tracker>]\n\n' +
+                '\tAttach the daemon to the given path imported previously\n' +
+                '\tAddress is in the form of <host>:<port>. if <host> is "*" then all interfaces\n' +
+                '\twill be listen on, if <port> is "*" then random port will be used.\n' +
+                '\tFor server connections wildcard is not allowed.'
             )
             .then(() => {
                 process.exit(0);
@@ -318,8 +318,8 @@ class Help {
      */
     helpConnections(argv) {
         return this._app.info(
-            'Usage:\tbhidctl connections [<path>] [-n] [-t <tracker>]\n\n' +
-            '\tPrint this daemon connections. Use -n for no-header version.'
+                'Usage:\tbhidctl connections [<path>] [-n] [-t <tracker>]\n\n' +
+                '\tPrint this daemon connections. Use -n for no-header version.'
             )
             .then(() => {
                 process.exit(0);
@@ -331,8 +331,9 @@ class Help {
      */
     helpDaemons(argv) {
         return this._app.info(
-            'Usage:\tbhidctl daemons [<name>] [-n] [-t <tracker>]\n\n' +
-            '\tPrint your daemons list. Use -n for no-header version.'
+                'Usage:\tbhidctl daemons [<path>] [-n] [-t <tracker>]\n\n' +
+                '\tPrints the list of all your daemons or daemons attached to <path>.\n' +
+                '\tUse -n for no-header version.'
             )
             .then(() => {
                 process.exit(0);
