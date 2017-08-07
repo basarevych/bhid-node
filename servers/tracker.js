@@ -381,7 +381,10 @@ class Tracker extends EventEmitter {
                 } catch (error) {
                     fs.mkdirSync(dirPath, 0o700);
                 }
-                return this._filer.lockRead(path.join(dirPath, `${name}.token`));
+                return this._filer.lockRead(path.join(dirPath, `${name}.token`))
+                    .then(contents => {
+                        return contents.trim();
+                    });
             })
             .catch(() => {
                 return '';
