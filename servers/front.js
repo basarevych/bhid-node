@@ -218,65 +218,74 @@ class Front extends EventEmitter {
         connection.address = address;
         connection.port = port;
         connection.encrypted = info.encrypted;
-        connection.tcp = net.createServer(socket => { this.onConnection(tracker, name, tunnelId, socket); });
         this.connections.set(fullName, connection);
 
-        let bind;
-        let onError = error => {
+        let bind, strAddress, onListening, onError;
+        onListening = () => {
+            let newCon = this.connections.get(fullName);
+            if (!newCon || newCon !== connection)
+                return;
+
+            connection.address = connection.tcp.address().address;
+            connection.port = connection.tcp.address().port.toString();
+
+            let info = this._peer.connections.get(fullName);
+            if (info) {
+                info.listenAddress = connection.address;
+                info.listenPort = connection.port;
+            }
+
+            this._connectionsList.updatePort(tracker, name, connection.port);
+
+            this._logger.info(`Ready for connections for ${fullName} on ${strAddress}`);
+            connection.tcp.removeListener('error', onError);
+        };
+        onError = error => {
             if (error.syscall !== 'listen')
                 return this._logger.error(new NError(error, 'Front.openClient()'));
 
             switch (error.code) {
                 case 'EACCES':
-                    this._logger.error(`${fullName}: Could not bind to ${address}:${port}`);
+                    this._logger.error(`${fullName}: Could not bind to ${strAddress}`);
                     setTimeout(() => { bind(); }, this.constructor.bindPause);
                     break;
                 case 'EADDRINUSE':
-                    this._logger.error(`${fullName}: port ${address}:${port} is already in use`);
+                    this._logger.error(`${fullName}: ${strAddress} is already in use`);
                     setTimeout(() => { bind(); }, this.constructor.bindPause);
                     break;
                 default:
                     this._logger.error(new NError(error, 'Front.openClient()'));
             }
         };
+
+        let listenArgs = [];
+        if (!port || port === '*') {
+            listenArgs.push(0);
+            strAddress = '*';
+        } else if (port[0] === '/') {
+            listenArgs.push(port);
+            strAddress = port;
+        } else {
+            listenArgs.push(parseInt(port));
+            strAddress = port;
+        }
+        if (strAddress[0] !== '/') {
+            if (address && address !== '*') {
+                listenArgs.push(address);
+                strAddress = address + ':' + strAddress;
+            } else {
+                strAddress = '*:' + strAddress;
+            }
+        }
+        listenArgs.push(onListening);
+
         bind = () => {
             let newCon = this.connections.get(fullName);
             if (!newCon || newCon !== connection)
                 return;
 
+            connection.tcp = net.createServer(socket => { this.onConnection(tracker, name, tunnelId, socket); });
             connection.tcp.once('error', onError);
-
-            let onListening = () => {
-                let newCon = this.connections.get(fullName);
-                if (!newCon || newCon !== connection)
-                    return;
-
-                connection.address = connection.tcp.address().address;
-                connection.port = connection.tcp.address().port.toString();
-
-                let info = this._peer.connections.get(fullName);
-                if (info) {
-                    info.listenAddress = connection.address;
-                    info.listenPort = connection.port;
-                }
-
-                this._connectionsList.updatePort(tracker, name, connection.port);
-
-                this._logger.info(`Ready for connections for ${fullName} on ${connection.address}:${connection.port}`);
-                connection.tcp.removeListener('error', onError);
-            };
-
-            let listenArgs = [];
-            if (!port || port === '*')
-                listenArgs.push(0);
-            else if (port[0] === '/')
-                listenArgs.push(port);
-            else
-                listenArgs.push(parseInt(port));
-            if (address && address !== '*')
-                listenArgs.push(address);
-            listenArgs.push(onListening);
-
             connection.tcp.listen.apply(connection.tcp, listenArgs);
         };
         bind();
