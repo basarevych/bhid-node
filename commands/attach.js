@@ -84,7 +84,7 @@ class Attach {
                 overrideAddress = '';
                 overridePort = parts[0];
             } else {
-                return this.error('Invalid override address notation');
+                return this.error('Invalid override address');
             }
         } else {
             overrideAddress = '';
@@ -133,6 +133,8 @@ class Attach {
                                 return this.error('Invalid path');
                             case this.AttachResponse.Result.PATH_NOT_FOUND:
                                 return this.error('Path not found');
+                            case this.AttachResponse.Result.INVALID_ADDRESS:
+                                return this.error('Invalid address');
                             case this.AttachResponse.Result.ALREADY_ATTACHED:
                                 return this.error('Already attached');
                             case this.AttachResponse.Result.TIMEOUT:

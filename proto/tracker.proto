@@ -171,7 +171,8 @@ message AttachResponse {
         REJECTED = 1;
         INVALID_PATH = 10;
         PATH_NOT_FOUND = 11;
-        ALREADY_ATTACHED = 20;
+        INVALID_ADDRESS = 20;
+        ALREADY_ATTACHED = 30;
     }
     Result response = 1;
     ConnectionsList updates = 2;
@@ -192,8 +193,9 @@ message RemoteAttachResponse {
         REJECTED = 1;
         INVALID_PATH = 10;
         PATH_NOT_FOUND = 11;
-        DAEMON_NOT_FOUND = 12;
-        ALREADY_ATTACHED = 20;
+        INVALID_ADDRESS = 20;
+        DAEMON_NOT_FOUND = 30;
+        ALREADY_ATTACHED = 40;
     }
     Result response = 1;
 }

@@ -205,7 +205,8 @@ class Help {
                 '\tconnection is fixed (clients list is saved and unknown clients will not be accepted by a daemon\n' +
                 '\tuntil next "load" command run on the daemon, daemons also will not be allowed to change RSA keys).\n\n' +
                 '\t<connect-addr> and <listen-addr> are written in the form of host:port or just /path/to/unix/socket.\n' +
-                '\tListen host and port can contain * symbol for any host or random port respectively.\n\n' +
+                '\tListen host and port can contain * symbol for any host or random port respectively. Default listen\n' +
+                '\taddress is *:*.\n\n' +
                 '\tRequires master token'
             )
             .then(() => {
@@ -245,11 +246,12 @@ class Help {
      */
     helpAttach(argv) {
         return this._app.info(
-                'Usage:\tbhidctl attach <path> [<listen-address>] [-t <tracker>]\n\n' +
-                '\tAttach the daemon to the given path imported previously\n' +
-                '\tAddress is in the form of <host>:<port>. if <host> is "*" then all interfaces\n' +
-                '\twill be listen on, if <port> is "*" then random port will be used.\n' +
-                '\tFor server connections wildcard is not allowed.'
+                'Usage:\tbhidctl attach <path> [<addr-override>] [-t <tracker>]\n\n' +
+                '\tAttach the daemon to the given path imported previously\n\n' +
+                '\tAddress is in the form of host:port or /path/to/unix/socket. If host or port value is omitted\n' +
+                '\tthen default will be used (set with "create" command). Client connection listen address override\n' +
+                '\thost or port can contain * symbol, which means all interfaces and random port respectively. Server\n' +
+                '\tconnection address override cannot contain *.'
             )
             .then(() => {
                 process.exit(0);
@@ -261,12 +263,13 @@ class Help {
      */
     helpRattach(argv) {
         return this._app.info(
-                'Usage:\tbhidctl rattach <path> <daemon-name> [<listen-address>] [-s] [-t <tracker>]\n\n' +
+                'Usage:\tbhidctl rattach <path> <daemon-name> [<addr-override>] [-s] [-t <tracker>]\n\n' +
                 '\tAttach specified daemon to the given path of your connection\n' +
-                '\tUse -s flag for daemon to become a server, it will be client otherwise.\n' +
-                '\tAddress is in the form of <host>:<port>. if <host> is "*" then all interfaces\n' +
-                '\twill be listen on, if <port> is "*" then random port will be used.\n' +
-                '\tFor server connections wildcard is not allowed.\n\n' +
+                '\tUse -s flag for the daemon to become a server, it will be client otherwise.\n\n' +
+                '\tAddress is in the form of host:port or /path/to/unix/socket. If host or port value is omitted\n' +
+                '\tthen default will be used (set with "create" command). Client connection listen address override\n' +
+                '\thost or port can contain * symbol, which means all interfaces and random port respectively. Server\n' +
+                '\tconnection address override cannot contain *.\n\n' +
                 '\tRequires master token'
             )
             .then(() => {

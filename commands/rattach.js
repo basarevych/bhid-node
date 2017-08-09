@@ -89,7 +89,7 @@ class Rattach {
                 overrideAddress = '';
                 overridePort = parts[0];
             } else {
-                return this.error('Invalid override address notation');
+                return this.error('Invalid override address');
             }
         } else {
             overrideAddress = '';
@@ -137,6 +137,8 @@ class Rattach {
                                 return this.error('Invalid path');
                             case this.RemoteAttachResponse.Result.PATH_NOT_FOUND:
                                 return this.error('Path not found');
+                            case this.RemoteAttachResponse.Result.INVALID_ADDRESS:
+                                return this.error('Invalid address');
                             case this.RemoteAttachResponse.Result.DAEMON_NOT_FOUND:
                                 return this.error('Daemon not found');
                             case this.RemoteAttachResponse.Result.ALREADY_ATTACHED:
