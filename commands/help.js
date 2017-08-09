@@ -200,11 +200,12 @@ class Help {
     helpCreate(argv) {
         return this._app.info(
                 'Usage:\tbhidctl create <path> <connect-addr> [<listen-addr>] [-s|-c] [-e] [-f] [-t <tracker>]\n\n' +
-                '\tCreate a new connection. If -s is set then the daemon is configured as server of this connection,\n' +
+                '\tCreate a new connection. If -s is set then this daemon is configured as server of this connection,\n' +
                 '\tor as client when -c is set. If -e is set then connection is encrypted. If -f is set then\n' +
                 '\tconnection is fixed (clients list is saved and unknown clients will not be accepted by a daemon\n' +
-                '\tuntil next "load" command run on the daemon).\n\n' +
-                '\t<connect-addr> and <listen-addr> are written in the form of address:port or just /path/to/unix/socket\n\n' +
+                '\tuntil next "load" command run on the daemon, daemons also will not be allowed to change RSA keys).\n\n' +
+                '\t<connect-addr> and <listen-addr> are written in the form of host:port or just /path/to/unix/socket.\n' +
+                '\tListen host and port can contain * symbol for any host or random port respectively.\n\n' +
                 '\tRequires master token'
             )
             .then(() => {

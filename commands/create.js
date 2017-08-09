@@ -107,11 +107,13 @@ class Create {
         if (parts.length === 2) {
             firstAddress = parts[0];
             firstPort = parts[1];
+            if (!firstAddress || !firstPort || firstAddress === '*' || firstPort === '*')
+                return this.error('Invalid connect address');
         } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
             firstAddress = '';
             firstPort = parts[0];
         } else {
-            return this.error('Invalid connect address notation');
+            return this.error('Invalid connect address');
         }
 
         let secondAddress, secondPort;
@@ -119,12 +121,16 @@ class Create {
             parts = second.split(':');
             if (parts.length === 2) {
                 secondAddress = parts[0];
+                if (!secondAddress)
+                    secondAddress = '*';
                 secondPort = parts[1];
+                if (!secondPort)
+                    secondPort = '*';
             } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
                 secondAddress = '';
                 secondPort = parts[0];
             } else {
-                return this.error('Invalid listen address notation');
+                return this.error('Invalid listen address');
             }
         } else {
             secondAddress = '';

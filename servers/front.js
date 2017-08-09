@@ -214,11 +214,6 @@ class Front extends EventEmitter {
         if (connection)
             return;
 
-        if (address === '*')
-            address = '';
-        if (port === '*')
-            port = '';
-
         connection = this._app.get('entities.frontClientConnection', fullName);
         connection.address = address;
         connection.port = port;
@@ -272,8 +267,13 @@ class Front extends EventEmitter {
             };
 
             let listenArgs = [];
-            listenArgs.push(port.length ? port : 0);
-            if (address.length)
+            if (!port || port === '*')
+                listenArgs.push(0);
+            else if (port[0] === '/')
+                listenArgs.push(port);
+            else
+                listenArgs.push(parseInt(port));
+            if (address && address !== '*')
                 listenArgs.push(address);
             listenArgs.push(onListening);
 

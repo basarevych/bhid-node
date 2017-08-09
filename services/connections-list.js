@@ -183,8 +183,10 @@ class ConnectionsList {
                 }
 
                 for (let connection of this._peer.connections.keys()) {
-                    if (!openedConnections.has(connection))
-                        this._peer.close(connection);
+                    if (!openedConnections.has(connection)) {
+                        let [ tracker, connName ] = connection.split('#');
+                        this._peer.close(tracker, connName);
+                    }
                 }
             }
         } catch (error) {
