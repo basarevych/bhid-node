@@ -348,9 +348,18 @@ class Tracker extends EventEmitter {
         if (!name)
             name = this.default;
 
+        let configPath;
         return Promise.resolve()
             .then(() => {
-                let dirPath = path.join(os.homedir(), '.bhid');
+                configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+                try {
+                    fs.accessSync(configPath, fs.constants.F_OK);
+                } catch (error) {
+                    throw new Error('Could not read bhid.conf');
+                }
+            })
+            .then(() => {
+                let dirPath = path.join(configPath, 'master');
                 try {
                     fs.accessSync(dirPath, fs.constants.F_OK);
                 } catch (error) {
@@ -373,9 +382,18 @@ class Tracker extends EventEmitter {
         if (!name)
             name = this.default;
 
+        let configPath;
         return Promise.resolve()
             .then(() => {
-                let dirPath = path.join(os.homedir(), '.bhid');
+                configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
+                try {
+                    fs.accessSync(configPath, fs.constants.F_OK);
+                } catch (error) {
+                    throw new Error('Could not read bhid.conf');
+                }
+            })
+            .then(() => {
+                let dirPath = path.join(configPath, 'master');
                 try {
                     fs.accessSync(dirPath, fs.constants.F_OK);
                 } catch (error) {
