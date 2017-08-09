@@ -94,7 +94,8 @@ class ConnectRequest {
                     let cryptSession = this._crypter.sessions.get(sessionId);
                     cryptSession.peerKey = new Uint8Array(Buffer.from(message.connectRequest.publicKey, 'base64'));
                     cryptSession.peerName = result.name;
-                    this._connectionsList.updateServerName(connection.tracker, connection.name, cryptSession.peerName);
+                    if (!connection.server)
+                        this._connectionsList.updateServerName(connection.tracker, connection.name, cryptSession.peerName);
                     this._logger.info(
                         `Peer ${result.name} of ${message.connectRequest.connectionName} passed identity check (${session.socket.address().address}:${session.socket.address().port})`
                     );
