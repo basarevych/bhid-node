@@ -53,7 +53,7 @@ class ConnectResponse {
 
         session.accepted = (message.connectResponse.response === this.peer.ConnectResponse.Result.ACCEPTED);
         if (!session.accepted) {
-            this._logger.info(`Peer of ${session.name} rejected our connection request (${session.socket.remoteAddress}:${session.socket.remotePort})`);
+            this._logger.info(`Peer of ${session.name} rejected our connection request (${session.socket.address().address}:${session.socket.address().port})`);
             setTimeout(() => {
                 let reply = this.peer.OuterMessage.create({
                     type: this.peer.OuterMessage.Type.BYE,

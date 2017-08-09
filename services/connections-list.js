@@ -342,6 +342,27 @@ class ConnectionsList {
     }
 
     /**
+     * Update client connection server
+     * @param {string} trackerName          Tracker name
+     * @param {object} connectionName       Connection short name
+     * @param {string} server               Daemon name
+     */
+    updateServerName(trackerName, connectionName, server) {
+        let conf = this._list.get(trackerName);
+        if (!conf)
+            return;
+
+        let connection = conf.clientConnections.get(connectionName);
+        if (!connection)
+            return;
+
+        if (!connection.server || (connection.server !== server && !connection.fixed)) {
+            connection.server = server;
+            this.save()
+        }
+    }
+
+    /**
      * Delete connection
      * @param {string} trackerName          Tracker name
      * @param {string} connectionName       Connection short name
@@ -439,9 +460,10 @@ class ConnectionsList {
     }
 
     /**
-     * Get imported connection token
+     * Get imported connection info
      * @param {string} trackerName          Tracker name
      * @param {string} connectionName       Connection short name
+     * @return {object}
      */
     getImport(trackerName, connectionName) {
         let info = this._imports.get(trackerName);

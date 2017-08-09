@@ -56,12 +56,8 @@ class ServerAvailable {
         if (trackedConnections) {
             let clientConnection = trackedConnections.clientConnections.get(message.serverAvailable.connectionName);
             if (clientConnection) {
-                if (!clientConnection.server || (!connection.fixed && clientConnection.server !== message.serverAvailable.daemonName)) {
-                    clientConnection.server = message.serverAvailable.daemonName;
-                    this._connectionsList.update(name, message.serverAvailable.connectionName, false, clientConnection, false);
-                    this._connectionsList.save();
-                }
                 connection.internal = message.serverAvailable.internalAddresses;
+                this._connectionsList.updateServerName(name, message.serverAvailable.connectionName, message.serverAvailable.daemonName);
                 this.peer.connect(name, message.serverAvailable.connectionName, 'internal');
             }
         }

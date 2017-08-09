@@ -15,12 +15,14 @@ class ConnectRequest {
      * @param {object} config                       Configuration
      * @param {Logger} logger                       Logger service
      * @param {Crypter} crypter                     Crypter service
+     * @param {ConnectionsList} connectionsList     ConnectionsList service
      */
-    constructor(app, config, logger, crypter) {
+    constructor(app, config, logger, crypter, connectionsList) {
         this._app = app;
         this._config = config;
         this._logger = logger;
         this._crypter = crypter;
+        this._connectionsList = connectionsList;
     }
 
     /**
@@ -36,7 +38,7 @@ class ConnectRequest {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'logger', 'crypter' ];
+        return [ 'app', 'config', 'logger', 'crypter', 'connectionsList' ];
     }
 
     /**
@@ -92,6 +94,7 @@ class ConnectRequest {
                     let cryptSession = this._crypter.sessions.get(sessionId);
                     cryptSession.peerKey = new Uint8Array(Buffer.from(message.connectRequest.publicKey, 'base64'));
                     cryptSession.peerName = result.name;
+                    this._connectionsList.updateServerName(connection.tracker, connection.name, cryptSession.peerName);
                     this._logger.info(
                         `Peer ${result.name} of ${message.connectRequest.connectionName} passed identity check (${session.socket.address().address}:${session.socket.address().port})`
                     );
