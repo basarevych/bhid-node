@@ -103,35 +103,48 @@ class Create {
             return this.error('Daemon cannot be a server and a client of the same connection at the same time');
 
         let firstAddress, firstPort;
-        let parts = first.split(':');
-        if (parts.length === 2) {
-            firstAddress = parts[0];
-            firstPort = parts[1];
-            if (!firstAddress || !firstPort || firstAddress === '*' || firstPort === '*')
-                return this.error('Invalid connect address');
-        } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
-            firstAddress = '';
-            firstPort = parts[0];
+        let match = /^\[(.+)\]:(\d+)$/.exec(first);
+        if (match) {
+            firstAddress = match[1];
+            firstPort = match[2];
         } else {
-            return this.error('Invalid connect address');
+            let parts = first.split(':');
+            if (parts.length === 2) {
+                firstAddress = parts[0];
+                firstPort = parts[1];
+                if (!firstAddress || !firstPort || firstAddress === '*' || firstPort === '*')
+                    return this.error('Invalid connect address');
+            } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
+                firstAddress = '';
+                firstPort = parts[0];
+            } else {
+                return this.error('Invalid connect address');
+            }
         }
 
         let secondAddress, secondPort;
         if (second) {
-            parts = second.split(':');
-            if (parts.length === 2) {
-                secondAddress = parts[0];
-                secondPort = parts[1];
-            } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
-                secondAddress = '';
-                secondPort = parts[0];
+            let match = /^\[(.+)\]:(\d+)$/.exec(second);
+            if (match) {
+                secondAddress = match[1];
+                secondPort = match[2];
             } else {
-                return this.error('Invalid listen address');
+                let parts = second.split(':');
+                if (parts.length === 2) {
+                    secondAddress = parts[0];
+                    secondPort = parts[1];
+                } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
+                    secondAddress = '';
+                    secondPort = parts[0];
+                } else {
+                    return this.error('Invalid listen address');
+                }
             }
         } else {
             secondAddress = '';
             secondPort = '';
         }
+
 
         let type;
         return this.init()

@@ -76,15 +76,21 @@ class Attach {
 
         let overrideAddress, overridePort;
         if (override) {
-            let parts = override.split(':');
-            if (parts.length === 2) {
-                overrideAddress = parts[0];
-                overridePort = parts[1];
-            } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
-                overrideAddress = '';
-                overridePort = parts[0];
+            let match = /^\[(.+)\]:(\d+)$/.exec(override);
+            if (match) {
+                overrideAddress = match[1];
+                overridePort = match[2];
             } else {
-                return this.error('Invalid override address');
+                let parts = override.split(':');
+                if (parts.length === 2) {
+                    overrideAddress = parts[0];
+                    overridePort = parts[1];
+                } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
+                    overrideAddress = '';
+                    overridePort = parts[0];
+                } else {
+                    return this.error('Invalid override address');
+                }
             }
         } else {
             overrideAddress = '';
