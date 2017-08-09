@@ -355,7 +355,7 @@ class Tracker extends EventEmitter {
                 try {
                     fs.accessSync(configPath, fs.constants.F_OK);
                 } catch (error) {
-                    throw new Error('Could not read bhid.conf');
+                    throw new Error('No config directory');
                 }
             })
             .then(() => {
@@ -389,7 +389,7 @@ class Tracker extends EventEmitter {
                 try {
                     fs.accessSync(configPath, fs.constants.F_OK);
                 } catch (error) {
-                    throw new Error('Could not read bhid.conf');
+                    throw new Error('No config directory');
                 }
             })
             .then(() => {

@@ -115,6 +115,15 @@ class Install {
                     }
                 }
                 try {
+                    fs.accessSync(path.join(configDir, 'master'), fs.constants.F_OK);
+                } catch (error) {
+                    try {
+                        fs.mkdirSync(path.join(configDir, 'master'), 0o700);
+                    } catch (error) {
+                        return this.error(`Could not create ${path.join(configDir, 'master')}`);
+                    }
+                }
+                try {
                     fs.accessSync('/var/run/bhid', fs.constants.F_OK);
                 } catch (error) {
                     try {
