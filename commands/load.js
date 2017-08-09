@@ -75,54 +75,27 @@ class Load {
 
         return this.init()
             .then(() => {
-                this._app.debug('Sending CONNECTION LIST REQUEST').catch(() => { /* do nothing */ });
-                let request = this.ConnectionsListRequest.create({
-                    trackerName: trackerName,
-                });
-                let message = this.ClientMessage.create({
-                    type: this.ClientMessage.Type.CONNECTIONS_LIST_REQUEST,
-                    connectionsListRequest: request,
-                });
-                let buffer = this.ClientMessage.encode(message).finish();
-                return this.send(buffer, sockName);
+                return this.request(trackerName, sockName);
             })
-            .then(data => {
-                let message = this.ServerMessage.decode(data);
-                if (message.type !== this.ServerMessage.Type.CONNECTIONS_LIST_RESPONSE)
-                    return this.error('Invalid reply from daemon');
+            .then(list => {
+                if (force) {
+                    return this.load(trackerName, list, sockName);
+                } else {
+                    return this.printTable(list)
+                        .then(() => {
+                            return new Promise((resolve, reject) => {
+                                read({ prompt: '\nAccept? (yes/no): ' }, (error, answer) => {
+                                    if (error)
+                                        return reject(error);
 
-                switch (message.connectionsListResponse.response) {
-                    case this.ConnectionsListResponse.Result.ACCEPTED:
-                        if (force) {
-                            return this.load(trackerName, message.connectionsListResponse.list, sockName);
-                        } else {
-                            return this.printTable(message.connectionsListResponse.list)
-                                .then(() => {
-                                    return new Promise((resolve, reject) => {
-                                        read({ prompt: '\nAccept? (yes/no): ' }, (error, answer) => {
-                                            if (error)
-                                                return reject(error);
-
-                                            resolve(answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y');
-                                        });
-                                    });
-                                })
-                                .then(load => {
-                                    if (load)
-                                        return this.load(trackerName, message.connectionsListResponse.list, sockName);
+                                    resolve(answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y');
                                 });
-                        }
-                        break;
-                    case this.ConnectionsListResponse.Result.REJECTED:
-                        return this.error('Request rejected');
-                    case this.ConnectionsListResponse.Result.TIMEOUT:
-                        return this.error('No response from the tracker');
-                    case this.ConnectionsListResponse.Result.NO_TRACKER:
-                        return this.error('Not connected to the tracker');
-                    case this.ConnectionsListResponse.Result.NOT_REGISTERED:
-                        return this.error('Not registered with the tracker');
-                    default:
-                        return this.error('Unsupported response from daemon');
+                            });
+                        })
+                        .then(load => {
+                            if (load)
+                                return this.load(trackerName, list, sockName);
+                        });
                 }
             })
             .then(() => {
@@ -164,6 +137,50 @@ class Load {
             table.newRow();
         });
         return this._app.info(table.toString().trim());
+    }
+
+    /**
+     * Request the list
+     * @param {string} trackerName                      Name of the tracker
+     * @param {string} [sockName]                       Socket name
+     * @return {Promise}
+     */
+    request(trackerName, sockName) {
+        return Promise.resolve()
+            .then(() => {
+                this._app.debug('Sending CONNECTION LIST REQUEST').catch(() => { /* do nothing */ });
+                let request = this.ConnectionsListRequest.create({
+                    trackerName: trackerName,
+                });
+                let message = this.ClientMessage.create({
+                    type: this.ClientMessage.Type.CONNECTIONS_LIST_REQUEST,
+                    connectionsListRequest: request,
+                });
+                let buffer = this.ClientMessage.encode(message).finish();
+                return this.send(buffer, sockName);
+            })
+            .then(data => {
+                let message = this.ServerMessage.decode(data);
+                if (message.type !== this.ServerMessage.Type.CONNECTIONS_LIST_RESPONSE)
+                    return this.error('Invalid reply from daemon');
+
+                switch (message.connectionsListResponse.response) {
+                    case this.ConnectionsListResponse.Result.ACCEPTED:
+                        break;
+                    case this.ConnectionsListResponse.Result.REJECTED:
+                        return this.error('Request rejected');
+                    case this.ConnectionsListResponse.Result.TIMEOUT:
+                        return this.error('No response from the tracker');
+                    case this.ConnectionsListResponse.Result.NO_TRACKER:
+                        return this.error('Not connected to the tracker');
+                    case this.ConnectionsListResponse.Result.NOT_REGISTERED:
+                        return this.error('Not registered with the tracker');
+                    default:
+                        return this.error('Unsupported response from daemon');
+                }
+
+                return message.connectionsListResponse.list;
+            });
     }
 
     /**

@@ -460,8 +460,6 @@ class Tracker extends EventEmitter {
             })
             .then(() => {
                 server.token = token;
-                server.socket.end();
-                server.wrapper.detach();
                 this.emit('token', name);
                 return true;
             })

@@ -17,11 +17,13 @@ class Auth {
      * @param {App} app                 The application
      * @param {object} config           Configuration
      * @param {Help} help               Help command
+     * @param {Load} load               Load command
      */
-    constructor(app, config, help) {
+    constructor(app, config, help, load) {
         this._app = app;
         this._config = config;
         this._help = help;
+        this._load = load;
     }
 
     /**
@@ -37,7 +39,7 @@ class Auth {
      * @type {string[]}
      */
     static get requires() {
-        return [ 'app', 'config', 'commands.help' ];
+        return [ 'app', 'config', 'commands.help', 'commands.load' ];
     }
 
     /**
@@ -50,6 +52,11 @@ class Auth {
             .option({
                 name: 'help',
                 short: 'h',
+                type: 'boolean',
+            })
+            .option({
+                name: 'load',
+                short: 'l',
                 type: 'boolean',
             })
             .option({
@@ -72,6 +79,18 @@ class Auth {
         let sockName = args.options.socket;
 
         return this.auth(token, trackerName, sockName)
+            .then(() => {
+                if (!args.options.load)
+                    return;
+
+                return this._load.init()
+                    .then(() => {
+                        return this._load.request(trackerName, sockName);
+                    })
+                    .then(list => {
+                       return this._load.load(trackerName, list, sockName);
+                    });
+            })
             .then(() => {
                 process.exit(0);
             })

@@ -186,8 +186,8 @@ class Help {
      */
     helpAuth(argv) {
         return this._app.info(
-                'Usage:\tbhidctl auth <token> [-t <tracker>]\n\n' +
-                '\tSet and save the token of this daemon'
+                'Usage:\tbhidctl auth <token> [-l] [-t <tracker>]\n\n' +
+                '\tSet and save the token of this daemon. With -l flag "load -f" command will be executed.'
             )
             .then(() => {
                 process.exit(0);
