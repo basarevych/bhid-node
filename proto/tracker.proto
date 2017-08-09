@@ -123,6 +123,7 @@ message CreateResponse {
         REJECTED = 1;
         INVALID_PATH = 10;
         PATH_EXISTS = 11;
+        INVALID_ADDRESS = 20;
     }
     Result response = 1;
     string server_token = 2;

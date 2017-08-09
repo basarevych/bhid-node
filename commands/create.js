@@ -186,6 +186,8 @@ class Create {
                         return this.error('Invalid path');
                     case this.CreateResponse.Result.PATH_EXISTS:
                         return this.error('Path exists');
+                    case this.CreateResponse.Result.INVALID_ADDRESS:
+                        return this.error('Invalid address');
                     case this.CreateResponse.Result.TIMEOUT:
                         return this.error('No response from the tracker');
                     case this.CreateResponse.Result.NO_TRACKER:

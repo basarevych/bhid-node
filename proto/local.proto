@@ -136,6 +136,7 @@ message CreateResponse {
         REJECTED = 1;
         INVALID_PATH = 10;
         PATH_EXISTS = 11;
+        INVALID_ADDRESS = 20;
         TIMEOUT = 9000;
         NO_TRACKER = 9010;
         NOT_REGISTERED = 9020;
