@@ -123,7 +123,18 @@ class Load {
             table.cell('Fixed', row.fixed ? 'yes' : 'no');
             table.cell('Address', row.connectAddress);
             table.cell('Port', row.connectPort);
-            table.cell('Peers', row.clients.length ? row.clients.join(', ') : '');
+            if (row.fixed) {
+                table.cell('Peers', row.clients.length ? row.clients[0] : '');
+                for (let i = 1; i < row.clients.length; i++) {
+                    table.cell('Name', '');
+                    table.cell('Type', '');
+                    table.cell('Encrypted', '');
+                    table.cell('Fixed', '');
+                    table.cell('Address', '');
+                    table.cell('Port', '');
+                    table.cell('Peers', row.clients[i]);
+                }
+            }
             table.newRow();
         });
         list.clientConnections.forEach(row => {
@@ -133,7 +144,8 @@ class Load {
             table.cell('Fixed', row.fixed ? 'yes' : 'no');
             table.cell('Address', row.listenAddress);
             table.cell('Port', row.listenPort);
-            table.cell('Peers', row.server);
+            if (row.fixed)
+                table.cell('Peers', row.server);
             table.newRow();
         });
         return this._app.info(table.toString().trim());
