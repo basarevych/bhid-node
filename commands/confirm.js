@@ -122,7 +122,7 @@ class Confirm {
 
                                         switch (message.setTokenResponse.response) {
                                             case this.SetTokenResponse.Result.ACCEPTED:
-                                                return this._app.info('New master token has been saved to ~/.bhid directory and will be used automatically');
+                                                return this._app.info('New master token has been saved on this host and will be used automatically');
                                             case this.SetTokenResponse.Result.REJECTED:
                                                 return this.error('Set token request rejected');
                                             default:
