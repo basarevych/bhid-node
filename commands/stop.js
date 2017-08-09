@@ -64,7 +64,7 @@ class Stop {
      * Kill the daemon and wait for exit
      */
     terminate() {
-        return this._runner.exec(path.join(__dirname, '..', 'bin', 'status'), [ '/var/run/bhit/daemon.pid' ])
+        return this._runner.exec(path.join(__dirname, '..', 'bin', 'status'), [ '/var/run/bhid/daemon.pid' ])
             .then(result => {
                 if (result.code === 0) {
                     return this._runner.exec(
