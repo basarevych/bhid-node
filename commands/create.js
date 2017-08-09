@@ -121,11 +121,7 @@ class Create {
             parts = second.split(':');
             if (parts.length === 2) {
                 secondAddress = parts[0];
-                if (!secondAddress)
-                    secondAddress = '*';
                 secondPort = parts[1];
-                if (!secondPort)
-                    secondPort = '*';
             } else if (parts.length === 1 && parts[0].length && parts[0][0] === '/') {
                 secondAddress = '';
                 secondPort = parts[0];
@@ -137,14 +133,15 @@ class Create {
             secondPort = '';
         }
 
-        let type = this.CreateRequest.Type.NOT_CONNECTED;
-        if (server)
-            type = this.CreateRequest.Type.SERVER;
-        else if (client)
-            type = this.CreateRequest.Type.CLIENT;
-
+        let type;
         return this.init()
             .then(() => {
+                type = this.CreateRequest.Type.NOT_CONNECTED;
+                if (server)
+                    type = this.CreateRequest.Type.SERVER;
+                else if (client)
+                    type = this.CreateRequest.Type.CLIENT;
+
                 this._app.debug('Sending CREATE REQUEST').catch(() => { /* do nothing */ });
                 let request = this.CreateRequest.create({
                     trackerName: trackerName,
@@ -177,7 +174,7 @@ class Create {
                             )
                             .then(() => {
                                 if (type !== this.CreateRequest.Type.NOT_CONNECTED)
-                                    return this._app.info('This daemon is configured as ' + (client ? 'client' : 'server'));
+                                    return this._app.info('This daemon is configured as a ' + (client ? 'client' : 'server'));
                             })
                             .then(() => {
                                 if (type !== this.CreateRequest.Type.NOT_CONNECTED)
