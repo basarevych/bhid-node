@@ -116,6 +116,8 @@ class Load {
             return this._app.info('No connections defined');
 
         let table = new Table();
+
+        let fixed = list.serverConnections.some(item => { return item.fixed; });
         list.serverConnections.forEach(row => {
             table.cell('Name', row.name);
             table.cell('Type', 'server');
@@ -123,8 +125,9 @@ class Load {
             table.cell('Fixed', row.fixed ? 'yes' : 'no');
             table.cell('Address', row.connectAddress);
             table.cell('Port', row.connectPort);
-            if (row.fixed) {
+            if (fixed) {
                 table.cell('Peers', row.clients.length ? row.clients[0] : '');
+                table.newRow();
                 for (let i = 1; i < row.clients.length; i++) {
                     table.cell('Name', '');
                     table.cell('Type', '');
@@ -133,10 +136,14 @@ class Load {
                     table.cell('Address', '');
                     table.cell('Port', '');
                     table.cell('Peers', row.clients[i]);
+                    table.newRow();
                 }
+            } else {
+                table.newRow();
             }
-            table.newRow();
         });
+
+        fixed = list.clientConnections.some(item => { return item.fixed; });
         list.clientConnections.forEach(row => {
             table.cell('Name', row.name);
             table.cell('Type', 'client');
@@ -144,7 +151,7 @@ class Load {
             table.cell('Fixed', row.fixed ? 'yes' : 'no');
             table.cell('Address', row.listenAddress);
             table.cell('Port', row.listenPort);
-            if (row.fixed)
+            if (fixed)
                 table.cell('Peers', row.server);
             table.newRow();
         });
