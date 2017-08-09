@@ -83,7 +83,7 @@ class RemoteAttachRequest {
                         return;
 
                     this._logger.debug('remote-attach-request', `Got REMOTE ATTACH RESPONSE from tracker`);
-                    reply(response.attachResponse.response);
+                    reply(response.remoteAttachResponse.response);
                 };
                 this.tracker.on('remote_attach_response', onResponse);
 
