@@ -69,7 +69,7 @@ class Stop {
                 if (result.code === 0) {
                     return this._runner.exec(
                         'kill',
-                        [ '/var/run/bhit/daemon.pid', 'SIGTERM' ],
+                        [ '/var/run/bhid/daemon.pid', 'SIGTERM' ],
                         { pipe: process }
                     );
                 }
@@ -77,7 +77,7 @@ class Stop {
                 return new Promise((resolve, reject) => {
                     let tries = 0;
                     let waitExit = () => {
-                        this._runner.exec(path.join(__dirname, '..', 'bin', 'status'), [ '/var/run/bhit/daemon.pid' ])
+                        this._runner.exec(path.join(__dirname, '..', 'bin', 'status'), [ '/var/run/bhid/daemon.pid' ])
                             .then(result => {
                                 if (result.code === 100)
                                     return resolve();

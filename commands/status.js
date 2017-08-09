@@ -53,7 +53,7 @@ class Status {
 
         return this._runner.exec(
                 path.join(__dirname, '..', 'bin', 'status'),
-                [ '/var/run/bhit/daemon.pid' ],
+                [ '/var/run/bhid/daemon.pid' ],
                 { pipe: process }
             )
             .then(result => {
