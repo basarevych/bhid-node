@@ -25,18 +25,16 @@ module.exports = {
 
     // Load base classes and services, path names
     autoload: [
-        '!arpen/src/services',
-        'entities',
-        'services',
-        'servers',
-        'commands',
+        '!arpen/src',
+        'src',
     ],
 
     // Loaded modules
     modules: [
         'daemon',
-        'tracker',
+        'front',
         'peer',
+        'tracker',
     ],
 
     // Servers
@@ -44,14 +42,14 @@ module.exports = {
         daemon: {
             class: 'servers.daemon',
         },
-        tracker: {
-            class: 'servers.tracker',
+        front: {
+            class: 'servers.front',
         },
         peer: {
             class: 'servers.peer',
         },
-        front: {
-            class: 'servers.front',
+        tracker: {
+            class: 'servers.tracker',
         },
     },
 
@@ -87,7 +85,7 @@ module.exports = {
             path: '/var/log/bhid',
             interval: '1d',
             mode: 0o640,
-            maxFiles: 3,
+            max_files: 3,
             history: '/var/log/bhid/bhid.log.history',
         },
     },

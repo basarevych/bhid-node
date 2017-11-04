@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const path = require('path');
+const App = require('arpen').App;
 const Console = require('arpen').Console;
 
 let argv = process.argv.slice(2);
@@ -8,4 +9,9 @@ if (!argv.length)
     argv = [ 'help' ];
 
 const console = new Console(path.join(__dirname, '..'), argv);
-console.run({ disableLogFiles: true });
+console
+    .run()
+    .catch(error => {
+        process.stderr.write((error.fullStack || error.stack || error.message || error) + '\n');
+        process.exit(App.fatalExitCode);
+    });

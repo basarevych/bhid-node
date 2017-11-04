@@ -3,12 +3,8 @@
 const fs = require('fs-ext');
 
 let args = process.argv.slice(2);
-let pidFile = args.shift();
+let pidFile = '/var/run/bhid/daemon.pid';
 let signal = args.shift();
-if (!pidFile) {
-    console.error('Usage:\tkill <pidfile> [<signal>]');
-    process.exit(1);
-}
 if (!signal)
     signal = 'SIGTERM';
 

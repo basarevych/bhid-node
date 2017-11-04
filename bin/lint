@@ -7,12 +7,12 @@ if [ ! -d "$basepath" ]; then
     exit 1
 fi
 
-if [ ! -x "$basepath/node_modules/.bin/jshint" ]; then
-    echo "jsHint is not installed"
+if [ ! -x "$basepath/node_modules/.bin/eslint" ]; then
+    echo "eslint is not installed"
     exit 1
 fi
 
 find "$basepath" \
     \( -name "node_modules" -o -name "spec" -o -name "docs" -o -name "config" -o -name "public" -o -path "*/.*" \) -prune \
-    -o -name "*.js" -print | \
-    xargs "$basepath/node_modules/.bin/jshint"
+    -o \( -name "*.js" -a -not -name "*.config.js" \) -print | \
+    xargs "$basepath/node_modules/.bin/eslint"

@@ -2,23 +2,18 @@
 
 const fs = require('fs-ext');
 
-let args = process.argv.slice(2);
-let pidFile = args.shift();
-if (!pidFile) {
-    console.error('Usage:\tstatus <pidfile>');
-    process.exit(1);
-}
+let pidFile = '/var/run/bhid/daemon.pid';
 
 try {
     fs.accessSync(pidFile, fs.constants.F_OK);
     try {
         fs.accessSync(pidFile, fs.constants.R_OK);
     } catch (error) {
-        console.error(`File ${pidFile} is not readable`);
+        process.stderr.write(`File ${pidFile} is not readable\n`);
         process.exit(1);
     }
 } catch (error) {
-    console.log('Daemon is not running');
+    process.stdout.write('Daemon is not running\n');
     process.exit(100);
 }
 
@@ -26,23 +21,23 @@ let fd;
 try {
     fd = fs.openSync(pidFile, 'r');
 } catch (error) {
-    console.error(error.message);
+    process.stderr.write(error.message + '\n');
     process.exit(1);
 }
 
 try {
     fs.flockSync(fd, 'exnb');
-    console.log('Daemon is not running');
+    process.stdout.write('Daemon is not running\n');
     process.exit(100);
 } catch (error) {
     fs.fstat(fd, (err, stats) => {
         if (err) {
-            console.error(error.message);
+            process.stderr.write(error.message + '\n');
             process.exit(1);
         }
 
         if (stats.size === 0) {
-            console.error('Invalid PID file');
+            process.stderr.write('Invalid PID file\n');
             process.exit(1);
         }
 
@@ -55,24 +50,24 @@ try {
             null,
             (err, bytesRead, buffer) => {
                 if (err) {
-                    console.error(error.message);
+                    process.stderr.write(error.message + '\n');
                     process.exit(1);
                 }
                 if (bytesRead !== stats.size) {
-                    console.error('Could not read PID file');
+                    process.stderr.write('Could not read PID file\n');
                     process.exit(1);
                 }
 
                 try {
                     let pid = parseInt(buffer.toString().trim());
                     if (isNaN(pid)) {
-                        console.error('PID file does not contain a pid');
+                        process.stderr.write('PID file does not contain a pid\n');
                         process.exit(1);
                     }
-                    console.log(`Daemon is running at PID ${pid}`);
+                    process.stdout.write(`Daemon is running at PID ${pid}\n`);
                     process.exit(0);
                 } catch (error) {
-                    console.error(error.message);
+                    process.stderr.write(error.message + '\n');
                     process.exit(1);
                 }
             }
