@@ -65,10 +65,10 @@ class Stop extends Base {
      * @return {Promise}
      */
     async terminate() {
-        let result = await this._runner.exec(path.join(__dirname, '..', 'bin', 'status'));
+        let result = await this._runner.exec(path.join(__dirname, '..', '..', 'bin', 'status'));
         if (result.code === 0) {
             return this._runner.exec(
-                path.join(__dirname, '..', 'bin', 'kill'),
+                path.join(__dirname, '..', '..', 'bin', 'kill'),
                 ['SIGTERM'],
                 { pipe: process }
             );
@@ -78,7 +78,7 @@ class Stop extends Base {
             let tries = 0;
             let waitExit = async () => {
                 try {
-                    let result = await this._runner.exec(path.join(__dirname, '..', 'bin', 'status'));
+                    let result = await this._runner.exec(path.join(__dirname, '..', '..', 'bin', 'status'));
                     if (result.code === 100)
                         return resolve();
 

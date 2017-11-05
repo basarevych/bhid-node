@@ -54,7 +54,7 @@ class Status extends Base {
 
         try {
             let result = await this._runner.exec(
-                path.join(__dirname, '..', 'bin', 'status'),
+                path.join(__dirname, '..', '..', 'bin', 'status'),
                 [],
                 { pipe: process }
             );
