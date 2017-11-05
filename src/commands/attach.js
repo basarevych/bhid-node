@@ -127,7 +127,7 @@ class Attach extends Base {
                 attachRequest: request,
             });
             let buffer = this.ClientMessage.encode(message).finish();
-            let data = this.send(buffer, sockName);
+            let data = await this.send(buffer, sockName);
 
             let reply = this.ServerMessage.decode(data);
             if (reply.type !== this.ServerMessage.Type.ATTACH_RESPONSE)
