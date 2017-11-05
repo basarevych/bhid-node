@@ -421,7 +421,7 @@ class Tracker extends EventEmitter {
                 name = this.default;
             let server = this.servers.get(name);
             if (!server)
-                return Promise.resolve(false);
+                return false;
 
             let configPath = (os.platform() === 'freebsd' ? '/usr/local/etc/bhid' : '/etc/bhid');
             try {

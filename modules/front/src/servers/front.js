@@ -588,7 +588,7 @@ class Front extends EventEmitter {
     onError(tracker, name, sessionId, error) {
         let fullName = tracker + '#' + name;
         if (error.code !== 'ECONNRESET')
-            this._logger.error(`Front ${fullName} socket error: ${error.fullStack || error.stack}`);
+            this._logger.error(`Front ${fullName} socket error: ${error.messages || error.message}`);
     }
 
     /**
