@@ -727,7 +727,7 @@ class Tracker extends EventEmitter {
      */
     onError(name, error) {
         if (error.code !== 'ECONNRESET')
-            this._logger.error(`Tracker ${name} socket error: ${error.fullStack || error.stack}`);
+            this._logger.error(`Tracker ${name} socket error: ${error.messages || error.message}`);
     }
 
     /**
@@ -741,7 +741,8 @@ class Tracker extends EventEmitter {
         if (!server || !server.socket)
             return;
 
-        this._logger.info(`Tracker ${name} disconnected`);
+        if (server.connected)
+            this._logger.info(`Tracker ${name} disconnected`);
 
         server.socket.destroy();
         server.socket = null;
