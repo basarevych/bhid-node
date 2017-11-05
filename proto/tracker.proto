@@ -229,6 +229,7 @@ message RemoteDetachResponse {
         REJECTED = 1;
         INVALID_PATH = 10;
         PATH_NOT_FOUND = 11;
+        DAEMON_NOT_FOUND = 12;
         NOT_ATTACHED = 20;
     }
     Result response = 1;

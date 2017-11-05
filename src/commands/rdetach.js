@@ -114,7 +114,7 @@ class Rdetach extends Base {
                 case this.RemoteDetachResponse.Result.PATH_NOT_FOUND:
                     return this.error('Path not found');
                 case this.RemoteDetachResponse.Result.DAEMON_NOT_FOUND:
-                    return this.error('Path not found');
+                    return this.error('Daemon not found');
                 case this.RemoteDetachResponse.Result.NOT_ATTACHED:
                     return this.error('Not attached');
                 case this.RemoteDetachResponse.Result.TIMEOUT:

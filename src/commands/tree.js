@@ -150,13 +150,13 @@ class Tree extends Base {
         if (tree.connection) {
             obj.label += '\n' +
                 (tree.type === this.Tree.Type.SERVER ? '[*] ' : '[ ] ') +
-                tree.serversNumber + ' server(s) online for ' +
+                tree.serversNumber + ' server(s) defined for ' +
                 (tree.connectAddress
                     ? tree.connectAddress + ':'
                     : '') + tree.connectPort;
             obj.label += '\n' +
                 (tree.type === this.Tree.Type.CLIENT ? '[*] ' : '[ ] ') +
-                tree.clientsNumber + ' client(s) online on ' +
+                tree.clientsNumber + ' client(s) defined on ' +
                 (tree.listenAddress
                     ? tree.listenAddress + ':'
                     : ((tree.listenPort && tree.listenPort[0] === '/') ? '' : '*:')) +
