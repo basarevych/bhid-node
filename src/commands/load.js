@@ -195,7 +195,7 @@ class Load extends Base {
 
         switch (reply.connectionsListResponse.response) {
             case this.ConnectionsListResponse.Result.ACCEPTED:
-                return message.connectionsListResponse.list;
+                return reply.connectionsListResponse.list;
             case this.ConnectionsListResponse.Result.REJECTED:
                 return this.error('Request rejected');
             case this.ConnectionsListResponse.Result.TIMEOUT:
