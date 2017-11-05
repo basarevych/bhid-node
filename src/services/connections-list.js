@@ -264,7 +264,8 @@ class ConnectionsList {
             this._list.set(trackerName, conf);
         }
 
-        let connected = 0, found = false;
+        let connected = 0;
+        let found = false;
         for (let [ thisName, thisConnection ] of server ? conf.serverConnections : conf.clientConnections) {
             if (thisName === connectionName) {
                 found = true;
@@ -406,13 +407,11 @@ class ConnectionsList {
             for (let section of Object.keys(bhidConfig)) {
                 if (!section.endsWith(this.constructor.serverSection) &&
                     !section.endsWith(this.constructor.clientSection))
-                {
                     output[section] = bhidConfig[section];
-                }
             }
 
             for (let [ trackerName, list ] of this._list) {
-                for (let [ name, connection ] of list.serverConnections) {
+                for (let connection of list.serverConnections.values()) {
                     output[trackerName + '#' + connection.name + this.constructor.serverSection] = {
                         connect_address: connection.connectAddress,
                         connect_port: connection.connectPort,
@@ -421,7 +420,7 @@ class ConnectionsList {
                         clients: connection.fixed ? connection.clients : [],
                     };
                 }
-                for (let [ name, connection ] of list.clientConnections) {
+                for (let connection of list.clientConnections.values()) {
                     output[trackerName + '#' + connection.name + this.constructor.clientSection] = {
                         listen_address: connection.listenAddress || '*',
                         listen_port: connection.listenPort || '*',

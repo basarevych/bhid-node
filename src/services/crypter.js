@@ -5,7 +5,6 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const uuid = require('uuid');
 const crypto = require('crypto');
 const NodeRSA = require('node-rsa');
 const nacl = require('tweetnacl');
@@ -263,7 +262,6 @@ class Crypter {
         this._peer_instance = this._app.get('servers').get('peer');
         return this._peer_instance;
     }
-
 
     /**
      * Lookup peer by identity

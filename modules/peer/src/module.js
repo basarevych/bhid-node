@@ -3,7 +3,6 @@
  * @module peer/module
  */
 
-
 /**
  * Module main class
  */

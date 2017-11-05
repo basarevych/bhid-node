@@ -3,12 +3,8 @@
  * @module commands/register
  */
 const path = require('path');
-const fs = require('fs');
-const os = require('os');
-const net = require('net');
 const protobuf = require('protobufjs');
 const argvParser = require('argv');
-const SocketWrapper = require('socket-wrapper');
 const Base = require('./base');
 
 /**

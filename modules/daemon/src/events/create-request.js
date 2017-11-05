@@ -59,7 +59,7 @@ class CreateRequest extends Base {
 
         this._logger.debug('create-request', `Got CREATE REQUEST`);
         try {
-            let masterToken = await this.tracker.getMasterToken(message.createRequest.trackerName)
+            let masterToken = await this.tracker.getMasterToken(message.createRequest.trackerName);
             let relayId = uuid.v1();
 
             let timer, onResponse;

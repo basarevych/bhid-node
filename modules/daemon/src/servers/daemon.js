@@ -333,7 +333,7 @@ class Daemon extends EventEmitter {
 
         try {
             this._logger.debug('daemon', `Incoming message ${message.type}`);
-            switch(message.type) {
+            switch (message.type) {
                 case this.ClientMessage.Type.INIT_REQUEST:
                     this.emit('init_request', id, message);
                     break;

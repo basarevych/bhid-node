@@ -2,7 +2,6 @@
  * Registered event
  * @module tracker/events/registered
  */
-const uuid = require('uuid');
 const NError = require('nerror');
 const Base = require('./base');
 
@@ -60,7 +59,6 @@ class Registered extends Base {
 
         this._logger.info(`Registered with ${server.name} as ${server.daemonName} (${server.email})`);
         try {
-
             let trackedConnections = this._connectionsList.get(name);
             if (!trackedConnections)
                 return;

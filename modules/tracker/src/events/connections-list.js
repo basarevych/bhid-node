@@ -2,7 +2,6 @@
  * Connections List event
  * @module tracker/events/connections-list
  */
-const uuid = require('uuid');
 const NError = require('nerror');
 const Base = require('./base');
 

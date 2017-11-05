@@ -642,7 +642,7 @@ class Tracker extends EventEmitter {
 
         try {
             this._logger.debug('tracker', `Incoming message ${message.type} from ${name}`);
-            switch(message.type) {
+            switch (message.type) {
                 case this.ServerMessage.Type.INIT_RESPONSE:
                     this.emit('init_response', name, message);
                     break;

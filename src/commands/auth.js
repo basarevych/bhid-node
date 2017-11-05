@@ -3,10 +3,8 @@
  * @module commands/auth
  */
 const path = require('path');
-const net = require('net');
 const protobuf = require('protobufjs');
 const argvParser = require('argv');
-const SocketWrapper = require('socket-wrapper');
 const Base = require('./base');
 
 /**
@@ -83,7 +81,7 @@ class Auth extends Base {
             await this.auth(token, trackerName, sockName);
             if (args.options.load) {
                 await this._load.init();
-                await this._load.request(trackerName, sockName);
+                let list = await this._load.request(trackerName, sockName);
                 await this._load.load(trackerName, list, sockName);
             }
             return 0;

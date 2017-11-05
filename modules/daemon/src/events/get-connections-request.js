@@ -2,7 +2,6 @@
  * Get Connections Request event
  * @module daemon/events/get-connections-request
  */
-const uuid = require('uuid');
 const NError = require('nerror');
 const Base = require('./base');
 

@@ -147,7 +147,7 @@ class Install extends Base {
             configExists = true;
         } catch (error) {
             try {
-                let config = fs.readFileSync(path.join(__dirname, '..', '..', 'bhid.conf'), { encoding: 'utf8'});
+                let config = fs.readFileSync(path.join(__dirname, '..', '..', 'bhid.conf'), { encoding: 'utf8' });
                 fs.writeFileSync(path.join(configDir, 'bhid.conf'), config, { mode: 0o640 });
             } catch (error) {
                 return this.error(`Could not create bhid.conf`);
@@ -155,7 +155,8 @@ class Install extends Base {
         }
         if (configExists) {
             let contents = fs.readFileSync(path.join(configDir, 'bhid.conf'), { encoding: 'utf8' });
-            let parsed = [], needsConverting = false;
+            let parsed = [];
+            let needsConverting = false;
             for (let line of contents.split('\n')) {
                 if (/^\s*\[.+\]\s*/.test(line)) {
                     if (line.indexOf('\\') !== -1)

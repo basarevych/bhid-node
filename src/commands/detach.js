@@ -3,10 +3,8 @@
  * @module commands/detach
  */
 const path = require('path');
-const net = require('net');
 const protobuf = require('protobufjs');
 const argvParser = require('argv');
-const SocketWrapper = require('socket-wrapper');
 const Base = require('./base');
 
 /**

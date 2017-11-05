@@ -359,7 +359,7 @@ class Front extends EventEmitter {
                 info.socket.setTimeout(0);
 
                 let data;
-                while (!!(data = info.buffer.shift()))
+                while ((data = info.buffer.shift()))
                     info.socket.write(data);
             }
         );
@@ -414,7 +414,7 @@ class Front extends EventEmitter {
         info.buffer.push(data);
 
         if (info.connected) {
-            while (!!(data = info.buffer.shift()))
+            while ((data = info.buffer.shift()))
                 info.socket.write(data);
         }
     }

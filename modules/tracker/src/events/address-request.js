@@ -2,8 +2,6 @@
  * Address Request event
  * @module tracker/events/address-request
  */
-const uuid = require('uuid');
-const utp = require('utp-punch');
 const NError = require('nerror');
 const Base = require('./base');
 

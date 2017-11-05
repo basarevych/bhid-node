@@ -2,7 +2,6 @@
  * Import Connections Request event
  * @module daemon/events/import-connections-request
  */
-const uuid = require('uuid');
 const NError = require('nerror');
 const Base = require('./base');
 

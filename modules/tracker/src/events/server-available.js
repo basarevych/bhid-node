@@ -2,7 +2,6 @@
  * Server Available event
  * @module tracker/events/server-available
  */
-const uuid = require('uuid');
 const NError = require('nerror');
 const Base = require('./base');
 

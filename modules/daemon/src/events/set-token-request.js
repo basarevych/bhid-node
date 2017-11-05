@@ -2,7 +2,6 @@
  * Set Token Request event
  * @module daemon/events/set-token-request
  */
-const uuid = require('uuid');
 const NError = require('nerror');
 const Base = require('./base');
 
@@ -66,7 +65,7 @@ class SetTokenRequest extends Base {
                     break;
                 case this.daemon.SetTokenRequest.Type.DAEMON:
                     success = await this.tracker.setDaemonToken(message.setTokenRequest.trackerName, message.setTokenRequest.token);
-                    break
+                    break;
             }
 
             let reply = this.daemon.SetTokenResponse.create({

@@ -436,7 +436,8 @@ class Peer extends EventEmitter {
         let doConnect = (address, port) => {
             try {
                 this._logger.info(`Initiating connection to ${type} address of ${fullName} (${address}:${port})`);
-                let session, socket = this.utp.connect(
+                let session;
+                let socket = this.utp.connect(
                     port,
                     address,
                     () => {

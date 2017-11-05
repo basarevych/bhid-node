@@ -41,7 +41,7 @@ class BaseCommand {
                 sock = path.join('/var', 'run', 'bhid', `daemon${sockName ? '.' + sockName : ''}.sock`);
 
             let onError = async error => {
-                return reject(`Could not connect to daemon: ${error.message}`);
+                return this.error(`Could not connect to daemon: ${error.message}`);
             };
 
             let socket = net.connect(sock, async () => {

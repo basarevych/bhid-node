@@ -3,11 +3,9 @@
  * @module commands/disconnect
  */
 const path = require('path');
-const net = require('net');
 const protobuf = require('protobufjs');
 const archy = require('archy');
 const argvParser = require('argv');
-const SocketWrapper = require('socket-wrapper');
 const Base = require('./base');
 
 /**
@@ -153,14 +151,15 @@ class Tree extends Base {
             obj.label += '\n' +
                 (tree.type === this.Tree.Type.SERVER ? '[*] ' : '[ ] ') +
                 tree.serversNumber + ' server(s) online for ' +
-                (tree.connectAddress ?
-                    tree.connectAddress + ':' : '') + tree.connectPort;
+                (tree.connectAddress
+                    ? tree.connectAddress + ':'
+                    : '') + tree.connectPort;
             obj.label += '\n' +
                 (tree.type === this.Tree.Type.CLIENT ? '[*] ' : '[ ] ') +
                 tree.clientsNumber + ' client(s) online on ' +
-                (tree.listenAddress ?
-                    tree.listenAddress + ':' :
-                    ((tree.listenPort && tree.listenPort[0] === '/') ? '' : '*:')) +
+                (tree.listenAddress
+                    ? tree.listenAddress + ':'
+                    : ((tree.listenPort && tree.listenPort[0] === '/') ? '' : '*:')) +
                 (tree.listenPort || '*');
 
             let props = [];

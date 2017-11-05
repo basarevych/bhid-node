@@ -2,7 +2,6 @@
  * Daemon module
  * @module daemon/module
  */
-const path = require('path');
 
 /**
  * Module main class
@@ -14,8 +13,7 @@ class Daemon {
      * @param {object} config                                       Configuration
      * @param {Logger} logger                                       Logger service
      */
-    constructor(app, config, logger)
-    {
+    constructor(app, config, logger) {
         this._app = app;
         this._config = config;
         this._logger = logger;

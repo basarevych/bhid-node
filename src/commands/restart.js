@@ -2,7 +2,6 @@
  * Restart command
  * @module commands/restart
  */
-const path = require('path');
 const argvParser = require('argv');
 const Base = require('./base');
 

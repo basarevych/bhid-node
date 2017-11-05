@@ -3,7 +3,6 @@
  * @module tracker/module
  */
 
-
 /**
  * Module main class
  */

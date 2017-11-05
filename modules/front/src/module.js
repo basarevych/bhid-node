@@ -13,8 +13,7 @@ class Front {
      * @param {object} config                                       Configuration
      * @param {Logger} logger                                       Logger service
      */
-    constructor(app, config, logger)
-    {
+    constructor(app, config, logger) {
         this._app = app;
         this._config = config;
         this._logger = logger;

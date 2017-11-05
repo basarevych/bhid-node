@@ -44,7 +44,7 @@ class Stop extends Base {
      * @return {Promise}
      */
     async run(argv) {
-        let args = argvParser
+        argvParser
             .option({
                 name: 'help',
                 short: 'h',
@@ -83,10 +83,10 @@ class Stop extends Base {
                         return resolve();
 
                     if (result.code !== 0)
-                        return reject('Could not get daemon status');
+                        return this.error('Could not get daemon status');
 
                     if (++tries > 60)
-                        return reject('Daemon would not exit');
+                        return this.error('Daemon would not exit');
 
                     setTimeout(waitExit, 500);
                 } catch (error) {

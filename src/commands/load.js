@@ -3,11 +3,9 @@
  * @module commands/load
  */
 const path = require('path');
-const net = require('net');
 const protobuf = require('protobufjs');
 const read = require('read');
 const argvParser = require('argv');
-const SocketWrapper = require('socket-wrapper');
 const Table = require('easy-table');
 const Base = require('./base');
 

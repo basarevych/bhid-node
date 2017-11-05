@@ -3,10 +3,8 @@
  * @module commands/import
  */
 const path = require('path');
-const net = require('net');
 const protobuf = require('protobufjs');
 const argvParser = require('argv');
-const SocketWrapper = require('socket-wrapper');
 const Base = require('./base');
 
 /**
@@ -73,7 +71,7 @@ class Import extends Base {
         let sockName = args.options.socket;
 
         try {
-            await this.init()
+            await this.init();
 
             await this._app.debug('Sending IMPORT REQUEST');
             let request = this.ImportRequest.create({

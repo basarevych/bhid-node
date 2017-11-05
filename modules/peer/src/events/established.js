@@ -2,7 +2,6 @@
  * Established event
  * @module peer/events/established
  */
-const uuid = require('uuid');
 const NError = require('nerror');
 const Base = require('./base');
 
