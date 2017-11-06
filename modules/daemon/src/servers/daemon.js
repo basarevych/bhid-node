@@ -135,8 +135,7 @@ class Daemon extends EventEmitter {
         } catch (error) {
             return this._app.exit(
                 this._app.constructor.fatalExitCode,
-                error.messages || error.message,
-                this._app.constructor.gracefulTimeout
+                error.messages || error.message
             );
         }
     }
@@ -191,8 +190,7 @@ class Daemon extends EventEmitter {
         } catch (error) {
             return this._app.exit(
                 this._app.constructor.fatalExitCode,
-                error.messages || error.message,
-                this._app.constructor.gracefulTimeout
+                error.messages || error.message
             );
         }
     }
@@ -221,8 +219,7 @@ class Daemon extends EventEmitter {
         } catch (error) {
             return this._app.exit(
                 this._app.constructor.fatalExitCode,
-                error.messages || error.message,
-                this._app.constructor.gracefulTimeout
+                error.messages || error.message
             );
         }
     }
@@ -259,7 +256,7 @@ class Daemon extends EventEmitter {
             default:
                 msg = error;
         }
-        return this._app.exit(this._app.constructor.fatalExitCode, msg, this._app.constructor.gracefulTimeout);
+        return this._app.exit(this._app.constructor.fatalExitCode, msg);
     }
 
     /**
@@ -270,7 +267,7 @@ class Daemon extends EventEmitter {
         try {
             fs.chmodSync(sock, 0o600);
         } catch (error) {
-            this._logger.error('Could not prepare daemon socket', () => { process.exit(255); });
+            this._app.exit(this._app.constructor.fatalExitCode, 'Could not prepare daemon socket');
         }
 
         this._listening = true;

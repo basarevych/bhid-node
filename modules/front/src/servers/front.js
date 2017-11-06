@@ -100,8 +100,7 @@ class Front extends EventEmitter {
         } catch (error) {
             return this._app.exit(
                 this._app.constructor.fatalExitCode,
-                error.messages || error.message,
-                this._app.constructor.gracefulTimeout
+                error.messages || error.message
             );
         }
     }
@@ -160,8 +159,7 @@ class Front extends EventEmitter {
         } catch (error) {
             return this._app.exit(
                 this._app.constructor.fatalExitCode,
-                error.messages || error.message,
-                this._app.constructor.gracefulTimeout
+                error.messages || error.message
             );
         }
     }
