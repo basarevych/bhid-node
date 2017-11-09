@@ -1,4 +1,6 @@
-# Work in progress
+# Interconnect Daemon
+
+See https://github.com/breedhub/interconnect
 
 # Installation
 

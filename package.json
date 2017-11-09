@@ -1,6 +1,6 @@
 {
   "name": "bhid",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "Daemon for Breedhub Interconnect (connect server and client both behind NAT)",
   "license": "MIT",
   "author": "Ross Basarevych <basarevych@gmail.com>",
@@ -8,6 +8,11 @@
     "type": "git",
     "url": "git+https://github.com/breedhub/bhid-node.git"
   },
+  "keywords": [
+    "nat",
+    "hole punching",
+    "proxy"
+  ],
   "bin": {
     "bhidd": "bin/daemon",
     "bhidctl": "bin/cmd"
