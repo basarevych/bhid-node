@@ -15,7 +15,7 @@
   "dependencies": {
     "archy": "~1.0.0",
     "argv": "~0.0.2",
-    "arpen": "~0.2.32",
+    "arpen": "~1.0.1",
     "daemon": "~1.1.0",
     "easy-table": "~1.1.0",
     "emailjs": "~1.0.12",
@@ -29,7 +29,7 @@
     "read": "~1.0.7",
     "socket-wrapper": "~1.0.0",
     "tweetnacl": "~1.0.0",
-    "utp-punch": "~0.2.17",
+    "utp-punch": "~1.0.0",
     "uuid": "~3.1.0"
   },
   "devDependencies": {
